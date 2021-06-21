@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+  broker:
+    build:
+      context: .
+      dockerfile: broker.Dockerfile
+    networks:
+      default:
+        aliases:
+          - broker
+    restart: on-failure
+  build-cmds:
+    build:
+      context: .
+      dockerfile: compile.Dockerfile
+  director:
+    image: eulabeia_build-cmds:latest
+    command: eulabia-director --clientid sensor --server broker:9138
+    depends_on:
+      - build-cmds
+  example:
+    image: eulabeia_build-cmds:latest
+    command: example-client --clientid client1 --server broker:9138
+    depends_on:
+      - build-cmds
+      - director
+volumes:
+  binaries: {}
