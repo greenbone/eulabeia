@@ -13,7 +13,6 @@ import (
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/models"
-	"github.com/tidwall/gjson"
 )
 
 // Storage is for poutting and getting a models.Target
@@ -59,88 +58,37 @@ func (ts FileStorage) Get(id string) (*models.Target, error) {
 	return &target, err
 }
 
-// OnCreate handles the message create.target it will respond with a created.target message containing a uuid
-type OnCreate struct {
+type targetAggregate struct {
 	storage Storage
 }
 
-func (oct OnCreate) On(messageType string, message []byte) (interface{}, error) {
-	if messageType != "create.target" {
-		return nil, nil
-	}
+func (t targetAggregate) Create(c messages.Create) (*messages.Created, error) {
 	target := models.Target{
 		ID: uuid.NewString(),
 	}
-	if err := oct.storage.Put(target); err != nil {
+	if err := t.storage.Put(target); err != nil {
 		return nil, err
 	}
-	groupID := gjson.GetBytes(message, "groupId")
-	messageID := gjson.GetBytes(message, "messageId")
-	returnMessage := messages.Created{
+	return &messages.Created{
 		ID:      target.ID,
-		Message: messages.NewMessage("created.target", messageID.String(), groupID.String()),
-	}
-
-	return returnMessage, nil
+		Message: messages.NewMessage("created.target", c.MessageID, c.GroupID),
+	}, nil
 }
 
-// OnGet handles the message get.target it will respond with models.GotTarget
-type OnGet struct {
-	storage Storage
-}
-
-func (ogt OnGet) On(messageType string, message []byte) (interface{}, error) {
-	if messageType != "get.target" {
-		return nil, nil
-	}
-	var get messages.Get
-	if err := json.Unmarshal(message, &get); err != nil {
-		return nil, err
-	}
-	if target, err := ogt.storage.Get(get.ID); err != nil {
-		return nil, err
-	} else if target == nil {
-		return messages.Failure{
-			Message: messages.NewMessage("failure.get.target", get.MessageID, get.GroupID),
-			Error:   fmt.Sprintf("%s not found.", get.ID),
-		}, nil
-	} else {
-		return models.GotTarget{
-			Message: messages.NewMessage("got.target", get.MessageID, get.GroupID),
-			Target:  *target,
-		}, nil
-	}
-}
-
-// OnModify handles the message modify.target; it will respond with messages.Modified
-type OnModify struct {
-	storage Storage
-}
-
-func (omt OnModify) On(messageType string, message []byte) (msg interface{}, err error) {
-	if messageType != "modify.target" {
-		return nil, nil
-	}
-	var modify messages.Modify
-	err = json.Unmarshal(message, &modify)
-	if err != nil {
-		return
-	}
+func (t targetAggregate) Modify(m messages.Modify) (*messages.Modified, *messages.Failure, error) {
 	var target *models.Target
-	target, err = omt.storage.Get(modify.ID)
+	target, err := t.storage.Get(m.ID)
 	if err != nil {
-		return
+		return nil, nil, err
 	} else if target == nil {
-		log.Printf("Target %s not found, creating a new one.", modify.ID)
+		log.Printf("Target %s not found, creating a new one.", m.ID)
 		target = &models.Target{
-			ID: modify.ID,
+			ID: m.ID,
 		}
 	}
-	for k, v := range modify.Values {
+	for k, v := range m.Values {
 		// normalize field name
 		nk := strings.Title(k)
-		// don't return failure as err since it is based on the message
-		// and cannot be handled by the program itself anyway
 		var failure error
 		// due to map[string]interface{} []string can be detected as []interface{} instead
 		switch cv := v.(type) {
@@ -157,33 +105,44 @@ func (omt OnModify) On(messageType string, message []byte) (msg interface{}, err
 		}
 		if failure != nil {
 			log.Printf("Failure while processing field %v: %v", nk, failure)
-			msg = messages.Failure{
+			return nil, &messages.Failure{
 				Error:   fmt.Sprintf("Unable to set %s on target to %s: %v", nk, v, failure),
-				Message: messages.NewMessage("failure.modified.target", modify.MessageID, modify.GroupID),
-			}
-			return
+				Message: messages.NewMessage("failure.modified.target", m.MessageID, m.GroupID),
+			}, nil
 		}
 	}
-	omt.storage.Put(*target)
-	msg = messages.Modified{
-		ID:      modify.ID,
-		Message: messages.NewMessage("modified.target", modify.MessageID, modify.GroupID),
+	if err := t.storage.Put(*target); err != nil {
+		return nil, nil, err
 	}
 
-	return
+	return &messages.Modified{
+		ID:      m.ID,
+		Message: messages.NewMessage("modified.target", m.MessageID, m.GroupID),
+	}, nil, nil
+
+}
+func (t targetAggregate) Get(g messages.Get) (interface{}, *messages.Failure, error) {
+	if target, err := t.storage.Get(g.ID); err != nil {
+		return nil, nil, err
+	} else if target == nil {
+		return nil, &messages.Failure{
+			Message: messages.NewMessage("failure.get.target", g.MessageID, g.GroupID),
+			Error:   fmt.Sprintf("%s not found.", g.ID),
+		}, nil
+	} else {
+		return &models.GotTarget{
+			Message: messages.NewMessage("got.target", g.MessageID, g.GroupID),
+			Target:  *target,
+		}, nil, nil
+	}
 }
 
-// New returns a list of all known *.target handler.
-// A handler returns nil, nil when it either got handled or when it did not handle the message
-// Returns either an message.Failure or the corresponding response.
-// Returns an error if something unexpected did happen and the containing program should react on that
-func New(storage Storage) []handler.OnEvent {
+// New returns the type of aggregate as string and Aggregate
+//
+func New(storage Storage) (string, handler.Aggregate) {
+
 	if storage == nil {
 		storage = NoopStorage{}
 	}
-	return []handler.OnEvent{
-		OnCreate{storage: storage},
-		OnModify{storage: storage},
-		OnGet{storage: storage},
-	}
+	return "target", targetAggregate{storage: storage}
 }

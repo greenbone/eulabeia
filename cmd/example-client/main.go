@@ -13,8 +13,26 @@ import (
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
-	"github.com/greenbone/eulabeia/messages/handler"
+	"github.com/tidwall/gjson"
 )
+
+type OnEvent interface {
+	On(string, []byte) (interface{}, error)
+}
+
+type ExampleHandler struct {
+	handler []OnEvent
+}
+
+func (e ExampleHandler) On(msg []byte) (interface{}, error) {
+	messageType := gjson.GetBytes(msg, "message_type")
+	for _, h := range e.handler {
+		if _, err := h.On(messageType.String(), msg); err != nil {
+			return nil, err
+		}
+	}
+	return nil, nil
+}
 
 type OnCreatedTarget struct {
 	publisher     connection.Publisher
@@ -113,11 +131,13 @@ func main() {
 	}
 	modifyChan := make(chan messages.Modify, 1)
 	defer close(modifyChan)
-	mh, err := handler.New([]handler.OnEvent{
-		OnCreatedTarget{publisher: c, modifyMSGChan: modifyChan},
-		OnModifiedTarget{publisher: c, modifyMSGChan: modifyChan},
-		OnGotTarget{},
-	})
+	mh := ExampleHandler{
+		handler: []OnEvent{
+			OnCreatedTarget{publisher: c, modifyMSGChan: modifyChan},
+			OnModifiedTarget{publisher: c, modifyMSGChan: modifyChan},
+			OnGotTarget{},
+		},
+	}
 	if err != nil {
 		log.Panicf("Failed to create handler: %s", err)
 	}

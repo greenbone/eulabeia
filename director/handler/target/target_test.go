@@ -9,16 +9,17 @@ import (
 	"testing"
 )
 
-func createMessageHandler(changeEvent handler.OnEvent) connection.OnMessage {
-	h, _ := handler.New([]handler.OnEvent{changeEvent})
-	return h
+func createMessageHandler() connection.OnMessage {
+	k, v := New(NoopStorage{})
+	return handler.New(map[string]handler.Aggregate{
+		k: v,
+	})
 }
 
 func TestSuccessResponse(t *testing.T) {
 	var tests = []struct {
-		on      interface{}
-		then    string
-		handler connection.OnMessage
+		on   interface{}
+		then string
 	}{
 		{messages.Get{
 			Message: messages.Message{
@@ -29,8 +30,8 @@ func TestSuccessResponse(t *testing.T) {
 			},
 			ID: "someid",
 		},
-			"models.GotTarget",
-			createMessageHandler(OnGet{storage: NoopStorage{}})},
+			"*models.GotTarget",
+		},
 		{messages.Create{
 			Message: messages.Message{
 				MessageType: "create.target",
@@ -39,8 +40,8 @@ func TestSuccessResponse(t *testing.T) {
 				GroupID:     "12",
 			},
 		},
-			"messages.Created",
-			createMessageHandler(OnCreate{storage: NoopStorage{}})},
+			"*messages.Created",
+		},
 		{messages.Create{
 			Message: messages.Message{
 				MessageType: "created.target",
@@ -49,8 +50,8 @@ func TestSuccessResponse(t *testing.T) {
 				GroupID:     "12",
 			},
 		},
-			"<nil>",
-			createMessageHandler(OnCreate{storage: NoopStorage{}})},
+			"*messages.Failure",
+		},
 		{messages.Modify{
 			Message: messages.Message{
 				MessageType: "modify.target",
@@ -67,15 +68,16 @@ func TestSuccessResponse(t *testing.T) {
 				"parallel": false,
 			},
 		},
-			"messages.Modified",
-			createMessageHandler(OnModify{storage: NoopStorage{}})},
+			"*messages.Modified",
+		},
 	}
 	for i, test := range tests {
 		b, err := json.Marshal(test.on)
 		if err != nil {
 			t.Errorf("[%d] marshalling [%v] to json failed", i, test.on)
 		}
-		r, err := test.handler.On(b)
+		h := createMessageHandler()
+		r, err := h.On(b)
 		if err != nil {
 			t.Errorf("[%d] returned err (%v) on: %v", i, err, test.on)
 		}
