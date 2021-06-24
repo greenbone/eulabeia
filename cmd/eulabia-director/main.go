@@ -10,7 +10,7 @@ import (
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
-	"github.com/greenbone/eulabeia/libdirector/handler/target"
+	"github.com/greenbone/eulabeia/director/handler/target"
 	"github.com/greenbone/eulabeia/messages/handler"
 )
 

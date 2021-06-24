@@ -1,3 +1,4 @@
+// package mqtt contains the mqtt implementation of connection
 package mqtt
 
 import (

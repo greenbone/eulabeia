@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/google/uuid"
@@ -15,11 +16,13 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// Storage is for poutting and getting a models.Target
 type Storage interface {
-	Put(models.Target) error
-	Get(string) (*models.Target, error)
+	Put(models.Target) error            // Overrides existing or creates a models.Target
+	Get(string) (*models.Target, error) // Gets a models.Target via ID
 }
 
+// NoopStorage is used when Storage should not have an effect
 type NoopStorage struct{}
 
 func (n NoopStorage) Put(target models.Target) error {
@@ -29,6 +32,8 @@ func (n NoopStorage) Get(id string) (*models.Target, error) {
 	return &models.Target{ID: id}, nil
 }
 
+// FileStorage stores models.Target as json within a given StorageDir
+// The filename is a uuid without suffix.
 type FileStorage struct {
 	StorageDir string
 }
@@ -45,6 +50,9 @@ func (ts FileStorage) Get(id string) (*models.Target, error) {
 	var target models.Target
 	b, err := ioutil.ReadFile(ts.StorageDir + "/" + id)
 	if err != nil {
+		if _, ok := err.(*os.PathError); ok {
+			return nil, nil
+		}
 		return nil, err
 	}
 	err = json.Unmarshal(b, &target)
@@ -76,6 +84,7 @@ func (oct OnCreate) On(messageType string, message []byte) (interface{}, error) 
 	return returnMessage, nil
 }
 
+// OnGet handles the message get.target it will respond with models.GotTarget
 type OnGet struct {
 	storage Storage
 }
@@ -90,6 +99,11 @@ func (ogt OnGet) On(messageType string, message []byte) (interface{}, error) {
 	}
 	if target, err := ogt.storage.Get(get.ID); err != nil {
 		return nil, err
+	} else if target == nil {
+		return messages.Failure{
+			Message: messages.NewMessage("failure.get.target", get.MessageID, get.GroupID),
+			Error:   fmt.Sprintf("%s not found.", get.ID),
+		}, nil
 	} else {
 		return models.GotTarget{
 			Message: messages.NewMessage("got.target", get.MessageID, get.GroupID),
@@ -98,6 +112,7 @@ func (ogt OnGet) On(messageType string, message []byte) (interface{}, error) {
 	}
 }
 
+// OnModify handles the message modify.target; it will respond with messages.Modified
 type OnModify struct {
 	storage Storage
 }
@@ -112,8 +127,10 @@ func (omt OnModify) On(messageType string, message []byte) (msg interface{}, err
 		return
 	}
 	var target *models.Target
-	target, e := omt.storage.Get(modify.ID)
-	if e != nil {
+	target, err = omt.storage.Get(modify.ID)
+	if err != nil {
+		return
+	} else if target == nil {
 		log.Printf("Target %s not found, creating a new one.", modify.ID)
 		target = &models.Target{
 			ID: modify.ID,
@@ -156,6 +173,10 @@ func (omt OnModify) On(messageType string, message []byte) (msg interface{}, err
 	return
 }
 
+// New returns a list of all known *.target handler.
+// A handler returns nil, nil when it either got handled or when it did not handle the message
+// Returns either an message.Failure or the corresponding response.
+// Returns an error if something unexpected did happen and the containing program should react on that
 func New(storage Storage) []handler.OnEvent {
 	if storage == nil {
 		storage = NoopStorage{}
