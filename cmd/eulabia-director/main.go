@@ -28,10 +28,10 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	entityName, aggregateHandler := target.New(target.FileStorage{StorageDir: "/tmp"})
-	mh := handler.New(map[string]handler.Aggregate{
-		entityName: aggregateHandler,
-	})
+	mh := handler.New(
+		handler.FromAggregate(
+			target.New(
+				target.FileStorage{StorageDir: "/tmp"})))
 	if err != nil {
 		log.Panicf("Failed to create handler: %s", err)
 	}

@@ -110,9 +110,7 @@ func TestAggragteHandler(t *testing.T) {
 			if err != nil {
 				t.Errorf("[%s][%s] failed to create json", k, j)
 			}
-			h := New(map[string]Aggregate{
-				"target": targetAggregate{},
-			})
+			h := New(FromAggregate("target", targetAggregate{}))
 			r, err := h.On(b)
 			switch j {
 			case SUCCESS:

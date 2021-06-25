@@ -10,10 +10,7 @@ import (
 )
 
 func createMessageHandler() connection.OnMessage {
-	k, v := New(NoopStorage{})
-	return handler.New(map[string]handler.Aggregate{
-		k: v,
-	})
+	return handler.New(handler.FromAggregate(New(NoopStorage{})))
 }
 
 func TestSuccessResponse(t *testing.T) {

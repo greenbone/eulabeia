@@ -44,17 +44,19 @@ type Aggregate interface {
 	Getter
 }
 
-// onAggregate is a struct containing aggregates for registered types.
+// onMessage is a struct containing aggregates for registered types.
 //
 // The messages.MessageType is normalized like what.on e.g. create.target
-// onAggregate tries to parse the given messages to messages.Create,
+// onMessage tries to parse the given messages to messages.Create,
 // messages.Modify, messages.Get then tries to find via MessageType the
 // Aggregate via handler.
-type onAggregate struct {
-	handler map[string]Aggregate
+type onMessage struct {
+	creater  map[string]Creater
+	modifier map[string]Modifier
+	getter   map[string]Getter
 }
 
-func (mh onAggregate) On(message []byte) (interface{}, error) {
+func (mh onMessage) On(message []byte) (interface{}, error) {
 	messageType := gjson.GetBytes(message, "message_type")
 	if messageType.Type == gjson.Null {
 		return messages.Failure{
@@ -69,56 +71,83 @@ func (mh onAggregate) On(message []byte) (interface{}, error) {
 			Error:   fmt.Sprintf("incorrect message_type %s", messageType.String()),
 		}, nil
 	}
-	if h, ok := mh.handler[smt[1]]; ok {
-		switch m := smt[0]; m {
-		case "create":
-			var create messages.Create
-			if e := json.Unmarshal(message, &create); e != nil {
-				return messages.Failure{
-					Message: messages.NewMessage("failure", "", ""),
-					Error:   fmt.Sprintf("unable to parse %s: %s", m, e),
-				}, nil
-			}
+	switch m := smt[0]; m {
+	case "create":
+		var create messages.Create
+		if e := json.Unmarshal(message, &create); e != nil {
+			return messages.Failure{
+				Message: messages.NewMessage("failure", "", ""),
+				Error:   fmt.Sprintf("unable to parse %s: %s", m, e),
+			}, nil
+		}
+		if h, ok := mh.creater[smt[1]]; ok {
 			return h.Create(create)
-		case "modify":
-			var modify messages.Modify
-			if e := json.Unmarshal(message, &modify); e != nil {
-				return messages.Failure{
-					Message: messages.NewMessage("failure", "", ""),
-					Error:   fmt.Sprintf("unable to parse %s: %s", m, e),
-				}, nil
-			}
+		}
+		return &messages.Failure{
+			Message: messages.NewMessage("failure", "", ""),
+			Error:   fmt.Sprintf("unable to find handler for %s", smt[1]),
+		}, nil
+	case "modify":
+		var modify messages.Modify
+		if e := json.Unmarshal(message, &modify); e != nil {
+			return messages.Failure{
+				Message: messages.NewMessage("failure", "", ""),
+				Error:   fmt.Sprintf("unable to parse %s: %s", m, e),
+			}, nil
+		}
+
+		if h, ok := mh.modifier[smt[1]]; ok {
 			r, f, e := h.Modify(modify)
 			if f != nil {
 				return f, e
 			}
 			return r, e
-		case "get":
-			var get messages.Get
-			if e := json.Unmarshal(message, &get); e != nil {
-				return messages.Failure{
-					Message: messages.NewMessage("failure", "", ""),
-					Error:   fmt.Sprintf("unable to parse %s: %s", m, e),
-				}, nil
-			}
+		}
+		return &messages.Failure{
+			Message: messages.NewMessage("failure", "", ""),
+			Error:   fmt.Sprintf("unable to find handler for %s", smt[1]),
+		}, nil
+	case "get":
+		var get messages.Get
+		if e := json.Unmarshal(message, &get); e != nil {
+			return messages.Failure{
+				Message: messages.NewMessage("failure", "", ""),
+				Error:   fmt.Sprintf("unable to parse %s: %s", m, e),
+			}, nil
+		}
+		if h, ok := mh.getter[smt[1]]; ok {
 			r, f, e := h.Get(get)
 			if f != nil {
 				return f, e
 			}
 			return r, e
-		default:
-			return &messages.Failure{
-				Message: messages.NewMessage("failure", "", ""),
-				Error:   fmt.Sprintf("unable to identify method %s", m),
-			}, nil
 		}
+		return &messages.Failure{
+			Message: messages.NewMessage("failure", "", ""),
+			Error:   fmt.Sprintf("unable to find handler for %s", smt[1]),
+		}, nil
+	default:
+		return &messages.Failure{
+			Message: messages.NewMessage("failure", "", ""),
+			Error:   fmt.Sprintf("unable to identify method %s", m),
+		}, nil
 	}
-	return &messages.Failure{
-		Message: messages.NewMessage("failure", "", ""),
-		Error:   fmt.Sprintf("unable to find handler for %s", smt[1]),
-	}, nil
 }
 
-func New(handler map[string]Aggregate) connection.OnMessage {
-	return onAggregate{handler: handler}
+
+// FromAggregate is a convencience method to create specialized lookup maps for connection.OnMessage 
+func FromAggregate(topic string, a Aggregate) (map[string]Creater, map[string]Modifier, map[string]Getter) {
+	return map[string]Creater{topic: a},
+		map[string]Modifier{topic: a},
+		map[string]Getter{topic: a}
+}
+
+func New(creater map[string]Creater,
+	modifier map[string]Modifier,
+	getter map[string]Getter) connection.OnMessage {
+	return onMessage{
+		creater:  creater,
+		modifier: modifier,
+		getter:   getter,
+	}
 }
