@@ -134,17 +134,49 @@ func (mh onMessage) On(message []byte) (interface{}, error) {
 	}
 }
 
-
-// FromAggregate is a convencience method to create specialized lookup maps for connection.OnMessage 
-func FromAggregate(topic string, a Aggregate) (map[string]Creater, map[string]Modifier, map[string]Getter) {
-	return map[string]Creater{topic: a},
-		map[string]Modifier{topic: a},
-		map[string]Getter{topic: a}
+// Holder contains interfaces needed for OnMessage
+type Holder struct {
+	Topic    string
+	Creater  Creater
+	Modifier Modifier
+	Getter   Getter
 }
 
-func New(creater map[string]Creater,
-	modifier map[string]Modifier,
-	getter map[string]Getter) connection.OnMessage {
+// FromAggregate is a convencience method to create specialized lookup maps for connection.OnMessage
+func FromAggregate(topic string, a Aggregate) Holder {
+	return Holder{
+		Topic:    topic,
+		Creater:  a,
+		Modifier: a,
+		Getter:   a,
+	}
+}
+
+// FromGetter is a convencience method to create specialized lookup maps for connection.OnMessage
+func FromGetter(topic string, a Getter) Holder {
+	return Holder{
+		Topic:  topic,
+		Getter: a,
+	}
+}
+
+// New returns a new connection.OnMessage handler
+func New(holder ...Holder) connection.OnMessage {
+	creater := map[string]Creater{}
+	modifier := map[string]Modifier{}
+	getter := map[string]Getter{}
+
+	for _, h := range holder {
+		if h.Creater != nil {
+			creater[h.Topic] = h.Creater
+		}
+		if h.Modifier != nil {
+			modifier[h.Topic] = h.Modifier
+		}
+		if h.Getter != nil {
+			getter[h.Topic] = h.Getter
+		}
+	}
 	return onMessage{
 		creater:  creater,
 		modifier: modifier,
