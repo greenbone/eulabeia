@@ -138,7 +138,6 @@ func (t targetAggregate) Get(g messages.Get) (interface{}, *messages.Failure, er
 }
 
 // New returns the type of aggregate as string and Aggregate
-//
 func New(storage Storage) (string, handler.Aggregate) {
 
 	if storage == nil {

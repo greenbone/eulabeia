@@ -42,8 +42,8 @@ func (gm getMemory) Get(g messages.Get) (interface{}, *messages.Failure, error) 
 	return &response, nil, nil
 }
 
-func New() handler.Getter {
-	return getMemory{
+func New() (string, handler.Getter) {
+	return "memory", getMemory{
 		stats: mem.Get,
 	}
 }

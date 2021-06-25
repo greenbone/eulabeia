@@ -19,7 +19,7 @@ func main() {
 	clientid := flag.String("clientid", "", "A clientid for the connection")
 	flag.Parse()
 
-	log.Println("Starting sensor")
+	log.Println("Starting director")
 	c, err := mqtt.New(*server, *clientid, "", "")
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
@@ -32,16 +32,13 @@ func main() {
 		handler.FromAggregate(
 			target.New(
 				target.FileStorage{StorageDir: "/tmp"})))
-	if err != nil {
-		log.Panicf("Failed to create handler: %s", err)
-	}
 	err = c.Subscribe(map[string]connection.OnMessage{"greenbone.target": mh})
 	if err != nil {
 		panic(err)
 	}
 
 	ic := make(chan os.Signal, 1)
-	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(ic, os.Interrupt, syscall.SIGTERM, syscall.SIGSTOP)
 	<-ic
 	fmt.Println("signal received, exiting")
 	if c != nil {

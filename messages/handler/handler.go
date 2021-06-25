@@ -4,6 +4,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/greenbone/eulabeia/connection"
@@ -127,10 +128,8 @@ func (mh onMessage) On(message []byte) (interface{}, error) {
 			Error:   fmt.Sprintf("unable to find handler for %s", smt[1]),
 		}, nil
 	default:
-		return &messages.Failure{
-			Message: messages.NewMessage("failure", "", ""),
-			Error:   fmt.Sprintf("unable to identify method %s", m),
-		}, nil
+        log.Printf("unable to identify method %s", m)
+        return nil, nil
 	}
 }
 

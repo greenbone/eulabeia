@@ -57,7 +57,7 @@ func (m MQTT) Publish(topic string, message interface{}) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Publishing message: %s", string(b))
+	log.Printf("[%s] Publishing message: %s", topic, string(b))
 	props := &paho.PublishProperties{}
 	pb := &paho.Publish{
 		Topic:      topic,

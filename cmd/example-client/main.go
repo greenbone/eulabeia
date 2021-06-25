@@ -147,7 +147,7 @@ func main() {
 	}
 	ic := make(chan os.Signal, 1)
 	defer close(ic)
-	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(ic, os.Interrupt, syscall.SIGTERM, syscall.SIGSTOP)
 	<-ic
 	log.Println("signal received, exiting")
 	if c != nil {

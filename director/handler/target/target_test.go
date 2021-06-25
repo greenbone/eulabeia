@@ -47,7 +47,7 @@ func TestSuccessResponse(t *testing.T) {
 				GroupID:     "12",
 			},
 		},
-			"*messages.Failure",
+			"<nil>",
 		},
 		{messages.Modify{
 			Message: messages.Message{
