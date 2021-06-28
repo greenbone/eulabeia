@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/greenbone/eulabeia/director/handler/target"
+	"github.com/greenbone/eulabeia/internal/test"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/handler"
-	"github.com/greenbone/eulabeia/internal/test"
 )
 
 func TestCreateScan(t *testing.T) {

@@ -55,6 +55,9 @@ func (h *HandleTests) Verify(t *testing.T) {
 	if err != nil {
 		t.Errorf("marshalling [%v] to json failed", h.Input)
 	}
+	if h.Handler == nil {
+		t.Fatalf("Handler is not set")
+	}
 	r, err := h.Handler.On(b)
 	if h.VerifyError != nil {
 		h.VerifyError(err, *h, t)
@@ -62,8 +65,9 @@ func (h *HandleTests) Verify(t *testing.T) {
 		VerifyNilError(err, *h, t)
 		if h.VerifyResult != nil {
 			h.VerifyResult(r, *h, t)
+		} else {
+			VerifyMessageOfResult(r, *h, t)
 		}
-		VerifyMessageOfResult(r, *h, t)
 	}
 
 }
