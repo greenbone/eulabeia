@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/google/uuid"
+	dh "github.com/greenbone/eulabeia/director/handler"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/models"
@@ -86,31 +86,10 @@ func (t targetAggregate) Modify(m messages.Modify) (*messages.Modified, *message
 			ID: m.ID,
 		}
 	}
-	for k, v := range m.Values {
-		// normalize field name
-		nk := strings.Title(k)
-		var failure error
-		// due to map[string]interface{} []string can be detected as []interface{} instead
-		switch cv := v.(type) {
-		case []interface{}:
-			strings := make([]string, len(cv), cap(cv))
-			for i, j := range cv {
-				if s, ok := j.(string); ok {
-					strings[i] = s
-				}
-			}
-			failure = models.SetValueOf(target, nk, strings)
-		default:
-			failure = models.SetValueOf(target, nk, cv)
-		}
-		if failure != nil {
-			log.Printf("Failure while processing field %v: %v", nk, failure)
-			return nil, &messages.Failure{
-				Error:   fmt.Sprintf("Unable to set %s on target to %s: %v", nk, v, failure),
-				Message: messages.NewMessage("failure.modified.target", m.MessageID, m.GroupID),
-			}, nil
-		}
+	if f := dh.GenericSetValueOf(target, m); f != nil {
+		return nil, f, nil
 	}
+
 	if err := t.storage.Put(*target); err != nil {
 		return nil, nil, err
 	}

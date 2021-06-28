@@ -3,15 +3,10 @@ package target
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"testing"
 )
-
-func createMessageHandler() connection.OnMessage {
-	return handler.New(handler.FromAggregate(New(NoopStorage{})))
-}
 
 func TestSuccessResponse(t *testing.T) {
 	var tests = []struct {
@@ -73,7 +68,7 @@ func TestSuccessResponse(t *testing.T) {
 		if err != nil {
 			t.Errorf("[%d] marshalling [%v] to json failed", i, test.on)
 		}
-		h := createMessageHandler()
+		h := handler.New(handler.FromAggregate(New(NoopStorage{})))
 		r, err := h.On(b)
 		if err != nil {
 			t.Errorf("[%d] returned err (%v) on: %v", i, err, test.on)

@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages/handler"
@@ -20,7 +21,7 @@ func main() {
 	flag.Parse()
 
 	log.Println("Starting sensor")
-	c, err := mqtt.New(*server, *clientid, "", "")
+	c, err := mqtt.New(*server, *clientid+uuid.NewString(), "", "")
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
@@ -34,7 +35,7 @@ func main() {
 		panic(err)
 	}
 	ic := make(chan os.Signal, 1)
-	signal.Notify(ic, os.Interrupt, syscall.SIGTERM, syscall.SIGSTOP)
+	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
 	<-ic
 	fmt.Println("signal received, exiting")
 	if c != nil {

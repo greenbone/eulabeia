@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
@@ -84,7 +84,8 @@ func (omt OnModifiedTarget) On(messageType string, message []byte) (interface{},
 	log.Printf("original message id %v", original.MessageID)
 	log.Printf("modified message id %v", modified.MessageID)
 	if original.MessageID != modified.MessageID {
-		return nil, fmt.Errorf("response (%v) is not triggered by %s (%v)", modified, original.ID, original)
+		omt.modifyMSGChan <- original
+		return nil, nil
 	}
 	log.Printf("target: %s modified", original.ID)
 	omt.publisher.Publish(targetTopic, messages.Get{
@@ -110,7 +111,7 @@ func main() {
 	clientid := flag.String("clientid", "", "A clientid for the connection")
 	flag.Parse()
 	log.Println("Starting example client")
-	c, err := mqtt.New(*server, *clientid, "", "")
+	c, err := mqtt.New(*server, *clientid+uuid.NewString(), "", "")
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
@@ -147,7 +148,7 @@ func main() {
 	}
 	ic := make(chan os.Signal, 1)
 	defer close(ic)
-	signal.Notify(ic, os.Interrupt, syscall.SIGTERM, syscall.SIGSTOP)
+	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
 	<-ic
 	log.Println("signal received, exiting")
 	if c != nil {

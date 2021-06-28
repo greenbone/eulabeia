@@ -128,8 +128,8 @@ func (mh onMessage) On(message []byte) (interface{}, error) {
 			Error:   fmt.Sprintf("unable to find handler for %s", smt[1]),
 		}, nil
 	default:
-        log.Printf("unable to identify method %s", m)
-        return nil, nil
+		log.Printf("unable to identify method %s", m)
+		return nil, nil
 	}
 }
 
