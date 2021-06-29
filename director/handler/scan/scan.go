@@ -2,59 +2,41 @@
 package scan
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
 
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/director/handler/target"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/models"
+	"github.com/greenbone/eulabeia/storage"
 )
 
 // Storage is for poutting and getting a models.Scan
 type Storage interface {
 	Put(models.Scan) error            // Overrides existing or creates a models.Scan
 	Get(string) (*models.Scan, error) // Gets a models.Scan via ID
+	Delete(string) error
 }
 
-// NoopStorage is used when Storage should not have an effect
-type NoopStorage struct{}
-
-func (n NoopStorage) Put(scan models.Scan) error {
-	return nil
-}
-func (n NoopStorage) Get(id string) (*models.Scan, error) {
-	return &models.Scan{ID: id}, nil
-}
-
-// FileStorage stores models.Scan as json within a given StorageDir
+// Depositary stores models.Scan as json within a given StorageDir
 // The filename is a uuid without suffix.
-type FileStorage struct {
-	StorageDir string
+type Depositary struct {
+	Device storage.Json
 }
 
-func (ts FileStorage) Put(scan models.Scan) error {
-	b, err := json.Marshal(scan)
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(ts.StorageDir+"/"+scan.ID, b, 0640)
+func (ts Depositary) Put(scan models.Scan) error {
+	return ts.Device.Put(scan.ID, scan)
 }
 
-func (ts FileStorage) Get(id string) (*models.Scan, error) {
+func (ts Depositary) Delete(id string) error {
+	return ts.Device.Delete(id)
+}
+
+func (ts Depositary) Get(id string) (*models.Scan, error) {
 	var scan models.Scan
-	b, err := ioutil.ReadFile(ts.StorageDir + "/" + id)
-	if err != nil {
-		if _, ok := err.(*os.PathError); ok {
-			return nil, nil
-		}
-		return nil, err
-	}
-	err = json.Unmarshal(b, &scan)
+	err := ts.Device.Get(id, &scan)
 	return &scan, err
 }
 
@@ -87,37 +69,28 @@ func (t scanAggregate) Modify(m messages.Modify) (*messages.Modified, *messages.
 			ID: m.ID,
 		}
 	}
-	for k, v := range m.Values {
+	applyTargetID := func(k string, v interface{}) error {
 		switch k {
-		case "exclude":
-			// due to map[string]interface{} []string can be detected as []interface{} instead
-			if cv, ok := v.([]string); ok {
-				scan.Exclude = cv
-			} else {
-				log.Printf("Unable to cast %s to []string", v)
-			}
-		case "target_id", "targetId", "targetID":
+		case "target_id":
 			if str, ok := v.(string); ok {
 				target, err := t.target.Get(str)
 				if err != nil {
-					return nil, nil, err
+					return err
 				}
 				if target == nil {
-					return nil, &messages.Failure{
-						Message: messages.NewMessage("failure.modify.scan", m.MessageID, m.GroupID),
-						Error:   fmt.Sprintf("Unable to find target: %s", v),
-					}, nil
+					return fmt.Errorf("target %s not found", str)
 				}
 				scan.Target = *target
 			} else {
-				return nil, &messages.Failure{
-					Message: messages.NewMessage("failure.modify.scan", m.MessageID, m.GroupID),
-					Error:   fmt.Sprintf("To cast %v to string", v),
-				}, nil
-
+				return fmt.Errorf("[%T] %v is not a target ID", v, v)
 			}
+			return nil
+		default:
+			return fmt.Errorf("%s is unknown", k)
 		}
-
+	}
+	if f := handler.ModifySetValueOf(scan, m, applyTargetID); f != nil {
+		return nil, f, nil
 	}
 	if err := t.storage.Put(*scan); err != nil {
 		return nil, nil, err
@@ -129,14 +102,22 @@ func (t scanAggregate) Modify(m messages.Modify) (*messages.Modified, *messages.
 	}, nil, nil
 
 }
+
+func (t scanAggregate) Delete(d messages.Delete) (*messages.Deleted, *messages.Failure, error) {
+	if err := t.storage.Delete(d.ID); err != nil {
+		return nil, messages.DeleteFailureResponse(d.Message, "target", d.ID), nil
+	}
+	return &messages.Deleted{
+		Message: messages.NewMessage("deleted.target", d.MessageID, d.GroupID),
+		ID:      d.ID,
+	}, nil, nil
+}
+
 func (t scanAggregate) Get(g messages.Get) (interface{}, *messages.Failure, error) {
 	if scan, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if scan == nil {
-		return nil, &messages.Failure{
-			Message: messages.NewMessage("failure.get.scan", g.MessageID, g.GroupID),
-			Error:   fmt.Sprintf("%s not found.", g.ID),
-		}, nil
+		return nil, messages.GetFailureResponse(g.Message, "scan", g.ID), nil
 	} else {
 		return &models.GotScan{
 			Message: messages.NewMessage("got.scan", g.MessageID, g.GroupID),
@@ -146,10 +127,9 @@ func (t scanAggregate) Get(g messages.Get) (interface{}, *messages.Failure, erro
 }
 
 // New returns the type of aggregate as string and Aggregate
-func New(storage Storage, target target.Storage) (string, handler.Aggregate) {
+func New(storage storage.Json) (string, handler.Aggregate) {
 
-	if storage == nil {
-		storage = NoopStorage{}
-	}
-	return "scan", scanAggregate{storage: storage, target: target}
+	return "scan", scanAggregate{
+		storage: Depositary{Device: storage},
+		target:  target.Depositary{Device: storage}}
 }

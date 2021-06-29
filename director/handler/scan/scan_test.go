@@ -3,14 +3,14 @@ package scan
 import (
 	"testing"
 
-	"github.com/greenbone/eulabeia/director/handler/target"
 	"github.com/greenbone/eulabeia/internal/test"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/handler"
+	"github.com/greenbone/eulabeia/storage"
 )
 
 func TestCreateScan(t *testing.T) {
-	h := handler.New(handler.FromAggregate(New(NoopStorage{}, target.NoopStorage{})))
+	h := handler.New(handler.FromAggregate(New(storage.Noop{})))
 	tests := []test.HandleTests{
 		{
 			Input: messages.Create{

@@ -2,59 +2,39 @@
 package target
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
 
 	"github.com/google/uuid"
-	dh "github.com/greenbone/eulabeia/director/handler"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/models"
+	"github.com/greenbone/eulabeia/storage"
 )
 
 // Storage is for poutting and getting a models.Target
 type Storage interface {
 	Put(models.Target) error            // Overrides existing or creates a models.Target
 	Get(string) (*models.Target, error) // Gets a models.Target via ID
+	Delete(string) error
 }
 
-// NoopStorage is used when Storage should not have an effect
-type NoopStorage struct{}
-
-func (n NoopStorage) Put(target models.Target) error {
-	return nil
-}
-func (n NoopStorage) Get(id string) (*models.Target, error) {
-	return &models.Target{ID: id}, nil
+// Depositary stores models.Target as json
+type Depositary struct {
+	Device storage.Json
 }
 
-// FileStorage stores models.Target as json within a given StorageDir
-// The filename is a uuid without suffix.
-type FileStorage struct {
-	StorageDir string
+func (ts Depositary) Put(target models.Target) error {
+	return ts.Device.Put(target.ID, target)
 }
 
-func (ts FileStorage) Put(target models.Target) error {
-	b, err := json.Marshal(target)
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(ts.StorageDir+"/"+target.ID, b, 0640)
+func (ts Depositary) Delete(id string) error {
+	return ts.Device.Delete(id)
 }
 
-func (ts FileStorage) Get(id string) (*models.Target, error) {
+func (ts Depositary) Get(id string) (*models.Target, error) {
 	var target models.Target
-	b, err := ioutil.ReadFile(ts.StorageDir + "/" + id)
-	if err != nil {
-		if _, ok := err.(*os.PathError); ok {
-			return nil, nil
-		}
-		return nil, err
-	}
-	err = json.Unmarshal(b, &target)
+	err := ts.Device.Get(id, &target)
 	return &target, err
 }
 
@@ -86,7 +66,7 @@ func (t targetAggregate) Modify(m messages.Modify) (*messages.Modified, *message
 			ID: m.ID,
 		}
 	}
-	if f := dh.GenericSetValueOf(target, m); f != nil {
+	if f := handler.ModifySetValueOf(target, m, nil); f != nil {
 		return nil, f, nil
 	}
 
@@ -116,11 +96,17 @@ func (t targetAggregate) Get(g messages.Get) (interface{}, *messages.Failure, er
 	}
 }
 
-// New returns the type of aggregate as string and Aggregate
-func New(storage Storage) (string, handler.Aggregate) {
-
-	if storage == nil {
-		storage = NoopStorage{}
+func (t targetAggregate) Delete(d messages.Delete) (*messages.Deleted, *messages.Failure, error) {
+	if err := t.storage.Delete(d.ID); err != nil {
+		return nil, messages.DeleteFailureResponse(d.Message, "target", d.ID), nil
 	}
-	return "target", targetAggregate{storage: storage}
+	return &messages.Deleted{
+		Message: messages.NewMessage("deleted.target", d.MessageID, d.GroupID),
+		ID:      d.ID,
+	}, nil, nil
+}
+
+// New returns the type of aggregate as string and Aggregate
+func New(storage storage.Json) (string, handler.Aggregate) {
+	return "target", targetAggregate{storage: Depositary{Device: storage}}
 }

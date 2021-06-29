@@ -17,6 +17,7 @@ var VerifyNilError = func(e error, _ HandleTests, t *testing.T) {
 
 var VerifyMessageOfResult = func(d interface{}, h HandleTests, t *testing.T) {
 	var rm messages.Message
+	// simplify by using reflection
 	switch cv := d.(type) {
 	case *messages.Created:
 		rm = cv.Message
@@ -26,10 +27,14 @@ var VerifyMessageOfResult = func(d interface{}, h HandleTests, t *testing.T) {
 		rm = cv.Message
 	case *models.GotTarget:
 		rm = cv.Message
+	case *models.GotSensor:
+		rm = cv.Message
 	case *messages.Failure:
 		rm = cv.Message
+	case *messages.Deleted:
+		rm = cv.Message
 	default:
-		t.Fatalf("Unable to get message from %v", d)
+		t.Fatalf("Unable to get message from %v: %T", d, d)
 	}
 	if rm.GroupID != h.ExpectedMessage.GroupID {
 		t.Errorf("Expected GroupID to be: %s but was %s", h.ExpectedMessage.GroupID, rm.GroupID)

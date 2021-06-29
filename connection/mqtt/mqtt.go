@@ -21,31 +21,42 @@ func (m MQTT) Close() error {
 	return m.client.Disconnect(&paho.Disconnect{ReasonCode: 0})
 }
 
-func (m MQTT) Subscribe(handler map[string]connection.OnMessage) error {
-	for topic, h := range handler {
-		m.client.Router.RegisterHandler(topic, func(p *paho.Publish) {
-			log.Printf("Retrieved message: %s", string(p.Payload))
-			message, err := h.On(p.Payload)
+func (m MQTT) Register(topic string, handler connection.OnMessage) error {
+
+	m.client.Router.RegisterHandler(topic, func(p *paho.Publish) {
+		log.Printf("[%s] retrieved message: %s", topic, string(p.Payload))
+		message, err := handler.On(p.Payload)
+		if err != nil {
+			panic(err)
+		}
+		if message != nil {
+			err = m.Publish(topic, message)
 			if err != nil {
 				panic(err)
 			}
-			if message != nil {
-				err = m.Publish(topic, message)
-				if err != nil {
-					panic(err)
-				}
-			}
-		})
+		}
+	})
 
-		_, err := m.client.Subscribe(context.Background(), &paho.Subscribe{
-			// we need NoLocal otherwise we would consum our own messages
-			// again and ack them.
-			Subscriptions: map[string]paho.SubscribeOptions{
-				topic: {QoS: m.qos, NoLocal: true},
-			},
+	_, err := m.client.Subscribe(context.Background(), &paho.Subscribe{
+		// we need NoLocal otherwise we would consum our own messages
+		// again and ack them.
+		Subscriptions: map[string]paho.SubscribeOptions{
+			topic: {QoS: m.qos, NoLocal: true},
 		},
-		)
-		if err != nil {
+	},
+	)
+	return err
+}
+
+func (m MQTT) Deregister(topic string) error {
+	m.client.Router.UnregisterHandler(topic)
+	_, err := m.client.Unsubscribe(context.Background(), &paho.Unsubscribe{Topics: []string{topic}})
+	return err
+}
+
+func (m MQTT) Subscribe(handler map[string]connection.OnMessage) error {
+	for topic, h := range handler {
+		if err := m.Register(topic, h); err != nil {
 			return err
 		}
 	}
@@ -80,10 +91,20 @@ func (m MQTT) Connect() error {
 	return nil
 }
 
+type LastWillMessage struct {
+	Topic string
+	MSG   interface{}
+}
+
+func (lwm LastWillMessage) asBytes() ([]byte, error) {
+	return json.Marshal(lwm.MSG)
+}
+
 func New(server string,
 	clientid string,
 	username string,
-	password string) (connection.PubSub, error) {
+	password string,
+	lwm *LastWillMessage) (connection.PubSub, error) {
 
 	conn, err := net.Dial("tcp", server)
 	if err != nil {
@@ -100,6 +121,17 @@ func New(server string,
 		CleanStart: true,
 		Username:   username,
 		Password:   []byte(password),
+	}
+	if lwm != nil {
+		if b, err := lwm.asBytes(); err != nil {
+			return nil, err
+		} else {
+			cp.WillMessage = &paho.WillMessage{
+				Topic:   lwm.Topic,
+				QoS:     1,
+				Payload: b,
+			}
+		}
 	}
 	if username != "" {
 		cp.UsernameFlag = true

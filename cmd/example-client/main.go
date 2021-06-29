@@ -39,7 +39,7 @@ type OnCreatedTarget struct {
 	modifyMSGChan chan messages.Modify
 }
 
-const targetTopic = "greenbone.target"
+const topic = "greenbone.director"
 
 func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, error) {
 	if messageType != "created.target" {
@@ -57,7 +57,7 @@ func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, 
 			"plugins": []string{"someoids"},
 		},
 	}
-	if err := oct.publisher.Publish(targetTopic, modify); err != nil {
+	if err := oct.publisher.Publish(topic, modify); err != nil {
 		return nil, err
 	}
 	oct.modifyMSGChan <- modify
@@ -88,7 +88,7 @@ func (omt OnModifiedTarget) On(messageType string, message []byte) (interface{},
 		return nil, nil
 	}
 	log.Printf("target: %s modified", original.ID)
-	omt.publisher.Publish(targetTopic, messages.Get{
+	omt.publisher.Publish(topic, messages.Get{
 		Message: messages.NewMessage("get.target", "", ""),
 		ID:      original.ID,
 	})
@@ -111,7 +111,7 @@ func main() {
 	clientid := flag.String("clientid", "", "A clientid for the connection")
 	flag.Parse()
 	log.Println("Starting example client")
-	c, err := mqtt.New(*server, *clientid+uuid.NewString(), "", "")
+	c, err := mqtt.New(*server, *clientid+uuid.NewString(), "", "", nil)
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
@@ -119,7 +119,7 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	err = c.Publish(targetTopic, messages.Create{
+	err = c.Publish(topic, messages.Create{
 		Message: messages.Message{
 			MessageType: "create.target",
 			Created:     7774,
@@ -142,7 +142,7 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to create handler: %s", err)
 	}
-	err = c.Subscribe(map[string]connection.OnMessage{targetTopic: mh})
+	err = c.Subscribe(map[string]connection.OnMessage{topic: mh})
 	if err != nil {
 		panic(err)
 	}

@@ -18,7 +18,6 @@ func TestMemoryHandlerErrors(t *testing.T) {
 		{reactOn, func() (*mem.Stats, error) { return nil, nil }, true},
 		{reactOn, func() (*mem.Stats, error) { return nil, errors.New("someerror") }, true},
 		{reactOn, func() (*mem.Stats, error) { return &mem.Stats{}, nil }, false},
-		{"nope", func() (*mem.Stats, error) { panic("do not call me") }, false},
 	}
 	for i, test := range tests {
 		h := getMemory{

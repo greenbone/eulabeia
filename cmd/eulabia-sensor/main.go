@@ -11,17 +11,26 @@ import (
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
+	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/sensor/handler/memory"
 )
 
 func main() {
+	topic := "greenbone.sensor"
 	server := flag.String("server", "localhost:1883", "A clientid for the connection")
 	clientid := flag.String("clientid", "", "A clientid for the connection")
+	sensorID := flag.String("sensorID", "bla", "A sensorID for the registration")
 	flag.Parse()
 
 	log.Println("Starting sensor")
-	c, err := mqtt.New(*server, *clientid+uuid.NewString(), "", "")
+	c, err := mqtt.New(*server, *clientid+uuid.NewString(), "", "",
+		&mqtt.LastWillMessage{
+			Topic: topic,
+			MSG: messages.Delete{
+				ID:      *sensorID,
+				Message: messages.NewMessage("delete.sensor", "", ""),
+			}})
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
@@ -29,8 +38,15 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
+	c.Publish(topic, messages.Modify{
+		Message: messages.NewMessage("modify.sensor", "", ""),
+		ID:      *sensorID,
+		Values: map[string]interface{}{
+			"type": "undefined",
+		},
+	})
 	mh := handler.New(handler.FromGetter(memory.New()))
-	err = c.Subscribe(map[string]connection.OnMessage{"greenbone.sensor": mh})
+	err = c.Subscribe(map[string]connection.OnMessage{topic: mh})
 	if err != nil {
 		panic(err)
 	}

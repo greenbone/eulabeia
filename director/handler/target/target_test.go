@@ -6,10 +6,11 @@ import (
 	"github.com/greenbone/eulabeia/internal/test"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/handler"
+	"github.com/greenbone/eulabeia/storage"
 )
 
 func TestSuccessResponse(t *testing.T) {
-	h := handler.New(handler.FromAggregate(New(NoopStorage{})))
+	h := handler.New(handler.FromAggregate(New(storage.Noop{})))
 	tests := []test.HandleTests{
 		{
 			Input: messages.Create{
@@ -27,11 +28,19 @@ func TestSuccessResponse(t *testing.T) {
 			ExpectedMessage: messages.NewMessage("got.target", "1", "1"),
 		},
 		{
+			Input: messages.Delete{
+				Message: messages.NewMessage("delete.target", "1", "1"),
+				ID:      "someid",
+			},
+			Handler:         h,
+			ExpectedMessage: messages.NewMessage("deleted.target", "1", "1"),
+		},
+		{
 			Input: messages.Modify{
 				Message: messages.NewMessage("modify.target", "1", "1"),
 				ID:      "1",
 				Values: map[string]interface{}{
-					"scanner":  "openvas",
+					"sensor":   "openvas",
 					"hosts":    []string{"a", "b"},
 					"plugins":  []string{"a", "b"},
 					"alive":    true,
