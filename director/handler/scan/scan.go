@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/google/uuid"
+	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/director/handler/target"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/handler"
@@ -41,8 +42,27 @@ func (ts Depositary) Get(id string) (*models.Scan, error) {
 }
 
 type scanAggregate struct {
-	storage Storage
-	target  target.Storage
+	storage     Storage
+	target      target.Storage
+	sensorTopic string
+}
+
+func (t scanAggregate) Start(s messages.Start) (interface{}, *messages.Failure, error) {
+	scan, err := t.storage.Get(s.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if scan == nil {
+		return nil, messages.GetFailureResponse(s.Message, "scan", s.ID), nil
+	}
+
+	return &connection.SendResponse{
+		MSG: &messages.Start{
+			Message: messages.NewMessage(fmt.Sprintf("start.scan.%s", scan.Sensor), s.MessageID, s.GroupID),
+			ID:      s.ID,
+		},
+		Topic: t.sensorTopic,
+	}, nil, nil
 }
 
 func (t scanAggregate) Create(c messages.Create) (*messages.Created, error) {
@@ -81,10 +101,10 @@ func (t scanAggregate) Modify(m messages.Modify) (*messages.Modified, *messages.
 					return fmt.Errorf("target %s not found", str)
 				}
 				scan.Target = *target
+				return nil
 			} else {
 				return fmt.Errorf("[%T] %v is not a target ID", v, v)
 			}
-			return nil
 		default:
 			return fmt.Errorf("%s is unknown", k)
 		}
@@ -127,9 +147,12 @@ func (t scanAggregate) Get(g messages.Get) (interface{}, *messages.Failure, erro
 }
 
 // New returns the type of aggregate as string and Aggregate
-func New(storage storage.Json) (string, handler.Aggregate) {
-
-	return "scan", scanAggregate{
-		storage: Depositary{Device: storage},
-		target:  target.Depositary{Device: storage}}
+func New(sensorTopic string, storage storage.Json) handler.Holder {
+	s := scanAggregate{
+		sensorTopic: sensorTopic,
+		storage:     Depositary{Device: storage},
+		target:      target.Depositary{Device: storage}}
+	h := handler.FromAggregate("scan", s)
+	h.Starter = s
+	return h
 }

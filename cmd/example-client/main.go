@@ -24,7 +24,7 @@ type ExampleHandler struct {
 	handler []OnEvent
 }
 
-func (e ExampleHandler) On(msg []byte) (interface{}, error) {
+func (e ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse, error) {
 	messageType := gjson.GetBytes(msg, "message_type")
 	for _, h := range e.handler {
 		if _, err := h.On(messageType.String(), msg); err != nil {

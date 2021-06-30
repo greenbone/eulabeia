@@ -25,12 +25,12 @@ func (m MQTT) Register(topic string, handler connection.OnMessage) error {
 
 	m.client.Router.RegisterHandler(topic, func(p *paho.Publish) {
 		log.Printf("[%s] retrieved message: %s", topic, string(p.Payload))
-		message, err := handler.On(p.Payload)
+		message, err := handler.On(topic, p.Payload)
 		if err != nil {
 			panic(err)
 		}
 		if message != nil {
-			err = m.Publish(topic, message)
+			err = m.Publish(message.Topic, message.MSG)
 			if err != nil {
 				panic(err)
 			}

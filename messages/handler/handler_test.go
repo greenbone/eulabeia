@@ -129,31 +129,31 @@ func TestAggragteHandler(t *testing.T) {
 				t.Errorf("[%s][%s] failed to create json", k, j)
 			}
 			h := New(FromAggregate("target", exampleAggregate{}))
-			r, err := h.On(b)
+			r, err := h.On("", b)
 			switch j {
 			case SUCCESS:
 				switch k {
 				case "delete":
-					if _, ok := r.(*messages.Deleted); !ok {
+					if _, ok := r.MSG.(*messages.Deleted); !ok {
 						t.Errorf("[%s][%s] expected models.GotTarget but got %T", k, j, r)
 					}
 				case "get":
-					if _, ok := r.(*models.GotTarget); !ok {
+					if _, ok := r.MSG.(*models.GotTarget); !ok {
 						t.Errorf("[%s][%s] expected models.GotTarget but got %T", k, j, r)
 					}
 				case "create":
-					if _, ok := r.(*messages.Created); !ok {
+					if _, ok := r.MSG.(*messages.Created); !ok {
 						t.Errorf("[%s][%s] expected messages.Created but got %T", k, j, r)
 					}
 				case "modify":
-					if _, ok := r.(*messages.Modified); !ok {
+					if _, ok := r.MSG.(*messages.Modified); !ok {
 						t.Errorf("[%s][%s] expected messages.Modified but got %T", k, j, r)
 					}
 
 				}
 			case FAILURE:
 				if k != "create" {
-					if _, ok := r.(*messages.Failure); !ok {
+					if _, ok := r.MSG.(*messages.Failure); !ok {
 						t.Errorf("[%s][%s] expected messages.Failure but got %T", k, j, r)
 					}
 				}

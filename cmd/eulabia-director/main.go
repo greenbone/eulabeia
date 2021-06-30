@@ -36,7 +36,7 @@ func main() {
 		"greenbone.sensor": handler.New(handler.FromAggregate(sensor.New(device))),
 		"greenbone.director": handler.New(
 			handler.FromAggregate(target.New(device)),
-			handler.FromAggregate(scan.New(device))),
+			scan.New("greenbone.sensor", device)),
 	})
 	if err != nil {
 		panic(err)

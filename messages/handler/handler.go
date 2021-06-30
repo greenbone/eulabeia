@@ -17,11 +17,7 @@ import (
 //
 // Start is used to start an new event chain (e.g. start.scan)
 type Starter interface {
-	// Start should send a get.memory for a sensor and react on
-	// got.memory of given sensor; when sufficient memory is
-	// available then it should send start scan event to
-	// sensor and return started event
-	Start(messages.Start) (*messages.Started, *messages.Failure, error)
+	Start(messages.Start) (interface{}, *messages.Failure, error)
 }
 
 // Creater is the interface that wraps the basic Create method.
@@ -113,27 +109,34 @@ type onMessage struct {
 	lookup map[string]Holder
 }
 
-// enhance for topic information
-func (mh onMessage) On(message []byte) (interface{}, error) {
+func asResponse(t string, d interface{}) *connection.SendResponse {
+	return &connection.SendResponse{
+		Topic: t,
+		MSG:   d,
+	}
+}
+
+func (mh onMessage) On(topic string, message []byte) (*connection.SendResponse, error) {
 	messageType := gjson.GetBytes(message, "message_type")
 	if messageType.Type == gjson.Null {
-		return messages.Failure{
+		return asResponse(topic, messages.Failure{
 			Message: messages.NewMessage("failure", "", ""),
 			Error:   "unable to find message_type",
-		}, nil
+		}), nil
 	}
 	smt := strings.Split(messageType.String(), ".")
 	if len(smt) < 2 {
-		return messages.Failure{
+		return asResponse(topic, messages.Failure{
 			Message: messages.NewMessage("failure", "", ""),
 			Error:   fmt.Sprintf("incorrect message_type %s", messageType.String()),
-		}, nil
+		}), nil
 	}
 	if h, ok := mh.lookup[smt[1]]; ok {
 		var del messages.Delete
 		var create messages.Create
 		var modify messages.Modify
 		var get messages.Get
+		var start messages.Start
 		var use interface{}
 		var fuse func() (interface{}, *messages.Failure, error)
 		if m := smt[0]; m == "delete" && h.Deleter != nil {
@@ -147,6 +150,11 @@ func (mh onMessage) On(message []byte) (interface{}, error) {
 			fuse = func() (interface{}, *messages.Failure, error) {
 				r, e := h.Creater.Create(create)
 				return r, nil, e
+			}
+		} else if m == "start" && h.Starter != nil {
+			use = &start
+			fuse = func() (interface{}, *messages.Failure, error) {
+				return h.Starter.Start(start)
 			}
 		} else if m == "modify" && h.Modifier != nil {
 			use = &modify
@@ -163,16 +171,19 @@ func (mh onMessage) On(message []byte) (interface{}, error) {
 			return nil, nil
 		}
 		if e := json.Unmarshal(message, use); e != nil {
-			return messages.Failure{
+			return asResponse(topic, messages.Failure{
 				Message: messages.NewMessage("failure", "", ""),
 				Error:   fmt.Sprintf("unable to parse %s: %s", smt[0], e),
-			}, nil
+			}), nil
 		}
 		r, f, e := fuse()
 		if f != nil {
-			return f, e
+			return asResponse(topic, f), e
 		}
-		return r, e
+		if r, ok := r.(*connection.SendResponse); ok {
+			return r, e
+		}
+		return asResponse(topic, r), e
 
 	}
 	log.Printf("unable to identify entity %s", smt[1])
@@ -186,6 +197,7 @@ type Holder struct {
 	Modifier Modifier
 	Getter   Getter
 	Deleter  Deleter
+	Starter  Starter
 }
 
 // FromAggregate is a convencience method to create specialized lookup maps for connection.OnMessage
