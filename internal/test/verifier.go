@@ -2,11 +2,11 @@ package test
 
 import (
 	"encoding/json"
-	"testing"
-
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/models"
+	"reflect"
+	"testing"
 )
 
 var VerifyNilError = func(e error, _ HandleTests, t *testing.T) {
@@ -15,25 +15,22 @@ var VerifyNilError = func(e error, _ HandleTests, t *testing.T) {
 	}
 }
 
-var VerifyMessageOfResult = func(d interface{}, h HandleTests, t *testing.T) {
-	var rm messages.Message
-	// simplify by using reflection
-	switch cv := d.(type) {
-	case *messages.Created:
-		rm = cv.Message
-	case *messages.Modified:
-		rm = cv.Message
-	case *models.GotScan:
-		rm = cv.Message
-	case *models.GotTarget:
-		rm = cv.Message
-	case *models.GotSensor:
-		rm = cv.Message
-	case *messages.Failure:
-		rm = cv.Message
-	case *messages.Deleted:
-		rm = cv.Message
-	default:
+var VerifyMessageOfResult = func(d *connection.SendResponse, h HandleTests, t *testing.T) {
+
+	tv := reflect.ValueOf(d.MSG)
+	if tv.Kind() != reflect.Ptr || tv.IsNil() {
+		t.Fatal(&models.InvalidTargetError{Type: reflect.TypeOf(t)})
+	}
+	tve := tv.Elem()
+	if tve.Kind() != reflect.Struct {
+		t.Fatal(&models.InvalidTargetError{Type: tve.Type()})
+	}
+	f := tve.FieldByName("Message")
+	if !f.IsValid() || !f.CanSet() {
+		t.Fatal(&models.InvalidFieldError{Type: tve.Type(), Field: "Message"})
+	}
+	rm, ok := f.Interface().(messages.Message)
+	if !ok {
 		t.Fatalf("Unable to get message from %v: %T", d, d)
 	}
 	if rm.GroupID != h.ExpectedMessage.GroupID {
@@ -52,7 +49,7 @@ type HandleTests struct {
 	Handler         connection.OnMessage
 	ExpectedMessage messages.Message
 	VerifyError     func(error, HandleTests, *testing.T)
-	VerifyResult    func(interface{}, HandleTests, *testing.T)
+	VerifyResult    func(*connection.SendResponse, HandleTests, *testing.T)
 }
 
 func (h *HandleTests) Verify(t *testing.T) {
@@ -63,7 +60,7 @@ func (h *HandleTests) Verify(t *testing.T) {
 	if h.Handler == nil {
 		t.Fatalf("Handler is not set")
 	}
-	r, err := h.Handler.On(b)
+	r, err := h.Handler.On("some", b)
 	if h.VerifyError != nil {
 		h.VerifyError(err, *h, t)
 	} else {

@@ -5,8 +5,8 @@ import "github.com/greenbone/eulabeia/messages"
 // Scan contains Target as well as volatile information for a specific scan
 type Scan struct {
 	Target
-	ID      string   `json:"id"`      // ID of a Scan
-	Exclude []string `json:"exclude"` // Exclude hosts from scan
+	ID       string   `json:"id"`      // ID of a Scan
+	Finished []string `json:"exclude"` // Finished hosts from previous scan progress
 }
 
 // Sensor contains registered sensors

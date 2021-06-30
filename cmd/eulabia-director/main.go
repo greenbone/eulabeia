@@ -10,9 +10,9 @@ import (
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
-	"github.com/greenbone/eulabeia/director/handler/scan"
-	"github.com/greenbone/eulabeia/director/handler/sensor"
-	"github.com/greenbone/eulabeia/director/handler/target"
+	"github.com/greenbone/eulabeia/director/scan"
+	"github.com/greenbone/eulabeia/director/sensor"
+	"github.com/greenbone/eulabeia/director/target"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/storage"
 )
@@ -36,7 +36,7 @@ func main() {
 		"greenbone.sensor": handler.New(handler.FromAggregate(sensor.New(device))),
 		"greenbone.director": handler.New(
 			handler.FromAggregate(target.New(device)),
-			handler.FromAggregate(scan.New(device))),
+			scan.New("greenbone.sensor", device)),
 	})
 	if err != nil {
 		panic(err)

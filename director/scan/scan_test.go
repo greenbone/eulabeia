@@ -10,7 +10,7 @@ import (
 )
 
 func TestCreateScan(t *testing.T) {
-	h := handler.New(handler.FromAggregate(New(storage.Noop{})))
+	h := handler.New(New("greenbone.sensor", storage.Noop{}))
 	tests := []test.HandleTests{
 		{
 			Input: messages.Create{
@@ -20,11 +20,21 @@ func TestCreateScan(t *testing.T) {
 			ExpectedMessage: messages.NewMessage("created.scan", "1", "1"),
 		},
 		{
+			Input: messages.Start{
+				Message: messages.NewMessage("start.scan", "1", "1"),
+				ID:      "1234",
+			},
+			Handler: h,
+			// although NoopStorage for target doesn't have sensor it should just
+			// empty string and extend it that way
+			ExpectedMessage: messages.NewMessage("start.scan.", "1", "1"),
+		},
+		{
 			Input: messages.Modify{
 				Message: messages.NewMessage("modify.scan", "1", "2"),
 				ID:      "123",
 				Values: map[string]interface{}{
-					"exclude":   []string{"1", "2"},
+					"finished":  []string{"1", "2"},
 					"target_id": "1",
 				},
 			},
