@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [21.10] (unreleased)
 
 ### Added
-- mqtt integration [4](https://github.com/greenbone/eulabeia/pull/4)
+- Add mqtt, example, handler for create, modify and get target [4](https://github.com/greenbone/eulabeia/pull/4)
 ### Changed
 ### Fixed
 ### Removed
