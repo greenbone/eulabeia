@@ -110,10 +110,7 @@ type Aggregate interface {
 // messages.Modify, messages.Get then tries to find via MessageType the
 // Aggregate via handler.
 type onMessage struct {
-	creater  map[string]Creater
-	modifier map[string]Modifier
-	getter   map[string]Getter
-	deleter  map[string]Deleter
+	lookup map[string]Holder
 }
 
 // enhance for topic information
@@ -132,84 +129,54 @@ func (mh onMessage) On(message []byte) (interface{}, error) {
 			Error:   fmt.Sprintf("incorrect message_type %s", messageType.String()),
 		}, nil
 	}
-	switch m := smt[0]; m {
-	case "delete":
+	if h, ok := mh.lookup[smt[1]]; ok {
 		var del messages.Delete
-		if e := json.Unmarshal(message, &del); e != nil {
-			return messages.Failure{
-				Message: messages.NewMessage("failure", "", ""),
-				Error:   fmt.Sprintf("unable to parse %s: %s", m, e),
-			}, nil
-		}
-		if h, ok := mh.deleter[smt[1]]; ok {
-			r, f, e := h.Delete(del)
-			if f != nil {
-				return f, e
-			}
-			return r, e
-		}
-		return &messages.Failure{
-			Message: messages.NewMessage("failure", "", ""),
-			Error:   fmt.Sprintf("unable to find handler for %s", smt[1]),
-		}, nil
-	case "create":
 		var create messages.Create
-		if e := json.Unmarshal(message, &create); e != nil {
-			return messages.Failure{
-				Message: messages.NewMessage("failure", "", ""),
-				Error:   fmt.Sprintf("unable to parse %s: %s", m, e),
-			}, nil
-		}
-		if h, ok := mh.creater[smt[1]]; ok {
-			return h.Create(create)
-		}
-		return &messages.Failure{
-			Message: messages.NewMessage("failure", "", ""),
-			Error:   fmt.Sprintf("unable to find handler for %s", smt[1]),
-		}, nil
-	case "modify":
 		var modify messages.Modify
-		if e := json.Unmarshal(message, &modify); e != nil {
-			return messages.Failure{
-				Message: messages.NewMessage("failure", "", ""),
-				Error:   fmt.Sprintf("unable to parse %s: %s", m, e),
-			}, nil
-		}
-
-		if h, ok := mh.modifier[smt[1]]; ok {
-			r, f, e := h.Modify(modify)
-			if f != nil {
-				return f, e
-			}
-			return r, e
-		}
-		return &messages.Failure{
-			Message: messages.NewMessage("failure", "", ""),
-			Error:   fmt.Sprintf("unable to find handler for %s", smt[1]),
-		}, nil
-	case "get":
 		var get messages.Get
-		if e := json.Unmarshal(message, &get); e != nil {
+		var use interface{}
+		var fuse func() (interface{}, *messages.Failure, error)
+		if m := smt[0]; m == "delete" && h.Deleter != nil {
+			use = &del
+			fuse = func() (interface{}, *messages.Failure, error) {
+				return h.Deleter.Delete(del)
+			}
+
+		} else if m == "create" && h.Creater != nil {
+			use = &create
+			fuse = func() (interface{}, *messages.Failure, error) {
+				r, e := h.Creater.Create(create)
+				return r, nil, e
+			}
+		} else if m == "modify" && h.Modifier != nil {
+			use = &modify
+			fuse = func() (interface{}, *messages.Failure, error) {
+				return h.Modifier.Modify(modify)
+			}
+		} else if m == "get" && h.Getter != nil {
+			use = &get
+			fuse = func() (interface{}, *messages.Failure, error) {
+				return h.Getter.Get(get)
+			}
+		} else {
+			log.Printf("unable to identify method %s", m)
+			return nil, nil
+		}
+		if e := json.Unmarshal(message, use); e != nil {
 			return messages.Failure{
 				Message: messages.NewMessage("failure", "", ""),
-				Error:   fmt.Sprintf("unable to parse %s: %s", m, e),
+				Error:   fmt.Sprintf("unable to parse %s: %s", smt[0], e),
 			}, nil
 		}
-		if h, ok := mh.getter[smt[1]]; ok {
-			r, f, e := h.Get(get)
-			if f != nil {
-				return f, e
-			}
-			return r, e
+		r, f, e := fuse()
+		if f != nil {
+			return f, e
 		}
-		return &messages.Failure{
-			Message: messages.NewMessage("failure", "", ""),
-			Error:   fmt.Sprintf("unable to find handler for %s", smt[1]),
-		}, nil
-	default:
-		log.Printf("unable to identify method %s", m)
-		return nil, nil
+		return r, e
+
 	}
+	log.Printf("unable to identify entity %s", smt[1])
+	return nil, nil
 }
 
 // Holder contains interfaces needed for OnMessage
@@ -242,29 +209,12 @@ func FromGetter(topic string, a Getter) Holder {
 
 // New returns a new connection.OnMessage handler
 func New(holder ...Holder) connection.OnMessage {
-	creater := map[string]Creater{}
-	modifier := map[string]Modifier{}
-	getter := map[string]Getter{}
-	deleter := map[string]Deleter{}
+	lookup := map[string]Holder{}
 
 	for _, h := range holder {
-		if h.Creater != nil {
-			creater[h.Topic] = h.Creater
-		}
-		if h.Modifier != nil {
-			modifier[h.Topic] = h.Modifier
-		}
-		if h.Getter != nil {
-			getter[h.Topic] = h.Getter
-		}
-		if h.Deleter != nil {
-			deleter[h.Topic] = h.Deleter
-		}
+		lookup[h.Topic] = h
 	}
 	return onMessage{
-		creater:  creater,
-		modifier: modifier,
-		getter:   getter,
-		deleter:  deleter,
+		lookup: lookup,
 	}
 }
