@@ -2,6 +2,7 @@ package sensor
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/greenbone/eulabeia/util"
@@ -9,7 +10,9 @@ import (
 
 const (
 	MAX_SCANS       = 4
-	MEMORY_FOR_SCAN = 1153433600
+	MEMORY_FOR_SCAN = 0
+	SUDO            = true
+	NICENESS        = 10
 )
 
 var addChan = make(chan string) // Channel to insert scan into queue
@@ -27,6 +30,10 @@ func Del(scan string) {
 
 func Run(scan string) {
 	runChan <- scan
+}
+
+func Fin(scan string) {
+	finChan <- scan
 }
 
 func schedule() {
@@ -49,7 +56,7 @@ func schedule() {
 				util.RemoveListItem(init, scan)
 
 			case scan := <-finChan:
-				util.RemoveListItem(scan)
+				util.RemoveListItem(running, scan)
 
 			default:
 				break checkQueues
@@ -63,18 +70,20 @@ func schedule() {
 		}
 
 		// get memory stats and check for memory
-		m, err := util.GetAvailableMemory()
-		memoryNeeded := m.Bytes + uint64(len(init))*MEMORY_FOR_SCAN
-		if err != nil {
-			panic("Unable to get memory stats: %s\n", err)
-		}
-		if m.Bytes < memoryNeeded {
-			fmt.Printf("Unable to start scan, not enough memory\n")
-			continue
+		if MEMORY_FOR_SCAN > 0 {
+			m, err := util.GetAvailableMemory()
+			memoryNeeded := m.Bytes + uint64(len(init))*MEMORY_FOR_SCAN
+			if err != nil {
+				log.Panicf("Unable to get memory stats: %s\n", err)
+			}
+			if m.Bytes < memoryNeeded {
+				log.Printf("Unable to start scan, not enough memory\n")
+				continue
+			}
 		}
 
 		// try to initalize scan
-		InitScan(queue[0])
+		StartScan(queue[0], SUDO, NICENESS)
 		init = append(init, queue[0])
 		queue = queue[1:]
 	}
@@ -82,4 +91,5 @@ func schedule() {
 
 func init() {
 	go schedule()
+	// TODO: Setup MQTT
 }
