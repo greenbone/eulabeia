@@ -32,17 +32,14 @@ func findConfigFile(path string) string {
 		return path
 	}
 	// look in the default paths
-	home, err := os.UserHomeDir()
-	if err != nil {
-		panic( err )
-	}
 	var defaultPaths = [...]string {
-		home + "/.config",
+		os.Getenv("HOME") + "/.config",
 		"/usr/etc",
 		"/etc",
 	}
 	for _, path := range defaultPaths {
-		if fileExists(path + "/eulabeia/config.toml") {
+		path += "/eulabeia/config.toml"
+		if fileExists(path) {
 			// file exists
 			return path
 		}
