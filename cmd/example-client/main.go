@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
@@ -24,7 +24,7 @@ type ExampleHandler struct {
 	handler []OnEvent
 }
 
-func (e ExampleHandler) On(msg []byte) (interface{}, error) {
+func (e ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse, error) {
 	messageType := gjson.GetBytes(msg, "message_type")
 	for _, h := range e.handler {
 		if _, err := h.On(messageType.String(), msg); err != nil {
@@ -39,7 +39,7 @@ type OnCreatedTarget struct {
 	modifyMSGChan chan messages.Modify
 }
 
-const targetTopic = "greenbone.target"
+const topic = "greenbone.director"
 
 func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, error) {
 	if messageType != "created.target" {
@@ -57,7 +57,7 @@ func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, 
 			"plugins": []string{"someoids"},
 		},
 	}
-	if err := oct.publisher.Publish(targetTopic, modify); err != nil {
+	if err := oct.publisher.Publish(topic, modify); err != nil {
 		return nil, err
 	}
 	oct.modifyMSGChan <- modify
@@ -84,10 +84,11 @@ func (omt OnModifiedTarget) On(messageType string, message []byte) (interface{},
 	log.Printf("original message id %v", original.MessageID)
 	log.Printf("modified message id %v", modified.MessageID)
 	if original.MessageID != modified.MessageID {
-		return nil, fmt.Errorf("response (%v) is not triggered by %s (%v)", modified, original.ID, original)
+		omt.modifyMSGChan <- original
+		return nil, nil
 	}
 	log.Printf("target: %s modified", original.ID)
-	omt.publisher.Publish(targetTopic, messages.Get{
+	omt.publisher.Publish(topic, messages.Get{
 		Message: messages.NewMessage("get.target", "", ""),
 		ID:      original.ID,
 	})
@@ -110,7 +111,7 @@ func main() {
 	clientid := flag.String("clientid", "", "A clientid for the connection")
 	flag.Parse()
 	log.Println("Starting example client")
-	c, err := mqtt.New(*server, *clientid, "", "")
+	c, err := mqtt.New(*server, *clientid+uuid.NewString(), "", "", nil)
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
@@ -118,7 +119,7 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	err = c.Publish(targetTopic, messages.Create{
+	err = c.Publish(topic, messages.Create{
 		Message: messages.Message{
 			MessageType: "create.target",
 			Created:     7774,
@@ -141,7 +142,7 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to create handler: %s", err)
 	}
-	err = c.Subscribe(map[string]connection.OnMessage{targetTopic: mh})
+	err = c.Subscribe(map[string]connection.OnMessage{topic: mh})
 	if err != nil {
 		panic(err)
 	}
