@@ -1,12 +1,13 @@
 package messages
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Message contains the meta data for each sent message.
-// It should be embedded into all messages send to or received by eulabia.
+// It should be embedded into all messages send to or received by eulabeia.
 type Message struct {
 	Created     int    `json:"created"`      // Timestamp when this message was created
 	MessageType string `json:"message_type"` // Identifier what this message actually contains
