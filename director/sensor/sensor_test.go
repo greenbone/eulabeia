@@ -10,7 +10,7 @@ import (
 )
 
 func TestSensor(t *testing.T) {
-	h := handler.New(handler.FromAggregate(New(storage.Noop{})))
+	h := handler.New(New(storage.Noop{}))
 	tests := []test.HandleTests{
 		{
 			Input: messages.Create{

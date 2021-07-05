@@ -109,6 +109,6 @@ func (t sensorAggregate) Delete(d messages.Delete) (*messages.Deleted, *messages
 }
 
 // New returns the type of aggregate as string and Aggregate
-func New(store storage.Json) (string, handler.Aggregate) {
-	return "sensor", sensorAggregate{storage: Depositary{Device: store}}
+func New(store storage.Json) handler.Holder {
+	return handler.FromAggregate("sensor", sensorAggregate{storage: Depositary{Device: store}})
 }

@@ -21,7 +21,7 @@ func (m MQTT) Close() error {
 	return m.client.Disconnect(&paho.Disconnect{ReasonCode: 0})
 }
 
-func (m MQTT) Register(topic string, handler connection.OnMessage) error {
+func (m MQTT) register(topic string, handler connection.OnMessage) error {
 
 	m.client.Router.RegisterHandler(topic, func(p *paho.Publish) {
 		log.Printf("[%s] retrieved message: %s", topic, string(p.Payload))
@@ -48,15 +48,9 @@ func (m MQTT) Register(topic string, handler connection.OnMessage) error {
 	return err
 }
 
-func (m MQTT) Deregister(topic string) error {
-	m.client.Router.UnregisterHandler(topic)
-	_, err := m.client.Unsubscribe(context.Background(), &paho.Unsubscribe{Topics: []string{topic}})
-	return err
-}
-
 func (m MQTT) Subscribe(handler map[string]connection.OnMessage) error {
 	for topic, h := range handler {
-		if err := m.Register(topic, h); err != nil {
+		if err := m.register(topic, h); err != nil {
 			return err
 		}
 	}

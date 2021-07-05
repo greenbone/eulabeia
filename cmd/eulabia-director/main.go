@@ -33,9 +33,9 @@ func main() {
 	}
 	device := storage.File{Dir: "/tmp/"}
 	err = c.Subscribe(map[string]connection.OnMessage{
-		"greenbone.sensor": handler.New(handler.FromAggregate(sensor.New(device))),
+		"greenbone.sensor": handler.New(sensor.New(device)),
 		"greenbone.director": handler.New(
-			handler.FromAggregate(target.New(device)),
+			target.New(device),
 			scan.New("greenbone.sensor", device)),
 	})
 	if err != nil {

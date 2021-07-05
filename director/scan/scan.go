@@ -21,7 +21,7 @@ type Storage interface {
 	Delete(string) error
 }
 
-// Depositary stores models.Scan as json within a given StorageDir
+// depositary stores models.Scan as json within a given StorageDir
 // The filename is a uuid without suffix.
 type Depositary struct {
 	Device storage.Json

@@ -33,8 +33,8 @@ func (gm getMemory) Get(g messages.Get) (interface{}, *messages.Failure, error) 
 	return &response, nil, nil
 }
 
-func New() (string, handler.Getter) {
-	return "memory", getMemory{
+func New() handler.Holder{
+	return handler.FromGetter("memory", getMemory{
 		stats: mem.Get,
-	}
+	})
 }
