@@ -12,15 +12,18 @@ import (
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/director/handler/target"
 	"github.com/greenbone/eulabeia/messages/handler"
+	"github.com/greenbone/eulabeia/config"
 )
 
 func main() {
-	server := flag.String("server", "localhost:1883", "A clientid for the connection")
 	clientid := flag.String("clientid", "", "A clientid for the connection")
+	configfile := flag.String("config", "", "Use this config file")
 	flag.Parse()
+	conf_map := config.Load(*configfile)
+	server := conf_map.Get("server").(string)
 
 	log.Println("Starting sensor")
-	c, err := mqtt.New(*server, *clientid, "", "")
+	c, err := mqtt.New(server, *clientid, "", "")
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
