@@ -5,9 +5,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
-
-	"github.com/greenbone/eulabeia/connection/mqtt"
 )
 
 var processes = make(map[string]*os.Process)
@@ -16,8 +15,6 @@ var mutex = &sync.Mutex{}
 var endProcessChan = make(chan string)
 
 var sudo bool
-
-var _mqtt mqtt.MQTT
 
 type Error struct {
 	What string
@@ -89,6 +86,45 @@ func StopScan(scan string) error {
 func EndScan(scan string) {
 	removeProcess(scan)
 	log.Printf("%s: Scan successfully finished.\n", scan)
+}
+
+// GetVersion returns the Version of OpenVAS
+func GetVersion() (string, error) {
+	out, err := exec.Command("openvas", "-V").CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	split := strings.Split(string(out), "\n")
+	return split[0], nil
+}
+
+// GetSettings returns the Settings of OpenVAS as a map
+func GetSettings() (map[string]string, error) {
+	out, err := exec.Command("openvas", "-s").CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+	settingsList := strings.Split(string(out), "\n")
+	settingsMap := make(map[string]string)
+	for _, setting := range settingsList {
+		settingSplit := strings.Split(setting, "=")
+		if len(settingSplit) != 2 {
+			continue
+		}
+		settingsMap[settingSplit[0]] = settingSplit[1]
+	}
+	return settingsMap, nil
+}
+
+func LoadVTsIntoRedis() {
+	log.Printf("Loading VTs into Redis DB...\n")
+
+	err := exec.Command("openvas", "--update-vt-info").Run()
+	if err != nil {
+		log.Printf("OpenVAS Scanner failed to load VTs: %s", err)
+		return
+	}
+	log.Printf("Finished loading VTs into Redis DB.\n")
 }
 
 // waitForProcessToEnd gets Called as go-routine after OpenVAS Scan Process was
