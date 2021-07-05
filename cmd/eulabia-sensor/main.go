@@ -13,7 +13,7 @@ import (
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/handler"
-	"github.com/greenbone/eulabeia/sensor/handler/memory"
+	"github.com/greenbone/eulabeia/sensor/memory"
 )
 
 func main() {
@@ -45,8 +45,9 @@ func main() {
 			"type": "undefined",
 		},
 	})
-	mh := handler.New(handler.FromGetter(memory.New()))
-	err = c.Subscribe(map[string]connection.OnMessage{topic: mh})
+	err = c.Subscribe(map[string]connection.OnMessage{
+		topic: handler.New(memory.New()),
+	})
 	if err != nil {
 		panic(err)
 	}

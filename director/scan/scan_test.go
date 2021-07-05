@@ -34,7 +34,7 @@ func TestCreateScan(t *testing.T) {
 				Message: messages.NewMessage("modify.scan", "1", "2"),
 				ID:      "123",
 				Values: map[string]interface{}{
-					"exclude":   []string{"1", "2"},
+					"finished":  []string{"1", "2"},
 					"target_id": "1",
 				},
 			},

@@ -10,7 +10,7 @@ import (
 )
 
 func TestSuccessResponse(t *testing.T) {
-	h := handler.New(handler.FromAggregate(New(storage.Noop{})))
+	h := handler.New(New(storage.Noop{}))
 	tests := []test.HandleTests{
 		{
 			Input: messages.Create{
@@ -40,11 +40,13 @@ func TestSuccessResponse(t *testing.T) {
 				Message: messages.NewMessage("modify.target", "1", "1"),
 				ID:      "1",
 				Values: map[string]interface{}{
-					"sensor":   "openvas",
-					"hosts":    []string{"a", "b"},
-					"plugins":  []string{"a", "b"},
-					"alive":    true,
-					"parallel": false,
+					"sensor":      "openvas",
+					"hosts":       []string{"a", "b"},
+					"plugins":     []string{"a", "b"},
+					"alive":       true,
+					"parallel":    false,
+					"exclude":     []string{"host1"},
+					"credentials": map[string]string{"username": "nobody"},
 				},
 			},
 			Handler:         h,

@@ -10,9 +10,9 @@ import (
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
-	"github.com/greenbone/eulabeia/director/handler/scan"
-	"github.com/greenbone/eulabeia/director/handler/sensor"
-	"github.com/greenbone/eulabeia/director/handler/target"
+	"github.com/greenbone/eulabeia/director/scan"
+	"github.com/greenbone/eulabeia/director/sensor"
+	"github.com/greenbone/eulabeia/director/target"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/storage"
 )
@@ -23,19 +23,19 @@ func main() {
 	flag.Parse()
 
 	log.Println("Starting director")
-	c, err := mqtt.New(*server, *clientid, "", "", nil)
+	client, err := mqtt.New(*server, *clientid, "", "", nil)
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
-	err = c.Connect()
+	err = client.Connect()
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
 	device := storage.File{Dir: "/tmp/"}
-	err = c.Subscribe(map[string]connection.OnMessage{
-		"greenbone.sensor": handler.New(handler.FromAggregate(sensor.New(device))),
+	err = client.Subscribe(map[string]connection.OnMessage{
+		"greenbone.sensor": handler.New(sensor.New(device)),
 		"greenbone.director": handler.New(
-			handler.FromAggregate(target.New(device)),
+			target.New(device),
 			scan.New("greenbone.sensor", device)),
 	})
 	if err != nil {
@@ -46,8 +46,8 @@ func main() {
 	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
 	<-ic
 	fmt.Println("signal received, exiting")
-	if c != nil {
-		err = c.Close()
+	if client != nil {
+		err = client.Close()
 		if err != nil {
 			log.Fatalf("failed to send Disconnect: %s", err)
 		}
