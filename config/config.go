@@ -9,7 +9,6 @@ import (
 )
 
 type defaultConfigPaths struct {
-	
 }
 
 // Check if file exists
@@ -28,11 +27,11 @@ func fileExists(path string) bool {
 // 3. in /usr/etc or /etc/ ...
 // Returns the path to the first found file
 func findConfigFile(path string) string {
-	if path != "" && fileExists((path) ){
+	if path != "" && fileExists((path)) {
 		return path
 	}
 	// look in the default paths
-	var defaultPaths = [...]string {
+	var defaultPaths = [...]string{
 		os.Getenv("HOME") + "/.config",
 		"/usr/etc",
 		"/etc",
