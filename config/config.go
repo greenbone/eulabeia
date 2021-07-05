@@ -1,15 +1,12 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"os"
 
 	"github.com/pelletier/go-toml"
 )
-
-type defaultConfigPaths struct {
-}
 
 // Check if file exists
 // Returns true if file exists, false else
@@ -43,7 +40,7 @@ func findConfigFile(path string) string {
 			return path
 		}
 	}
-	panic(fmt.Sprintf("No config file found."))
+	panic(errors.New("no config file found"))
 }
 
 func Overwrite(config_map *toml.Tree, key string, value string) {
