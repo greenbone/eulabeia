@@ -1,4 +1,3 @@
-// Package models contains various aggregate structs
 package models
 
 import "github.com/greenbone/eulabeia/messages"
