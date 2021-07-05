@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
 RUN apt-get remove --purge --auto-remove -y &&\
 	rm -rf /var/lib/apt/lists/*
 COPY . /usr/local/src
+COPY config.toml /usr/etc/eulabeia/config.toml
 WORKDIR /usr/local/src
 RUN go mod tidy
 RUN go mod download
