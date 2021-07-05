@@ -116,7 +116,41 @@ func asResponse(t string, d interface{}) *connection.SendResponse {
 	}
 }
 
-func (mh onMessage) On(topic string, message []byte) (*connection.SendResponse, error) {
+func getMethodOfHolder(h Holder, method string) (interface{}, func() (interface{}, *messages.Failure, error)) {
+	var del messages.Delete
+	var create messages.Create
+	var modify messages.Modify
+	var get messages.Get
+	var start messages.Start
+	if method == "delete" && h.Deleter != nil {
+		return &del, func() (interface{}, *messages.Failure, error) {
+			return h.Deleter.Delete(del)
+		}
+
+	} else if method == "create" && h.Creater != nil {
+		return &create, func() (interface{}, *messages.Failure, error) {
+			r, e := h.Creater.Create(create)
+			return r, nil, e
+		}
+	} else if method == "start" && h.Starter != nil {
+		return &start, func() (interface{}, *messages.Failure, error) {
+			return h.Starter.Start(start)
+		}
+	} else if method == "modify" && h.Modifier != nil {
+		return &modify, func() (interface{}, *messages.Failure, error) {
+			return h.Modifier.Modify(modify)
+		}
+	} else if method == "get" && h.Getter != nil {
+		return &get, func() (interface{}, *messages.Failure, error) {
+			return h.Getter.Get(get)
+		}
+	} else {
+		log.Printf("unable to identify method %s", method)
+		return nil, nil
+	}
+}
+
+func (om onMessage) On(topic string, message []byte) (*connection.SendResponse, error) {
 	messageType := gjson.GetBytes(message, "message_type")
 	if messageType.Type == gjson.Null {
 		return asResponse(topic, messages.Failure{
@@ -131,45 +165,8 @@ func (mh onMessage) On(topic string, message []byte) (*connection.SendResponse, 
 			Error:   fmt.Sprintf("incorrect message_type %s", messageType.String()),
 		}), nil
 	}
-	if h, ok := mh.lookup[smt[1]]; ok {
-		var del messages.Delete
-		var create messages.Create
-		var modify messages.Modify
-		var get messages.Get
-		var start messages.Start
-		var use interface{}
-		var fuse func() (interface{}, *messages.Failure, error)
-		if m := smt[0]; m == "delete" && h.Deleter != nil {
-			use = &del
-			fuse = func() (interface{}, *messages.Failure, error) {
-				return h.Deleter.Delete(del)
-			}
-
-		} else if m == "create" && h.Creater != nil {
-			use = &create
-			fuse = func() (interface{}, *messages.Failure, error) {
-				r, e := h.Creater.Create(create)
-				return r, nil, e
-			}
-		} else if m == "start" && h.Starter != nil {
-			use = &start
-			fuse = func() (interface{}, *messages.Failure, error) {
-				return h.Starter.Start(start)
-			}
-		} else if m == "modify" && h.Modifier != nil {
-			use = &modify
-			fuse = func() (interface{}, *messages.Failure, error) {
-				return h.Modifier.Modify(modify)
-			}
-		} else if m == "get" && h.Getter != nil {
-			use = &get
-			fuse = func() (interface{}, *messages.Failure, error) {
-				return h.Getter.Get(get)
-			}
-		} else {
-			log.Printf("unable to identify method %s", m)
-			return nil, nil
-		}
+	if h, ok := om.lookup[smt[1]]; ok {
+		use, fuse := getMethodOfHolder(h, smt[0])
 		if e := json.Unmarshal(message, use); e != nil {
 			return asResponse(topic, messages.Failure{
 				Message: messages.NewMessage("failure", "", ""),
