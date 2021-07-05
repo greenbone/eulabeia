@@ -46,8 +46,8 @@ func main() {
 		},
 	})
 	err = c.Subscribe(map[string]connection.OnMessage{
-        topic: handler.New(memory.New()),
-    })
+		topic: handler.New(memory.New()),
+	})
 	if err != nil {
 		panic(err)
 	}

@@ -14,33 +14,6 @@ import (
 	"github.com/greenbone/eulabeia/storage"
 )
 
-// Storage is for poutting and getting a models.Scan
-type Storage interface {
-	Put(models.Scan) error            // Overrides existing or creates a models.Scan
-	Get(string) (*models.Scan, error) // Gets a models.Scan via ID
-	Delete(string) error
-}
-
-// depositary stores models.Scan as json within a given StorageDir
-// The filename is a uuid without suffix.
-type Depositary struct {
-	Device storage.Json
-}
-
-func (ts Depositary) Put(scan models.Scan) error {
-	return ts.Device.Put(scan.ID, scan)
-}
-
-func (ts Depositary) Delete(id string) error {
-	return ts.Device.Delete(id)
-}
-
-func (ts Depositary) Get(id string) (*models.Scan, error) {
-	var scan models.Scan
-	err := ts.Device.Get(id, &scan)
-	return &scan, err
-}
-
 type scanAggregate struct {
 	storage     Storage
 	target      target.Storage
@@ -150,8 +123,8 @@ func (t scanAggregate) Get(g messages.Get) (interface{}, *messages.Failure, erro
 func New(sensorTopic string, storage storage.Json) handler.Holder {
 	s := scanAggregate{
 		sensorTopic: sensorTopic,
-		storage:     Depositary{Device: storage},
-		target:      target.Depositary{Device: storage}}
+		storage:     NewStorage(storage),
+		target:      target.NewStorage(storage)}
 	h := handler.FromAggregate("scan", s)
 	h.Starter = s
 	return h

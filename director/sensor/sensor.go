@@ -4,7 +4,6 @@ package sensor
 import (
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/messages"
@@ -12,35 +11,6 @@ import (
 	"github.com/greenbone/eulabeia/models"
 	"github.com/greenbone/eulabeia/storage"
 )
-
-// Storage is for poutting and getting a models.Sensor
-type Storage interface {
-	Put(models.Sensor) error            // Overrides existing or creates a models.Sensor
-	Get(string) (*models.Sensor, error) // Gets a models.Sensor via ID
-	Delete(string) error
-}
-
-// Depositary stores models.Sensor as json within a given Device.
-type Depositary struct {
-	Device storage.Json
-}
-
-func (d Depositary) Put(sensor models.Sensor) error {
-	return d.Device.Put(sensor.ID, sensor)
-}
-
-func (d Depositary) Delete(id string) error {
-	return d.Device.Delete(id)
-}
-
-func (d Depositary) Get(id string) (*models.Sensor, error) {
-	var sensor models.Sensor
-	err := d.Device.Get(id, &sensor)
-	if _, ok := err.(*os.PathError); ok {
-		return nil, nil
-	}
-	return &sensor, err
-}
 
 type sensorAggregate struct {
 	storage Storage
@@ -110,5 +80,5 @@ func (t sensorAggregate) Delete(d messages.Delete) (*messages.Deleted, *messages
 
 // New returns the type of aggregate as string and Aggregate
 func New(store storage.Json) handler.Holder {
-	return handler.FromAggregate("sensor", sensorAggregate{storage: Depositary{Device: store}})
+	return handler.FromAggregate("sensor", sensorAggregate{storage: NewStorage(store)})
 }
