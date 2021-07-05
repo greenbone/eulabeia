@@ -1,7 +1,6 @@
 package sensor
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -65,7 +64,7 @@ func schedule() {
 
 		// Check for free scanner slot
 		if len(init)+len(running) == MAX_SCANS {
-			fmt.Printf("Unable to start scan, no free slots")
+			log.Printf("Unable to start scan, no free slots")
 			continue
 		}
 
