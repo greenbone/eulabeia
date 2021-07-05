@@ -46,10 +46,16 @@ func findConfigFile(path string) string {
 	panic(fmt.Sprintf("No config file found."))
 }
 
-func Overwrite() {
+func Overwrite(config_map *toml.Tree, key string, value string) {
 	//TODO overwrite at runtime given arguments
+	config_map.Set(key, value)
 }
 
+// Load the config file after startup
+// In the returned config map config values can
+// be accessed with Get("section.key").(string)
+// The values can also be overwritten at runtime
+// Returns the config map
 func Load(path string) *toml.Tree {
 	config_path := findConfigFile(path)
 
@@ -64,10 +70,4 @@ func Load(path string) *toml.Tree {
 		panic(err)
 	}
 	return tree
-}
-
-func Init(path string) *toml.Tree {
-	toml := Load(path)
-
-	return toml
 }
