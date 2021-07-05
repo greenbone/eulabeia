@@ -45,6 +45,7 @@ func TestSuccessResponse(t *testing.T) {
 					"plugins":  []string{"a", "b"},
 					"alive":    true,
 					"parallel": false,
+					"exclude":  []string{"host1"},
 				},
 			},
 			Handler:         h,

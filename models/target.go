@@ -11,6 +11,7 @@ type Target struct {
 	Sensor   string   `json:"sensor"`   // Sensor to use
 	Alive    bool     `json:"alive"`    // Alive when true only alive hosts get scanned
 	Parallel bool     `json:"parallel"` // Parallel when true mulitple scans run in parallel
+	Exclude  []string `json:"exclude"`  // Exclude hosts from a scan
 }
 
 // GotTarget is response for get.target
