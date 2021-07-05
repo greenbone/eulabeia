@@ -7,11 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/connection"
-<<<<<<< HEAD:director/handler/scan/scan.go
-	"github.com/greenbone/eulabeia/director/handler/target"
-=======
 	"github.com/greenbone/eulabeia/director/target"
->>>>>>> 0ef9bc6d1b45800f0441ccbb12434d15e2b19eea:director/scan/scan.go
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/models"
@@ -33,24 +29,6 @@ func (t scanAggregate) Start(s messages.Start) (interface{}, *messages.Failure, 
 		return nil, messages.GetFailureResponse(s.Message, "scan", s.ID), nil
 	}
 
-<<<<<<< HEAD:director/handler/scan/scan.go
-type scanAggregate struct {
-	storage     Storage
-	target      target.Storage
-	sensorTopic string
-}
-
-func (t scanAggregate) Start(s messages.Start) (interface{}, *messages.Failure, error) {
-	scan, err := t.storage.Get(s.ID)
-	if err != nil {
-		return nil, nil, err
-	}
-	if scan == nil {
-		return nil, messages.GetFailureResponse(s.Message, "scan", s.ID), nil
-	}
-
-=======
->>>>>>> 0ef9bc6d1b45800f0441ccbb12434d15e2b19eea:director/scan/scan.go
 	return &connection.SendResponse{
 		MSG: &messages.Start{
 			Message: messages.NewMessage(fmt.Sprintf("start.scan.%s", scan.Sensor), s.MessageID, s.GroupID),
@@ -145,13 +123,8 @@ func (t scanAggregate) Get(g messages.Get) (interface{}, *messages.Failure, erro
 func New(sensorTopic string, storage storage.Json) handler.Holder {
 	s := scanAggregate{
 		sensorTopic: sensorTopic,
-<<<<<<< HEAD:director/handler/scan/scan.go
-		storage:     Depositary{Device: storage},
-		target:      target.Depositary{Device: storage}}
-=======
 		storage:     NewStorage(storage),
 		target:      target.NewStorage(storage)}
->>>>>>> 0ef9bc6d1b45800f0441ccbb12434d15e2b19eea:director/scan/scan.go
 	h := handler.FromAggregate("scan", s)
 	h.Starter = s
 	return h
