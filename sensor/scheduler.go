@@ -10,7 +10,6 @@ import (
 const (
 	MAX_SCANS       = 4
 	MEMORY_FOR_SCAN = 0
-	SUDO            = true
 	NICENESS        = 10
 )
 
@@ -44,17 +43,31 @@ func schedule() {
 	checkQueues:
 		for { // Check for new stuff in queus
 			select {
-			case scan := <-addChan:
+			case scan := <-addChan: // start scan
 				queue = append(queue, scan)
 
-			case scan := <-delChan:
-				util.RemoveListItem(queue, scan)
+			case scan := <-delChan: // stop scan
+				var ok bool
+				queue, ok = util.RemoveListItem(queue, scan)
+				if !ok { // scan was not queued
+					init, ok = util.RemoveListItem(init, scan)
+					if !ok { // scan was not in init, scan should be in running
+						running, ok = util.RemoveListItem(running, scan)
+						if !ok {
+							log.Printf("%s: Scan cannot be stopped: Scan ID unknown.\n", scan)
+						}
+					}
+					err := StopScan(scan)
+					if err != nil {
+						log.Printf("%s: Scan cannot be stopped: %s.\n", scan, err)
+					}
+				}
 
-			case scan := <-runChan:
+			case scan := <-runChan: // scan runs
 				running = append(running, scan)
 				util.RemoveListItem(init, scan)
 
-			case scan := <-finChan:
+			case scan := <-finChan: // scan finished
 				util.RemoveListItem(running, scan)
 
 			default:
@@ -64,7 +77,7 @@ func schedule() {
 
 		// Check for free scanner slot
 		if len(init)+len(running) == MAX_SCANS {
-			log.Printf("Unable to start scan, no free slots")
+			log.Printf("Unable to start a scan from queue, no free slots.\n")
 			continue
 		}
 
@@ -76,13 +89,13 @@ func schedule() {
 				log.Panicf("Unable to get memory stats: %s\n", err)
 			}
 			if m.Bytes < memoryNeeded {
-				log.Printf("Unable to start scan, not enough memory\n")
+				log.Printf("Unable to start scan, not enough memory.\n")
 				continue
 			}
 		}
 
 		// try to initalize scan
-		StartScan(queue[0], SUDO, NICENESS)
+		StartScan(queue[0], NICENESS)
 		init = append(init, queue[0])
 		queue = queue[1:]
 	}
