@@ -55,6 +55,10 @@ func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, 
 		Values: map[string]interface{}{
 			"hosts":   []string{"localhorst", "nebenan"},
 			"plugins": []string{"someoids"},
+			"credentials": map[string]string{
+				"username": "admin",
+				"password": "admin",
+			},
 		},
 	}
 	if err := oct.publisher.Publish(topic, modify); err != nil {

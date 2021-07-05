@@ -54,6 +54,15 @@ func ModifySetValueOf(target interface{},
 		var failure error
 		// due to map[string]interface{} []string can be detected as []interface{} instead
 		switch cv := v.(type) {
+		case map[string]interface{}:
+			// currently we just support map[string]string
+			stringMap := make(map[string]string, len(cv))
+			for k, v := range cv {
+				if vs, ok := v.(string); ok {
+					stringMap[k] = vs
+				}
+			}
+			failure = models.SetValueOf(target, nk, stringMap)
 		case []interface{}:
 			strings := make([]string, len(cv), cap(cv))
 			for i, j := range cv {
