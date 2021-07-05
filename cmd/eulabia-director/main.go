@@ -8,11 +8,11 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/director/handler/target"
 	"github.com/greenbone/eulabeia/messages/handler"
-	"github.com/greenbone/eulabeia/config"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 	configfile := flag.String("config", "", "Use this config file")
 	flag.Parse()
 	conf_map := config.Load(*configfile)
-	server := conf_map.Get("server").(string)
+	server := conf_map.Get("connection.server").(string)
 
 	log.Println("Starting sensor")
 	c, err := mqtt.New(server, *clientid, "", "")
