@@ -5,12 +5,10 @@ sequenceDiagram
     participant scanner
     
     client->>eulabia_director: start_scan [scan_id]
-    Note right of eulabia_director: Based on target information the scanner is chosen<br>
-    loop Until sensor has sufficient memory
+    Note right of eulabia_director: Based on target information the scanner is chosen<br>loop Until sensor has sufficient memory
 
     eulabia_director->>eulabia_sensor: start_scan  [scan_id]
-    Note right of eulabia_sensor: A sensor needs to check if it has sufficient memory to start the scan<br> 
-    When it does have sufficient memory then it should ask for scan details.
+    Note right of eulabia_sensor: A sensor needs to check if it has sufficient memory to start the scan<br> When it does have sufficient memory then it should ask for scan details.
     eulabia_sensor->>eulabia_director: get_scan [scan_id]
     eulabia_director->>eulabia_sensor: got_scan [scan_id, target]
     eulabia_sensor->>+scanner: start_scanner [target]
