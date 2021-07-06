@@ -1,12 +1,14 @@
 package messages
 
 import (
-	"github.com/google/uuid"
+	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Message contains the meta data for each sent message.
-// It should be embedded into all messages send to or received by eulabia.
+// It should be embedded into all messages send to or received by eulabeia.
 type Message struct {
 	Created     int    `json:"created"`      // Timestamp when this message was created
 	MessageType string `json:"message_type"` // Identifier what this message actually contains
@@ -30,10 +32,40 @@ func NewMessage(messageType string, messageID string, groupID string) Message {
 	}
 }
 
+// DeleteFailureResponse is a conenvience method to return a Failure as Unable to delete
+func DeleteFailureResponse(msg Message, prefix string, id string) *Failure {
+	return &Failure{
+		Message: NewMessage(fmt.Sprintf("failure.%s", msg.MessageType), msg.MessageID, msg.GroupID),
+		Error:   fmt.Sprintf("Unable to delete %s %s.", prefix, id),
+	}
+}
+
+// GetFailureResponse is a conenvience method to return a Failure as NotFound
+func GetFailureResponse(msg Message, prefix string, id string) *Failure {
+	return &Failure{
+		Message: NewMessage(fmt.Sprintf("failure.%s", msg.MessageType), msg.MessageID, msg.GroupID),
+		Error:   fmt.Sprintf("%s %s not found.", prefix, id),
+	}
+}
+
 // Create indicates that a new entity should be created.
 // The type of of entity is indicated by `message_type`
 // e.g. "message_type": "create.target" creates a target.
 type Create struct {
+	Message
+}
+
+// Start indicates that something with the ID should be started.
+//
+// As an example an event with the stype start.scan with the id 1 would start scan id 1
+type Start struct {
+	ID string `json:"id"`
+	Message
+}
+
+// Started is returned by a start event and contains the `id` as an identifier for the scan entity.
+type Started struct {
+	ID string `json:"id"`
 	Message
 }
 
@@ -77,6 +109,20 @@ type Modified struct {
 // Get is used by a client to get the latest snapshort of an aggregate.
 // The response for Get is usually the aggragte with Message information and can be found within a model.
 type Get struct {
+	ID string `json:"id"`
+	Message
+}
+
+// Delete is used by a client to delete the latest snapshort of an aggregate.
+//
+// The response of Delete is Deleted.
+type Delete struct {
+	ID string `json:"id"`
+	Message
+}
+
+// Deleted is the success response of Delete.
+type Deleted struct {
 	ID string `json:"id"`
 	Message
 }
