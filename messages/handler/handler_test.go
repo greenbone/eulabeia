@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/models"
 )
 
@@ -26,7 +27,7 @@ func (t exampleAggregate) FailureOnKeyword(m messages.Message) *messages.Failure
 	return nil
 }
 
-func (t exampleAggregate) Create(c messages.Create) (*messages.Created, error) {
+func (t exampleAggregate) Create(c cmds.Create) (*messages.Created, error) {
 
 	if err := t.ErrorOnKeyword(c.Message); err != nil {
 		return nil, err
@@ -37,7 +38,7 @@ func (t exampleAggregate) Create(c messages.Create) (*messages.Created, error) {
 	}, nil
 }
 
-func (t exampleAggregate) Modify(m messages.Modify) (*messages.Modified, *messages.Failure, error) {
+func (t exampleAggregate) Modify(m cmds.Modify) (*messages.Modified, *messages.Failure, error) {
 	if err := t.ErrorOnKeyword(m.Message); err != nil {
 		return nil, nil, err
 	}
@@ -51,7 +52,7 @@ func (t exampleAggregate) Modify(m messages.Modify) (*messages.Modified, *messag
 	}, nil, nil
 
 }
-func (t exampleAggregate) Get(g messages.Get) (interface{}, *messages.Failure, error) {
+func (t exampleAggregate) Get(g cmds.Get) (interface{}, *messages.Failure, error) {
 	if err := t.ErrorOnKeyword(g.Message); err != nil {
 		return nil, nil, err
 	}
@@ -63,7 +64,7 @@ func (t exampleAggregate) Get(g messages.Get) (interface{}, *messages.Failure, e
 		Message: g.Message,
 	}, nil, nil
 }
-func (t exampleAggregate) Delete(g messages.Delete) (*messages.Deleted, *messages.Failure, error) {
+func (t exampleAggregate) Delete(g cmds.Delete) (*messages.Deleted, *messages.Failure, error) {
 	if err := t.ErrorOnKeyword(g.Message); err != nil {
 		return nil, nil, err
 	}
@@ -83,23 +84,29 @@ func createMessage(mt string, tt string) messages.Message {
 func createEvent(mt string, tt string) interface{} {
 	switch mt {
 	case "create":
-		return &messages.Create{
+		return &cmds.Create{
 			Message: createMessage(mt, tt),
 		}
 	case "modify":
-		return &messages.Modify{
-			Message: createMessage(mt, tt),
-			ID:      "1234",
+		return &cmds.Modify{
+			Identifier: messages.Identifier{
+				Message: createMessage(mt, tt),
+				ID:      "1234",
+			},
 		}
 	case "get":
-		return &messages.Get{
-			Message: createMessage(mt, tt),
-			ID:      "1234",
+		return &cmds.Get{
+			Identifier: messages.Identifier{
+				Message: createMessage(mt, tt),
+				ID:      "1234",
+			},
 		}
 	case "delete":
-		return &messages.Delete{
-			Message: createMessage(mt, tt),
-			ID:      "1234",
+		return &cmds.Delete{
+			Identifier: messages.Identifier{
+				Message: createMessage(mt, tt),
+				ID:      "1234",
+			},
 		}
 	default:
 		return &messages.Failure{

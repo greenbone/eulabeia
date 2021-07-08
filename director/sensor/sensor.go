@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/models"
 	"github.com/greenbone/eulabeia/storage"
@@ -16,7 +17,7 @@ type sensorAggregate struct {
 	storage Storage
 }
 
-func (t sensorAggregate) Create(c messages.Create) (*messages.Created, error) {
+func (t sensorAggregate) Create(c cmds.Create) (*messages.Created, error) {
 	sensor := models.Sensor{
 		ID: uuid.NewString(),
 	}
@@ -29,7 +30,7 @@ func (t sensorAggregate) Create(c messages.Create) (*messages.Created, error) {
 	}, nil
 }
 
-func (t sensorAggregate) Modify(m messages.Modify) (*messages.Modified, *messages.Failure, error) {
+func (t sensorAggregate) Modify(m cmds.Modify) (*messages.Modified, *messages.Failure, error) {
 	sensor, err := t.storage.Get(m.ID)
 	if err != nil {
 		return nil, nil, err
@@ -52,7 +53,7 @@ func (t sensorAggregate) Modify(m messages.Modify) (*messages.Modified, *message
 	}, nil, nil
 
 }
-func (t sensorAggregate) Get(g messages.Get) (interface{}, *messages.Failure, error) {
+func (t sensorAggregate) Get(g cmds.Get) (interface{}, *messages.Failure, error) {
 	if sensor, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if sensor == nil {
@@ -68,7 +69,7 @@ func (t sensorAggregate) Get(g messages.Get) (interface{}, *messages.Failure, er
 	}
 }
 
-func (t sensorAggregate) Delete(d messages.Delete) (*messages.Deleted, *messages.Failure, error) {
+func (t sensorAggregate) Delete(d cmds.Delete) (*messages.Deleted, *messages.Failure, error) {
 	if err := t.storage.Delete(d.ID); err != nil {
 		return nil, messages.DeleteFailureResponse(d.Message, "sensor", d.ID), nil
 	}

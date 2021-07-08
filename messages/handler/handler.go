@@ -9,6 +9,7 @@ import (
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/models"
 	"github.com/tidwall/gjson"
 )
@@ -17,7 +18,7 @@ import (
 //
 // Start is used to start an new event chain (e.g. start.scan)
 type Starter interface {
-	Start(messages.Start) (interface{}, *messages.Failure, error)
+	Start(cmds.Start) (interface{}, *messages.Failure, error)
 }
 
 // Creater is the interface that wraps the basic Create method.
@@ -26,7 +27,7 @@ type Starter interface {
 // Creates a new entity of a given type via messages.Message.MessageType.
 // It responds with messages.Created which contains the id of the entity.
 type Creater interface {
-	Create(messages.Create) (*messages.Created, error)
+	Create(cmds.Create) (*messages.Created, error)
 }
 
 // Modifier is the interface that wraps the basic Modify method.
@@ -35,7 +36,7 @@ type Creater interface {
 // It responds with messages.Modified on successful alteration
 // messages.Failure on incorrect Values
 type Modifier interface {
-	Modify(messages.Modify) (*messages.Modified, *messages.Failure, error)
+	Modify(cmds.Modify) (*messages.Modified, *messages.Failure, error)
 }
 
 // ModifySetValueOf is a conenvience function to set values of Modify to target
@@ -46,7 +47,7 @@ type Modifier interface {
 // apply to try it via own handling mechanismn. If apply is nil or apply fails as well
 // an messages.Failure is returned.
 func ModifySetValueOf(target interface{},
-	m messages.Modify,
+	m cmds.Modify,
 	apply func(string, interface{}) error) *messages.Failure {
 	for k, v := range m.Values {
 		// normalize field name
@@ -93,11 +94,11 @@ func ModifySetValueOf(target interface{},
 // Gets a entity of a given type via messages.Message.MessageType and ID.
 // It responds with interface{} on success and messages.Failure when not found.
 type Getter interface {
-	Get(messages.Get) (interface{}, *messages.Failure, error)
+	Get(cmds.Get) (interface{}, *messages.Failure, error)
 }
 
 type Deleter interface {
-	Delete(messages.Delete) (*messages.Deleted, *messages.Failure, error)
+	Delete(cmds.Delete) (*messages.Deleted, *messages.Failure, error)
 }
 
 // Aggregate is the interface to handle Aggregate messages
@@ -126,11 +127,11 @@ func asResponse(t string, d interface{}) *connection.SendResponse {
 }
 
 func getMethodOfHolder(h Holder, method string) (interface{}, func() (interface{}, *messages.Failure, error)) {
-	var del messages.Delete
-	var create messages.Create
-	var modify messages.Modify
-	var get messages.Get
-	var start messages.Start
+	var del cmds.Delete
+	var create cmds.Create
+	var modify cmds.Modify
+	var get cmds.Get
+	var start cmds.Start
 	if method == "delete" && h.Deleter != nil {
 		return &del, func() (interface{}, *messages.Failure, error) {
 			return h.Deleter.Delete(del)

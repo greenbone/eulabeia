@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/models"
 	"github.com/greenbone/eulabeia/storage"
@@ -16,7 +17,7 @@ type targetAggregate struct {
 	storage Storage
 }
 
-func (t targetAggregate) Create(c messages.Create) (*messages.Created, error) {
+func (t targetAggregate) Create(c cmds.Create) (*messages.Created, error) {
 	target := models.Target{
 		ID: uuid.NewString(),
 	}
@@ -29,7 +30,7 @@ func (t targetAggregate) Create(c messages.Create) (*messages.Created, error) {
 	}, nil
 }
 
-func (t targetAggregate) Modify(m messages.Modify) (*messages.Modified, *messages.Failure, error) {
+func (t targetAggregate) Modify(m cmds.Modify) (*messages.Modified, *messages.Failure, error) {
 	var target *models.Target
 	target, err := t.storage.Get(m.ID)
 	if err != nil {
@@ -54,7 +55,7 @@ func (t targetAggregate) Modify(m messages.Modify) (*messages.Modified, *message
 	}, nil, nil
 
 }
-func (t targetAggregate) Get(g messages.Get) (interface{}, *messages.Failure, error) {
+func (t targetAggregate) Get(g cmds.Get) (interface{}, *messages.Failure, error) {
 	if target, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if target == nil {
@@ -70,7 +71,7 @@ func (t targetAggregate) Get(g messages.Get) (interface{}, *messages.Failure, er
 	}
 }
 
-func (t targetAggregate) Delete(d messages.Delete) (*messages.Deleted, *messages.Failure, error) {
+func (t targetAggregate) Delete(d cmds.Delete) (*messages.Deleted, *messages.Failure, error) {
 	if err := t.storage.Delete(d.ID); err != nil {
 		return nil, messages.DeleteFailureResponse(d.Message, "target", d.ID), nil
 	}

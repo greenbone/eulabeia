@@ -12,6 +12,7 @@ import (
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/sensor/memory"
 )
@@ -27,9 +28,11 @@ func main() {
 	c, err := mqtt.New(*server, *clientid+uuid.NewString(), "", "",
 		&mqtt.LastWillMessage{
 			Topic: topic,
-			MSG: messages.Delete{
-				ID:      *sensorID,
-				Message: messages.NewMessage("delete.sensor", "", ""),
+			MSG: cmds.Delete{
+				Identifier: messages.Identifier{
+					Message: messages.NewMessage("delete.sensor", "", ""),
+					ID:      *sensorID,
+				},
 			}})
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
@@ -38,9 +41,11 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	c.Publish(topic, messages.Modify{
-		Message: messages.NewMessage("modify.sensor", "", ""),
-		ID:      *sensorID,
+	c.Publish(topic, cmds.Modify{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("modify.sensor", "", ""),
+			ID:      *sensorID,
+		},
 		Values: map[string]interface{}{
 			"type": "undefined",
 		},
