@@ -13,6 +13,7 @@ import (
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/tidwall/gjson"
 )
 
@@ -36,7 +37,7 @@ func (e ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse, 
 
 type OnCreatedTarget struct {
 	publisher     connection.Publisher
-	modifyMSGChan chan messages.Modify
+	modifyMSGChan chan cmds.Modify
 }
 
 const topic = "greenbone.director"
@@ -49,9 +50,11 @@ func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, 
 	if err := json.Unmarshal(message, &created); err != nil {
 		return nil, err
 	}
-	modify := messages.Modify{
-		Message: messages.NewMessage("modify.target", "", created.GroupID),
-		ID:      created.ID,
+	modify := cmds.Modify{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("modify.target", "", created.GroupID),
+			ID:      created.ID,
+		},
 		Values: map[string]interface{}{
 			"hosts":   []string{"localhorst", "nebenan"},
 			"plugins": []string{"someoids"},
@@ -70,7 +73,7 @@ func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, 
 
 type OnModifiedTarget struct {
 	publisher     connection.Publisher
-	modifyMSGChan chan messages.Modify
+	modifyMSGChan chan cmds.Modify
 }
 
 func (omt OnModifiedTarget) On(messageType string, message []byte) (interface{}, error) {
@@ -92,9 +95,12 @@ func (omt OnModifiedTarget) On(messageType string, message []byte) (interface{},
 		return nil, nil
 	}
 	log.Printf("target: %s modified", original.ID)
-	omt.publisher.Publish(topic, messages.Get{
-		Message: messages.NewMessage("get.target", "", ""),
-		ID:      original.ID,
+	omt.publisher.Publish(topic, cmds.Get{
+		Identifier: messages.Identifier{
+
+			Message: messages.NewMessage("get.target", "", ""),
+			ID:      original.ID,
+		},
 	})
 	return nil, nil
 }
@@ -123,7 +129,7 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	err = c.Publish(topic, messages.Create{
+	err = c.Publish(topic, cmds.Create{
 		Message: messages.Message{
 			MessageType: "create.target",
 			Created:     7774,
@@ -134,7 +140,7 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to publish: %s", err)
 	}
-	modifyChan := make(chan messages.Modify, 1)
+	modifyChan := make(chan cmds.Modify, 1)
 	defer close(modifyChan)
 	mh := ExampleHandler{
 		handler: []OnEvent{

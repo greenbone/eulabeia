@@ -5,6 +5,7 @@ import (
 
 	"github.com/greenbone/eulabeia/internal/test"
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/storage"
 )
@@ -13,32 +14,38 @@ func TestSuccessResponse(t *testing.T) {
 	h := handler.New(New(storage.Noop{}))
 	tests := []test.HandleTests{
 		{
-			Input: messages.Create{
+			Input: cmds.Create{
 				Message: messages.NewMessage("create.target", "1", "1"),
 			},
 			Handler:         h,
 			ExpectedMessage: messages.NewMessage("created.target", "1", "1"),
 		},
 		{
-			Input: messages.Get{
-				Message: messages.NewMessage("get.target", "1", "1"),
-				ID:      "someid",
+			Input: cmds.Get{
+				Identifier: messages.Identifier{
+					Message: messages.NewMessage("get.target", "1", "1"),
+					ID:      "someid",
+				},
 			},
 			Handler:         h,
 			ExpectedMessage: messages.NewMessage("got.target", "1", "1"),
 		},
 		{
-			Input: messages.Delete{
-				Message: messages.NewMessage("delete.target", "1", "1"),
-				ID:      "someid",
+			Input: cmds.Delete{
+				Identifier: messages.Identifier{
+					Message: messages.NewMessage("delete.target", "1", "1"),
+					ID:      "someid",
+				},
 			},
 			Handler:         h,
 			ExpectedMessage: messages.NewMessage("deleted.target", "1", "1"),
 		},
 		{
-			Input: messages.Modify{
-				Message: messages.NewMessage("modify.target", "1", "1"),
-				ID:      "1",
+			Input: cmds.Modify{
+				Identifier: messages.Identifier{
+					Message: messages.NewMessage("modify.target", "1", "1"),
+					ID:      "1",
+				},
 				Values: map[string]interface{}{
 					"sensor":      "openvas",
 					"hosts":       []string{"a", "b"},

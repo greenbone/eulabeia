@@ -9,6 +9,7 @@ import (
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/director/target"
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/models"
 	"github.com/greenbone/eulabeia/storage"
@@ -20,7 +21,7 @@ type scanAggregate struct {
 	sensorTopic string
 }
 
-func (t scanAggregate) Start(s messages.Start) (interface{}, *messages.Failure, error) {
+func (t scanAggregate) Start(s cmds.Start) (interface{}, *messages.Failure, error) {
 	scan, err := t.storage.Get(s.ID)
 	if err != nil {
 		return nil, nil, err
@@ -30,15 +31,18 @@ func (t scanAggregate) Start(s messages.Start) (interface{}, *messages.Failure, 
 	}
 
 	return &connection.SendResponse{
-		MSG: &messages.Start{
-			Message: messages.NewMessage(fmt.Sprintf("start.scan.%s", scan.Sensor), s.MessageID, s.GroupID),
-			ID:      s.ID,
+
+		MSG: &cmds.Start{
+			Identifier: messages.Identifier{
+				Message: messages.NewMessage(fmt.Sprintf("start.scan.%s", scan.Sensor), s.MessageID, s.GroupID),
+				ID:      s.ID,
+			},
 		},
 		Topic: t.sensorTopic,
 	}, nil, nil
 }
 
-func (t scanAggregate) Create(c messages.Create) (*messages.Created, error) {
+func (t scanAggregate) Create(c cmds.Create) (*messages.Created, error) {
 	scan := models.Scan{
 		ID: uuid.NewString(),
 	}
@@ -51,7 +55,7 @@ func (t scanAggregate) Create(c messages.Create) (*messages.Created, error) {
 	}, nil
 }
 
-func (t scanAggregate) Modify(m messages.Modify) (*messages.Modified, *messages.Failure, error) {
+func (t scanAggregate) Modify(m cmds.Modify) (*messages.Modified, *messages.Failure, error) {
 	var scan *models.Scan
 	scan, err := t.storage.Get(m.ID)
 	if err != nil {
@@ -96,7 +100,7 @@ func (t scanAggregate) Modify(m messages.Modify) (*messages.Modified, *messages.
 
 }
 
-func (t scanAggregate) Delete(d messages.Delete) (*messages.Deleted, *messages.Failure, error) {
+func (t scanAggregate) Delete(d cmds.Delete) (*messages.Deleted, *messages.Failure, error) {
 	if err := t.storage.Delete(d.ID); err != nil {
 		return nil, messages.DeleteFailureResponse(d.Message, "target", d.ID), nil
 	}
@@ -106,7 +110,7 @@ func (t scanAggregate) Delete(d messages.Delete) (*messages.Deleted, *messages.F
 	}, nil, nil
 }
 
-func (t scanAggregate) Get(g messages.Get) (interface{}, *messages.Failure, error) {
+func (t scanAggregate) Get(g cmds.Get) (interface{}, *messages.Failure, error) {
 	if scan, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if scan == nil {
