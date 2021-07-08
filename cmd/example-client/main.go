@@ -14,6 +14,7 @@ import (
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
+	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/tidwall/gjson"
 )
 
@@ -46,7 +47,7 @@ func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, 
 	if messageType != "created.target" {
 		return nil, nil
 	}
-	var created messages.Created
+	var created info.Created
 	if err := json.Unmarshal(message, &created); err != nil {
 		return nil, err
 	}
@@ -84,7 +85,7 @@ func (omt OnModifiedTarget) On(messageType string, message []byte) (interface{},
 	if !ok {
 		return nil, errors.New("closed modify channel")
 	}
-	var modified messages.Modified
+	var modified info.Modified
 	if err := json.Unmarshal(message, &modified); err != nil {
 		return nil, err
 	}

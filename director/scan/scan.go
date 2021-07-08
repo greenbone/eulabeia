@@ -11,6 +11,7 @@ import (
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/handler"
+	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
 	"github.com/greenbone/eulabeia/storage"
 )
@@ -21,13 +22,13 @@ type scanAggregate struct {
 	sensorTopic string
 }
 
-func (t scanAggregate) Start(s cmds.Start) (interface{}, *messages.Failure, error) {
+func (t scanAggregate) Start(s cmds.Start) (interface{}, *info.Failure, error) {
 	scan, err := t.storage.Get(s.ID)
 	if err != nil {
 		return nil, nil, err
 	}
 	if scan == nil {
-		return nil, messages.GetFailureResponse(s.Message, "scan", s.ID), nil
+		return nil, info.GetFailureResponse(s.Message, "scan", s.ID), nil
 	}
 
 	return &connection.SendResponse{
@@ -42,20 +43,22 @@ func (t scanAggregate) Start(s cmds.Start) (interface{}, *messages.Failure, erro
 	}, nil, nil
 }
 
-func (t scanAggregate) Create(c cmds.Create) (*messages.Created, error) {
+func (t scanAggregate) Create(c cmds.Create) (*info.Created, error) {
 	scan := models.Scan{
 		ID: uuid.NewString(),
 	}
 	if err := t.storage.Put(scan); err != nil {
 		return nil, err
 	}
-	return &messages.Created{
-		ID:      scan.ID,
-		Message: messages.NewMessage("created.scan", c.MessageID, c.GroupID),
+	return &info.Created{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("created.scan", c.MessageID, c.GroupID),
+			ID:      scan.ID,
+		},
 	}, nil
 }
 
-func (t scanAggregate) Modify(m cmds.Modify) (*messages.Modified, *messages.Failure, error) {
+func (t scanAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, error) {
 	var scan *models.Scan
 	scan, err := t.storage.Get(m.ID)
 	if err != nil {
@@ -93,28 +96,32 @@ func (t scanAggregate) Modify(m cmds.Modify) (*messages.Modified, *messages.Fail
 		return nil, nil, err
 	}
 
-	return &messages.Modified{
-		ID:      m.ID,
-		Message: messages.NewMessage("modified.scan", m.MessageID, m.GroupID),
+	return &info.Modified{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("modified.scan", m.MessageID, m.GroupID),
+			ID:      m.ID,
+		},
 	}, nil, nil
 
 }
 
-func (t scanAggregate) Delete(d cmds.Delete) (*messages.Deleted, *messages.Failure, error) {
+func (t scanAggregate) Delete(d cmds.Delete) (*info.Deleted, *info.Failure, error) {
 	if err := t.storage.Delete(d.ID); err != nil {
-		return nil, messages.DeleteFailureResponse(d.Message, "target", d.ID), nil
+		return nil, info.DeleteFailureResponse(d.Message, "target", d.ID), nil
 	}
-	return &messages.Deleted{
-		Message: messages.NewMessage("deleted.target", d.MessageID, d.GroupID),
-		ID:      d.ID,
+	return &info.Deleted{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("deleted.target", d.MessageID, d.GroupID),
+			ID:      d.ID,
+		},
 	}, nil, nil
 }
 
-func (t scanAggregate) Get(g cmds.Get) (interface{}, *messages.Failure, error) {
+func (t scanAggregate) Get(g cmds.Get) (interface{}, *info.Failure, error) {
 	if scan, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if scan == nil {
-		return nil, messages.GetFailureResponse(g.Message, "scan", g.ID), nil
+		return nil, info.GetFailureResponse(g.Message, "scan", g.ID), nil
 	} else {
 		return &models.GotScan{
 			Message: messages.NewMessage("got.scan", g.MessageID, g.GroupID),

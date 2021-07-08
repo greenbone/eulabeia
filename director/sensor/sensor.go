@@ -9,6 +9,7 @@ import (
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/handler"
+	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
 	"github.com/greenbone/eulabeia/storage"
 )
@@ -17,20 +18,22 @@ type sensorAggregate struct {
 	storage Storage
 }
 
-func (t sensorAggregate) Create(c cmds.Create) (*messages.Created, error) {
+func (t sensorAggregate) Create(c cmds.Create) (*info.Created, error) {
 	sensor := models.Sensor{
 		ID: uuid.NewString(),
 	}
 	if err := t.storage.Put(sensor); err != nil {
 		return nil, err
 	}
-	return &messages.Created{
-		ID:      sensor.ID,
-		Message: messages.NewMessage("created.sensor", c.MessageID, c.GroupID),
+	return &info.Created{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("created.sensor", c.MessageID, c.GroupID),
+			ID:      sensor.ID,
+		},
 	}, nil
 }
 
-func (t sensorAggregate) Modify(m cmds.Modify) (*messages.Modified, *messages.Failure, error) {
+func (t sensorAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, error) {
 	sensor, err := t.storage.Get(m.ID)
 	if err != nil {
 		return nil, nil, err
@@ -47,17 +50,19 @@ func (t sensorAggregate) Modify(m cmds.Modify) (*messages.Modified, *messages.Fa
 		return nil, nil, err
 	}
 
-	return &messages.Modified{
-		ID:      m.ID,
-		Message: messages.NewMessage("modified.sensor", m.MessageID, m.GroupID),
+	return &info.Modified{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("modified.sensor", m.MessageID, m.GroupID),
+			ID:      m.ID,
+		},
 	}, nil, nil
 
 }
-func (t sensorAggregate) Get(g cmds.Get) (interface{}, *messages.Failure, error) {
+func (t sensorAggregate) Get(g cmds.Get) (interface{}, *info.Failure, error) {
 	if sensor, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if sensor == nil {
-		return nil, &messages.Failure{
+		return nil, &info.Failure{
 			Message: messages.NewMessage("failure.get.sensor", g.MessageID, g.GroupID),
 			Error:   fmt.Sprintf("%s not found.", g.ID),
 		}, nil
@@ -69,13 +74,15 @@ func (t sensorAggregate) Get(g cmds.Get) (interface{}, *messages.Failure, error)
 	}
 }
 
-func (t sensorAggregate) Delete(d cmds.Delete) (*messages.Deleted, *messages.Failure, error) {
+func (t sensorAggregate) Delete(d cmds.Delete) (*info.Deleted, *info.Failure, error) {
 	if err := t.storage.Delete(d.ID); err != nil {
-		return nil, messages.DeleteFailureResponse(d.Message, "sensor", d.ID), nil
+		return nil, info.DeleteFailureResponse(d.Message, "sensor", d.ID), nil
 	}
-	return &messages.Deleted{
-		Message: messages.NewMessage("deleted.sensor", d.MessageID, d.GroupID),
-		ID:      d.ID,
+	return &info.Deleted{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("deleted.sensor", d.MessageID, d.GroupID),
+			ID:      d.ID,
+		},
 	}, nil, nil
 }
 

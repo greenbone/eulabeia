@@ -1,10 +1,8 @@
 package messages
 
 import (
-	"fmt"
-	"time"
-
 	"github.com/google/uuid"
+	"time"
 )
 
 // Message contains the meta data for each sent message.
@@ -42,54 +40,4 @@ func NewMessage(messageType string, messageID string, groupID string) Message {
 		MessageID:   messageID,
 		GroupID:     groupID,
 	}
-}
-
-// DeleteFailureResponse is a conenvience method to return a Failure as Unable to delete
-func DeleteFailureResponse(msg Message, prefix string, id string) *Failure {
-	return &Failure{
-		Message: NewMessage(fmt.Sprintf("failure.%s", msg.MessageType), msg.MessageID, msg.GroupID),
-		Error:   fmt.Sprintf("Unable to delete %s %s.", prefix, id),
-	}
-}
-
-// GetFailureResponse is a conenvience method to return a Failure as NotFound
-func GetFailureResponse(msg Message, prefix string, id string) *Failure {
-	return &Failure{
-		Message: NewMessage(fmt.Sprintf("failure.%s", msg.MessageType), msg.MessageID, msg.GroupID),
-		Error:   fmt.Sprintf("%s %s not found.", prefix, id),
-	}
-}
-
-// Started is returned by a start event and contains the `id` as an identifier for the scan entity.
-type Started struct {
-	ID string `json:"id"`
-	Message
-}
-
-// Created is returned by a create event and contains the `id` as an identifier for the created entity.
-//
-// The type of entity is indicated by `message_type`.
-// e.g. on "message_type": "created.target" the `id` is a identifier for a target.
-type Created struct {
-	ID string `json:"id"`
-	Message
-}
-
-// Failure is returned when an error occured while processing a message
-type Failure struct {
-	Error string `json:"error"`
-	Message
-}
-
-// Modified is returned by a modify event and contains the `id` as an identifier for the modified entity.
-// The type of entity is indicated by `message_type`.
-type Modified struct {
-	ID string `json:"id"`
-	Message
-}
-
-// Deleted is the success response of Delete.
-type Deleted struct {
-	ID string `json:"id"`
-	Message
 }

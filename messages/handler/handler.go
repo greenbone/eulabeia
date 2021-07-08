@@ -10,6 +10,7 @@ import (
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
+	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
 	"github.com/tidwall/gjson"
 )
@@ -18,25 +19,25 @@ import (
 //
 // Start is used to start an new event chain (e.g. start.scan)
 type Starter interface {
-	Start(cmds.Start) (interface{}, *messages.Failure, error)
+	Start(cmds.Start) (interface{}, *info.Failure, error)
 }
 
 // Creater is the interface that wraps the basic Create method.
 //
 // Create is used on aggregate handler to handle messages.Create.
 // Creates a new entity of a given type via messages.Message.MessageType.
-// It responds with messages.Created which contains the id of the entity.
+// It responds with info.Created which contains the id of the entity.
 type Creater interface {
-	Create(cmds.Create) (*messages.Created, error)
+	Create(cmds.Create) (*info.Created, error)
 }
 
 // Modifier is the interface that wraps the basic Modify method.
 //
 // Modifies a entity of a given type via messages.Message.MessageType and ID.
-// It responds with messages.Modified on successful alteration
-// messages.Failure on incorrect Values
+// It responds with info.Modified on successful alteration
+// info.Failure on incorrect Values
 type Modifier interface {
-	Modify(cmds.Modify) (*messages.Modified, *messages.Failure, error)
+	Modify(cmds.Modify) (*info.Modified, *info.Failure, error)
 }
 
 // ModifySetValueOf is a conenvience function to set values of Modify to target
@@ -45,10 +46,10 @@ type Modifier interface {
 // match the naming scheme within models and then apply the given value to that.
 // If it fails to apply the given value directly it calls the given function
 // apply to try it via own handling mechanismn. If apply is nil or apply fails as well
-// an messages.Failure is returned.
+// an info.Failure is returned.
 func ModifySetValueOf(target interface{},
 	m cmds.Modify,
-	apply func(string, interface{}) error) *messages.Failure {
+	apply func(string, interface{}) error) *info.Failure {
 	for k, v := range m.Values {
 		// normalize field name
 		nk := strings.Title(k)
@@ -80,7 +81,7 @@ func ModifySetValueOf(target interface{},
 		}
 		if failure != nil {
 			log.Printf("Failure while processing field %v: %v", nk, failure)
-			return &messages.Failure{
+			return &info.Failure{
 				Error:   fmt.Sprintf("Unable to set %s on target to %s: %v", nk, v, failure),
 				Message: messages.NewMessage("failure."+m.MessageType, m.MessageID, m.GroupID),
 			}
@@ -92,13 +93,13 @@ func ModifySetValueOf(target interface{},
 // Getter is the interface that wraps the basic Get method.
 //
 // Gets a entity of a given type via messages.Message.MessageType and ID.
-// It responds with interface{} on success and messages.Failure when not found.
+// It responds with interface{} on success and info.Failure when not found.
 type Getter interface {
-	Get(cmds.Get) (interface{}, *messages.Failure, error)
+	Get(cmds.Get) (interface{}, *info.Failure, error)
 }
 
 type Deleter interface {
-	Delete(cmds.Delete) (*messages.Deleted, *messages.Failure, error)
+	Delete(cmds.Delete) (*info.Deleted, *info.Failure, error)
 }
 
 // Aggregate is the interface to handle Aggregate messages
@@ -126,32 +127,32 @@ func asResponse(t string, d interface{}) *connection.SendResponse {
 	}
 }
 
-func getMethodOfHolder(h Holder, method string) (interface{}, func() (interface{}, *messages.Failure, error)) {
+func getMethodOfHolder(h Holder, method string) (interface{}, func() (interface{}, *info.Failure, error)) {
 	var del cmds.Delete
 	var create cmds.Create
 	var modify cmds.Modify
 	var get cmds.Get
 	var start cmds.Start
 	if method == "delete" && h.Deleter != nil {
-		return &del, func() (interface{}, *messages.Failure, error) {
+		return &del, func() (interface{}, *info.Failure, error) {
 			return h.Deleter.Delete(del)
 		}
 
 	} else if method == "create" && h.Creater != nil {
-		return &create, func() (interface{}, *messages.Failure, error) {
+		return &create, func() (interface{}, *info.Failure, error) {
 			r, e := h.Creater.Create(create)
 			return r, nil, e
 		}
 	} else if method == "start" && h.Starter != nil {
-		return &start, func() (interface{}, *messages.Failure, error) {
+		return &start, func() (interface{}, *info.Failure, error) {
 			return h.Starter.Start(start)
 		}
 	} else if method == "modify" && h.Modifier != nil {
-		return &modify, func() (interface{}, *messages.Failure, error) {
+		return &modify, func() (interface{}, *info.Failure, error) {
 			return h.Modifier.Modify(modify)
 		}
 	} else if method == "get" && h.Getter != nil {
-		return &get, func() (interface{}, *messages.Failure, error) {
+		return &get, func() (interface{}, *info.Failure, error) {
 			return h.Getter.Get(get)
 		}
 	} else {
@@ -163,14 +164,14 @@ func getMethodOfHolder(h Holder, method string) (interface{}, func() (interface{
 func (om onMessage) On(topic string, message []byte) (*connection.SendResponse, error) {
 	messageType := gjson.GetBytes(message, "message_type")
 	if messageType.Type == gjson.Null {
-		return asResponse(topic, messages.Failure{
+		return asResponse(topic, info.Failure{
 			Message: messages.NewMessage("failure", "", ""),
 			Error:   "unable to find message_type",
 		}), nil
 	}
 	smt := strings.Split(messageType.String(), ".")
 	if len(smt) < 2 {
-		return asResponse(topic, messages.Failure{
+		return asResponse(topic, info.Failure{
 			Message: messages.NewMessage("failure", "", ""),
 			Error:   fmt.Sprintf("incorrect message_type %s", messageType.String()),
 		}), nil
@@ -178,7 +179,7 @@ func (om onMessage) On(topic string, message []byte) (*connection.SendResponse, 
 	if h, ok := om.lookup[smt[1]]; ok {
 		use, fuse := getMethodOfHolder(h, smt[0])
 		if e := json.Unmarshal(message, use); e != nil {
-			return asResponse(topic, messages.Failure{
+			return asResponse(topic, info.Failure{
 				Message: messages.NewMessage("failure", "", ""),
 				Error:   fmt.Sprintf("unable to parse %s: %s", smt[0], e),
 			}), nil
