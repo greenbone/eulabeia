@@ -5,6 +5,12 @@ import (
 	"io"
 )
 
+// Send Response is used to indicate that a response message should be send
+type SendResponse struct {
+	MSG   interface{}
+	Topic string
+}
+
 // OnMessage is the interface that wraps the basic On method.
 //
 // The behavior of On is that the interface{} is a response and should be send
@@ -15,7 +21,7 @@ import (
 // the implementation of OnMessage should response with  a response
 // (e.g. messages.Failure) instead of an error.
 type OnMessage interface {
-	On(message []byte) (interface{}, error)
+	On(topic string, message []byte) (*SendResponse, error)
 }
 
 // Publisher is the interface that wraps the basic Publish method.
