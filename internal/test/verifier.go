@@ -39,8 +39,8 @@ var VerifyMessageOfResult = func(d *connection.SendResponse, h HandleTests, t *t
 	if rm.MessageID != h.ExpectedMessage.MessageID {
 		t.Errorf("Expected MessageID to be: %s but was %s", h.ExpectedMessage.MessageID, rm.MessageID)
 	}
-	if rm.MessageType != h.ExpectedMessage.MessageType {
-		t.Errorf("Expected MessageType to be: %s but was %s", h.ExpectedMessage.MessageType, rm.MessageType)
+	if rm.Type != h.ExpectedMessage.Type {
+		t.Errorf("Expected MessageType to be: %s but was %s", h.ExpectedMessage.Type, rm.Type)
 	}
 }
 

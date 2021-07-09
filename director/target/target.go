@@ -60,7 +60,7 @@ func (t targetAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, e
 	}, nil, nil
 
 }
-func (t targetAggregate) Get(g cmds.Get) (interface{}, *info.Failure, error) {
+func (t targetAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) {
 	if target, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if target == nil {

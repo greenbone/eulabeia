@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -23,7 +24,7 @@ func (t exampleAggregate) ErrorOnKeyword(m messages.Message) error {
 }
 func (t exampleAggregate) FailureOnKeyword(m messages.Message) *info.Failure {
 	if strings.HasSuffix(m.MessageID, "failure") {
-		return &info.Failure{Message: m, Error: "some failure"}
+		return &info.Failure{Message: messages.NewMessage("failure.target", m.MessageID, m.GroupID), Error: "some failure"}
 	}
 	return nil
 }
@@ -57,7 +58,7 @@ func (t exampleAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, 
 	}, nil, nil
 
 }
-func (t exampleAggregate) Get(g cmds.Get) (interface{}, *info.Failure, error) {
+func (t exampleAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) {
 	if err := t.ErrorOnKeyword(g.Message); err != nil {
 		return nil, nil, err
 	}
@@ -89,7 +90,7 @@ func createMessage(mt string, tt string) messages.Message {
 	return messages.NewMessage(mt+".target", "1234"+tt, "")
 }
 
-func createEvent(mt string, tt string) interface{} {
+func createEvent(mt string, tt string) messages.Event {
 	switch mt {
 	case "create":
 		return &cmds.Create{
@@ -143,6 +144,7 @@ func TestAggragteHandler(t *testing.T) {
 			if err != nil {
 				t.Errorf("[%s][%s] failed to create json", k, j)
 			}
+			fmt.Printf("[%s][%s] running\n", k, j)
 			h := New(FromAggregate("target", exampleAggregate{}))
 			r, err := h.On("", b)
 			switch j {

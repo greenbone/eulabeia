@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	topic := "greenbone.sensor"
+	topic := "eulabeia/+/+/sensor"
 	server := flag.String("server", "localhost:1883", "A clientid for the connection")
 	clientid := flag.String("clientid", "", "A clientid for the connection")
 	sensorID := flag.String("sensorID", "bla", "A sensorID for the registration")
@@ -27,7 +27,7 @@ func main() {
 	log.Println("Starting sensor")
 	c, err := mqtt.New(*server, *clientid+uuid.NewString(), "", "",
 		&mqtt.LastWillMessage{
-			Topic: topic,
+			Topic: "eulabeia/sensor/cmd/director",
 			MSG: cmds.Delete{
 				Identifier: messages.Identifier{
 					Message: messages.NewMessage("delete.sensor", "", ""),
@@ -41,7 +41,7 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	c.Publish(topic, cmds.Modify{
+	c.Publish("eulabeia/sensor/cmd/director", cmds.Modify{
 		Identifier: messages.Identifier{
 			Message: messages.NewMessage("modify.sensor", "", ""),
 			ID:      *sensorID,
