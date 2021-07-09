@@ -13,7 +13,6 @@ import (
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/handler"
-	"github.com/greenbone/eulabeia/sensor/memory"
 )
 
 func main() {
@@ -24,7 +23,7 @@ func main() {
 	flag.Parse()
 
 	log.Println("Starting sensor")
-	c, err := mqtt.New(*server, *clientid+uuid.NewString(), "", "",
+	client, err := mqtt.New(*server, *clientid+uuid.NewString(), "", "",
 		&mqtt.LastWillMessage{
 			Topic: topic,
 			MSG: messages.Delete{
@@ -34,18 +33,18 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
-	err = c.Connect()
+	err = client.Connect()
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	c.Publish(topic, messages.Modify{
+	client.Publish(topic, messages.Modify{
 		Message: messages.NewMessage("modify.sensor", "", ""),
 		ID:      *sensorID,
 		Values: map[string]interface{}{
 			"type": "undefined",
 		},
 	})
-	err = c.Subscribe(map[string]connection.OnMessage{
+	err = client.Subscribe(map[string]connection.OnMessage{
 		topic: handler.New(memory.New()),
 	})
 	if err != nil {
@@ -55,7 +54,7 @@ func main() {
 	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
 	<-ic
 	fmt.Println("signal received, exiting")
-	if c != nil {
+	if client != nil {
 		err = c.Close()
 		if err != nil {
 			log.Fatalf("failed to send Disconnect: %s", err)

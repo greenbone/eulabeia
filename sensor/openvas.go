@@ -24,6 +24,8 @@ func (e *Error) Error() string {
 	return e.What
 }
 
+// StartScan starts scan with given scan-ID and process priority (-20 - 19,
+// lower is more prioritized)
 func StartScan(scan string, niceness int) error {
 	cmdString := make([]string, 0)
 
@@ -52,9 +54,8 @@ func StartScan(scan string, niceness int) error {
 	return nil
 }
 
-// Stops a scan
+// StopScan stops a scan with given scan-ID
 func StopScan(scan string) error {
-
 	err := removeProcess(scan)
 	if err != nil {
 		return err
@@ -116,6 +117,7 @@ func GetSettings() (map[string]string, error) {
 	return settingsMap, nil
 }
 
+// LoadVTsIntoRedis starts openvas which then loads new VTs into Redis
 func LoadVTsIntoRedis() {
 	log.Printf("Loading VTs into Redis DB...\n")
 
@@ -177,6 +179,4 @@ func init() {
 	} else {
 		sudo = true
 	}
-
-	// Setup MQTT
 }

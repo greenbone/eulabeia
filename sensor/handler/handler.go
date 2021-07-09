@@ -2,6 +2,7 @@
 package handler
 
 import (
+	"github.com/greenbone/eulabeia/messages"
 	"encoding/json"
 	"log"
 
@@ -11,39 +12,70 @@ import (
 
 var MQTT connection.PubSub
 
-// Handler for the scheduler
-type SchedulerHandler struct {
-	Channel chan string
+type InvalidCommandError struct {
+	cmd string
 }
 
+func (err InvalidCommandError) Error() string {
+	if err.cmd == ""
+		return "missing command"
+	return fmt.Sprintf("invalid command %s used", err.cmd)
+}
+
+// Handler for Messages regardings commands running scanner
+type CommandHandler struct {
+	startChan chan string
+	stopChan  chan string
+	verChan   chan struct{}
+	vtsChan   chan struct{}
+}
+
+
 // Implementation for the On method for handling incoming messages via MQTT
-func (s SchedulerHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
-	var data map[string]string
-	if err := json.Unmarshal(message, data); err != nil {
-		log.Printf("Sensor cannot read data on Topic %s: %s\n", topic, err)
-		return nil, nil
+func (handler CommandHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
+	var data messages.Command
+	if err := json.Unmarshal(message, &data); err != nil {
+		log.Printf("Sensor cannot read command on Topic %s\n", topic)
+		return nil, err
 	}
 
-	scan, ok := data["scan_id"]
-	if !ok {
-		log.Printf("Unable to get Scan ID from message on topic %s.\n", topic)
-		return nil, nil
+	switch data.Cmd {
+	case: "start"
+		handler.startChan <- data.ID
+	case: "stop"
+		handler.stopChan <- data.ID
+	case: "version"
+		handler.verChan <- struct{}{}
+	case: "loadvts"
+		handler.vtsChan <- struct{}{}
+	default:
+		return nil, &InvalidCommandError {
+			cmd: data.Cmd
+		}
 	}
-
-	s.Channel <- scan
 	return nil, nil
 }
 
-// Setup MQTT for message handling
-func init() {
-	var err error
-	MQTT, err = mqtt.New("localhost:1883", "sensor", "", "", &mqtt.LastWillMessage{
-		Topic: "sensor.status",
-		MSG: map[string]string{
-			"error": "sensor got disconnected from MQTT",
-		},
-	})
-	if err != nil {
-		log.Panicf("Unable to connect to MQTT Broker: %s", err)
+// Handler for Messages which do not regard scans (e.g. get version)
+type InfoHandler struct {
+	runChan   chan string
+	finChan   chan string
+}
+
+func (handler OpenVASHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
+	var data messages.ScanInfo
+	if err := json.Unmarshal(message, &data); err != nil {
+		log.Printf("Sensor cannot read info on topic %s\n", topic)
+		return nil, err
 	}
+
+	if data.InfoType == "status" {
+		switch data.Info{
+		case "running":
+			InfoHandler.runChan <- data.ID
+		case "finished":
+			InfoHandler.finChan <- data.ID
+		}
+	}
+	return nil, nil
 }

@@ -126,3 +126,22 @@ type Deleted struct {
 	ID string `json:"id"`
 	Message
 }
+
+// Command is used by the director to run a command on a sensor. Possible
+// commands are:
+//  - start
+//  - stop
+//  - version
+//  - loadvts
+type Command struct {
+	ID  string `json:"id"`
+	Cmd string `json:"cmd"`
+	Message
+}
+
+type ScanInfo struct {
+	ID       string `json:"id"`
+	InfoType string `json:"type"`
+	Info     string `json:"info"`
+	Message
+}
