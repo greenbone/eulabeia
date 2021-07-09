@@ -33,10 +33,9 @@ func main() {
 	}
 	device := storage.File{Dir: "/tmp/"}
 	err = client.Subscribe(map[string]connection.OnMessage{
-		"greenbone.sensor": handler.New(sensor.New(device)),
-		"greenbone.director": handler.New(
-			target.New(device),
-			scan.New("greenbone.sensor", device)),
+		"eulabeia/sensor/cmd/director": handler.New(sensor.New(device)),
+		"eulabeia/target/cmd/director": handler.New(target.New(device)),
+		"eulabeia/scan/cmd/director":   handler.New(scan.New(device)),
 	})
 	if err != nil {
 		panic(err)

@@ -19,7 +19,7 @@ import (
 //
 // Start is used to start an new event chain (e.g. start.scan)
 type Starter interface {
-	Start(cmds.Start) (interface{}, *info.Failure, error)
+	Start(cmds.Start) (messages.Event, *info.Failure, error)
 }
 
 // Creater is the interface that wraps the basic Create method.
@@ -83,7 +83,7 @@ func ModifySetValueOf(target interface{},
 			log.Printf("Failure while processing field %v: %v", nk, failure)
 			return &info.Failure{
 				Error:   fmt.Sprintf("Unable to set %s on target to %s: %v", nk, v, failure),
-				Message: messages.NewMessage("failure."+m.MessageType, m.MessageID, m.GroupID),
+				Message: messages.NewMessage("failure."+m.Type, m.MessageID, m.GroupID),
 			}
 		}
 	}
@@ -95,7 +95,7 @@ func ModifySetValueOf(target interface{},
 // Gets a entity of a given type via messages.Message.MessageType and ID.
 // It responds with interface{} on success and info.Failure when not found.
 type Getter interface {
-	Get(cmds.Get) (interface{}, *info.Failure, error)
+	Get(cmds.Get) (messages.Event, *info.Failure, error)
 }
 
 type Deleter interface {
@@ -120,39 +120,47 @@ type onMessage struct {
 	lookup map[string]Holder
 }
 
-func asResponse(t string, d interface{}) *connection.SendResponse {
+func asResponse(e messages.Event) *connection.SendResponse {
+	if e == nil {
+		return nil
+	}
+	mt := e.MessageType()
+	topic := fmt.Sprintf("eulabeia/%s/%s", mt.Aggregate, e.Event())
+	if mt.Destination != "" {
+		topic = fmt.Sprintf("%s.%s", topic, mt.Destination)
+	}
 	return &connection.SendResponse{
-		Topic: t,
-		MSG:   d,
+		Topic: topic,
+		MSG:   e,
 	}
 }
 
-func getMethodOfHolder(h Holder, method string) (interface{}, func() (interface{}, *info.Failure, error)) {
+func getMethodOfHolder(h Holder, method string) (messages.Event, func() (messages.Event, *info.Failure, error)) {
 	var del cmds.Delete
 	var create cmds.Create
 	var modify cmds.Modify
 	var get cmds.Get
 	var start cmds.Start
 	if method == "delete" && h.Deleter != nil {
-		return &del, func() (interface{}, *info.Failure, error) {
+		return &del, func() (messages.Event, *info.Failure, error) {
 			return h.Deleter.Delete(del)
 		}
 
 	} else if method == "create" && h.Creater != nil {
-		return &create, func() (interface{}, *info.Failure, error) {
+		return &create, func() (messages.Event, *info.Failure, error) {
 			r, e := h.Creater.Create(create)
 			return r, nil, e
 		}
 	} else if method == "start" && h.Starter != nil {
-		return &start, func() (interface{}, *info.Failure, error) {
+		return &start, func() (messages.Event, *info.Failure, error) {
 			return h.Starter.Start(start)
 		}
 	} else if method == "modify" && h.Modifier != nil {
-		return &modify, func() (interface{}, *info.Failure, error) {
+		return &modify, func() (messages.Event, *info.Failure, error) {
 			return h.Modifier.Modify(modify)
 		}
 	} else if method == "get" && h.Getter != nil {
-		return &get, func() (interface{}, *info.Failure, error) {
+		return &get, func() (messages.Event, *info.Failure, error) {
 			return h.Getter.Get(get)
 		}
 	} else {
@@ -164,37 +172,38 @@ func getMethodOfHolder(h Holder, method string) (interface{}, func() (interface{
 func (om onMessage) On(topic string, message []byte) (*connection.SendResponse, error) {
 	messageType := gjson.GetBytes(message, "message_type")
 	if messageType.Type == gjson.Null {
-		return asResponse(topic, info.Failure{
+		return asResponse(info.Failure{
 			Message: messages.NewMessage("failure", "", ""),
 			Error:   "unable to find message_type",
 		}), nil
 	}
-	smt := strings.Split(messageType.String(), ".")
-	if len(smt) < 2 {
-		return asResponse(topic, info.Failure{
+	mt, err := messages.ParseMessageType(messageType.String())
+	if err != nil {
+		return asResponse(info.Failure{
 			Message: messages.NewMessage("failure", "", ""),
 			Error:   fmt.Sprintf("incorrect message_type %s", messageType.String()),
 		}), nil
+
 	}
-	if h, ok := om.lookup[smt[1]]; ok {
-		use, fuse := getMethodOfHolder(h, smt[0])
+	if h, ok := om.lookup[mt.Aggregate]; ok {
+		use, fuse := getMethodOfHolder(h, mt.Function)
 		if e := json.Unmarshal(message, use); e != nil {
-			return asResponse(topic, info.Failure{
+			return asResponse(info.Failure{
 				Message: messages.NewMessage("failure", "", ""),
-				Error:   fmt.Sprintf("unable to parse %s: %s", smt[0], e),
+				Error:   fmt.Sprintf("unable to parse %s: %s", mt, e),
 			}), nil
 		}
 		r, f, e := fuse()
+		if e != nil {
+			return nil, e
+		}
 		if f != nil {
-			return asResponse(topic, f), e
+			return asResponse(f), e
 		}
-		if r, ok := r.(*connection.SendResponse); ok {
-			return r, e
-		}
-		return asResponse(topic, r), e
+		return asResponse(r), e
 
 	}
-	log.Printf("unable to identify entity %s", smt[1])
+	log.Printf("unable to identify entity %s", mt)
 	return nil, nil
 }
 

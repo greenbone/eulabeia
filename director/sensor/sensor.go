@@ -58,7 +58,7 @@ func (t sensorAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, e
 	}, nil, nil
 
 }
-func (t sensorAggregate) Get(g cmds.Get) (interface{}, *info.Failure, error) {
+func (t sensorAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) {
 	if sensor, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if sensor == nil {

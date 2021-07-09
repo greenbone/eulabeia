@@ -1,17 +1,41 @@
 package messages
 
 import (
-	"github.com/google/uuid"
+	"fmt"
+	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
+
+// EventType is used to identify a message
+type EventType string
+
+const (
+	CMD  EventType = "cmd"  // Event is a cmd
+	INFO EventType = "info" // Event is a info
+)
+
+type Event interface {
+	Event() EventType
+	MessageType() MessageType
+}
 
 // Message contains the meta data for each sent message.
 // It should be embedded into all messages send to or received by eulabeia.
 type Message struct {
-	Created     int    `json:"created"`      // Timestamp when this message was created
-	MessageType string `json:"message_type"` // Identifier what this message actually contains
-	MessageID   string `json:"message_id"`   // The ID of a message, responses will have the same ID
-	GroupID     string `json:"group_id"`     // The ID of a group of messages, responses will have the same ID
+	Created   int    `json:"created"`      // Timestamp when this message was created
+	Type      string `json:"message_type"` // Identifier what this message actually contains
+	MessageID string `json:"message_id"`   // The ID of a message, responses will have the same ID
+	GroupID   string `json:"group_id"`     // The ID of a group of messages, responses will have the same ID
+}
+
+func (m Message) MessageType() MessageType {
+	result, err := ParseMessageType(m.Type)
+	if err != nil {
+		panic(fmt.Errorf("unable to parse MessageType: %s", err))
+	}
+	return *result
 }
 
 // Identifier is an ID based cmd it contains an ID for messages.Message.MessageType
@@ -26,6 +50,31 @@ type MessageType struct {
 	Destination string // Destination is an optinal parameter to indicate if this message is deicated for a special consumer
 }
 
+func (m MessageType) String() string {
+	result := fmt.Sprintf("%s.%s", m.Function, m.Aggregate)
+	if m.Destination != "" {
+		result = fmt.Sprintf("%s.%s", result, m.Destination)
+	}
+	return result
+}
+
+func ParseMessageType(typ string) (*MessageType, error) {
+	smt := strings.Split(typ, ".")
+	if len(smt) < 1 {
+		return nil, fmt.Errorf("unable to parse %s to MessageType", typ)
+	}
+	result := MessageType{
+		Function: smt[0],
+	}
+	if len(smt) > 1 {
+		result.Aggregate = smt[1]
+	}
+	if len(smt) > 2 {
+		result.Destination = smt[2]
+	}
+	return &result, nil
+}
+
 // NewMessage creates a new message; if messageID oder groupID are empty a new uuid will be used instead.
 func NewMessage(messageType string, messageID string, groupID string) Message {
 	if messageID == "" {
@@ -35,9 +84,9 @@ func NewMessage(messageType string, messageID string, groupID string) Message {
 		groupID = uuid.NewString()
 	}
 	return Message{
-		Created:     time.Now().Nanosecond(),
-		MessageType: messageType,
-		MessageID:   messageID,
-		GroupID:     groupID,
+		Created:   time.Now().Nanosecond(),
+		Type:      messageType,
+		MessageID: messageID,
+		GroupID:   groupID,
 	}
 }

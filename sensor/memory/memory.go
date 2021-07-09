@@ -16,7 +16,7 @@ type getMemory struct {
 	stats func() (*mem.Stats, error)
 }
 
-func (gm getMemory) Get(g cmds.Get) (interface{}, *info.Failure, error) {
+func (gm getMemory) Get(g cmds.Get) (messages.Event, *info.Failure, error) {
 	s, err := gm.stats()
 	if err != nil {
 		return nil, nil, err

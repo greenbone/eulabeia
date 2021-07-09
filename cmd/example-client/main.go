@@ -41,7 +41,7 @@ type OnCreatedTarget struct {
 	modifyMSGChan chan cmds.Modify
 }
 
-const topic = "greenbone.director"
+const topic = "eulabeia/+/#"
 
 func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, error) {
 	if messageType != "created.target" {
@@ -65,7 +65,7 @@ func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, 
 			},
 		},
 	}
-	if err := oct.publisher.Publish(topic, modify); err != nil {
+	if err := oct.publisher.Publish("eulabeia/target/cmd/director", modify); err != nil {
 		return nil, err
 	}
 	oct.modifyMSGChan <- modify
@@ -96,7 +96,7 @@ func (omt OnModifiedTarget) On(messageType string, message []byte) (interface{},
 		return nil, nil
 	}
 	log.Printf("target: %s modified", original.ID)
-	omt.publisher.Publish(topic, cmds.Get{
+	omt.publisher.Publish("eulabeia/target/cmd/director", cmds.Get{
 		Identifier: messages.Identifier{
 
 			Message: messages.NewMessage("get.target", "", ""),
@@ -130,12 +130,12 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	err = c.Publish(topic, cmds.Create{
+	err = c.Publish("eulabeia/target/cmd/director", cmds.Create{
 		Message: messages.Message{
-			MessageType: "create.target",
-			Created:     7774,
-			MessageID:   "1",
-			GroupID:     "12",
+			Type:      "create.target",
+			Created:   7774,
+			MessageID: "1",
+			GroupID:   "12",
 		},
 	})
 	if err != nil {

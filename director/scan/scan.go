@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/google/uuid"
-	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/director/target"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
@@ -17,12 +16,11 @@ import (
 )
 
 type scanAggregate struct {
-	storage     Storage
-	target      target.Storage
-	sensorTopic string
+	storage Storage
+	target  target.Storage
 }
 
-func (t scanAggregate) Start(s cmds.Start) (interface{}, *info.Failure, error) {
+func (t scanAggregate) Start(s cmds.Start) (messages.Event, *info.Failure, error) {
 	scan, err := t.storage.Get(s.ID)
 	if err != nil {
 		return nil, nil, err
@@ -31,15 +29,11 @@ func (t scanAggregate) Start(s cmds.Start) (interface{}, *info.Failure, error) {
 		return nil, info.GetFailureResponse(s.Message, "scan", s.ID), nil
 	}
 
-	return &connection.SendResponse{
-
-		MSG: &cmds.Start{
-			Identifier: messages.Identifier{
-				Message: messages.NewMessage(fmt.Sprintf("start.scan.%s", scan.Sensor), s.MessageID, s.GroupID),
-				ID:      s.ID,
-			},
+	return &cmds.Start{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage(fmt.Sprintf("start.scan.%s", scan.Sensor), s.MessageID, s.GroupID),
+			ID:      s.ID,
 		},
-		Topic: t.sensorTopic,
 	}, nil, nil
 }
 
@@ -117,7 +111,7 @@ func (t scanAggregate) Delete(d cmds.Delete) (*info.Deleted, *info.Failure, erro
 	}, nil, nil
 }
 
-func (t scanAggregate) Get(g cmds.Get) (interface{}, *info.Failure, error) {
+func (t scanAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) {
 	if scan, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if scan == nil {
@@ -131,11 +125,10 @@ func (t scanAggregate) Get(g cmds.Get) (interface{}, *info.Failure, error) {
 }
 
 // New returns the type of aggregate as string and Aggregate
-func New(sensorTopic string, storage storage.Json) handler.Holder {
+func New(storage storage.Json) handler.Holder {
 	s := scanAggregate{
-		sensorTopic: sensorTopic,
-		storage:     NewStorage(storage),
-		target:      target.NewStorage(storage)}
+		storage: NewStorage(storage),
+		target:  target.NewStorage(storage)}
 	h := handler.FromAggregate("scan", s)
 	h.Starter = s
 	return h
