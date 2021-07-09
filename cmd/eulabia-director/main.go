@@ -16,11 +16,12 @@ import (
 )
 
 func main() {
+	confHandler := config.ConfigurationHandler{}
 	clientid := flag.String("clientid", "", "A clientid for the connection")
-	configfile := flag.String("config", "", "Use this config file")
+	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
 	flag.Parse()
-	conf_map := config.Load(*configfile)
-	server := conf_map.Get("connection.server").(string)
+	confHandler.Load(*configPath, "eulabeia")
+	server := confHandler.Configuration.Connection.Server
 
 	log.Println("Starting sensor")
 	c, err := mqtt.New(server, *clientid, "", "")
