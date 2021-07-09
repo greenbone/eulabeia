@@ -4,14 +4,9 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
-	"reflect"
 
 	"github.com/pelletier/go-toml"
 )
-
-type configurationHandler interface {
-	Load(string)
-}
 
 type ConfigurationHandler struct {
 	Configuration Configuration // The configuration object

@@ -6,14 +6,14 @@ type Certificate struct {
 }
 
 type Connection struct {
-	Server  string	// Bind address of server in format 133.713.371.337:1337
-	Timeout int64	// TODO
+	Server  string // Bind address of server in format 133.713.371.337:1337
+	Timeout int64  // TODO
 }
 
 type ScannerPreferences struct {
-	scanInfoStoreTime int64 // TODO
-	maxScan           int64 // TODO
-	maxQueuedScans    int64 // Maximum number of scans that can be queued
+	ScanInfoStoreTime int64 // TODO
+	MaxScan           int64 // TODO
+	MaxQueuedScans    int64 // Maximum number of scans that can be queued
 }
 
 type Preferences struct {
@@ -28,4 +28,3 @@ type Configuration struct {
 	ScannerPreferences ScannerPreferences
 	Preferences        Preferences
 }
-
