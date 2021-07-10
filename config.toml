@@ -1,14 +1,13 @@
 title = "eulabeia config"
 
 [Cert]
-default_key_file = "/usr/var/lib/gvm/private/CA/serverkey.pem"
-default_cert_file = "/usr/var/lib/gvm/CA/servercert.pem"
-default_ca_file = "/usr/var/lib/gvm/CA/cacert.pem"
+defaultKeyFile = "/usr/var/lib/gvm/private/CA/serverkey.pem"
+defaultCertFile = "/usr/var/lib/gvm/CA/servercert.pem"
+defaultCaFile = "/usr/var/lib/gvm/CA/cacert.pem"
 
 [Connection]
 # server = "0.0.0.0:0"
 server = "broker:9138"
-topic = ""
 timeout = 10 # in seconds
 
 [ScannerPreferences]
