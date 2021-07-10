@@ -22,9 +22,19 @@ type Preferences struct {
 	Niceness int64  // TODO
 }
 
+type Sensor struct {
+	Id string // The Id (a uuid) of this sensor
+}
+
+type Director struct {
+	Id string // The Id (a uuid) of this director
+}
+
 type Configuration struct {
 	Certificate        Certificate
 	Connection         Connection
 	ScannerPreferences ScannerPreferences
 	Preferences        Preferences
+	Sensor			Sensor
+	Director Director
 }

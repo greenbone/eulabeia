@@ -2,9 +2,11 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/pelletier/go-toml"
 )
 
@@ -49,6 +51,21 @@ func findConfigFile(path string, module string) string {
 	panic(errors.New("no config file found"))
 }
 
+
+// This
+func (c *ConfigurationHandler) SetId(device string) {
+	switch device {
+	case "sensor":
+		c.Configuration.Sensor.Id = uuid.NewString()
+		break
+	case "director":
+		c.Configuration.Director.Id = uuid.NewString()
+		break
+	default:
+		// TODO
+	}
+}
+
 // Load the config file after startup
 func (c *ConfigurationHandler) Load(path string, module string) {
 	c.module = module
@@ -60,6 +77,8 @@ func (c *ConfigurationHandler) Load(path string, module string) {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Printf(string(bytes))
 
-	toml.Unmarshal(bytes, c.Configuration)
+	toml.Unmarshal(bytes, &c.Configuration)
+	fmt.Printf(c.Configuration.Connection.Server)
 }
