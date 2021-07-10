@@ -35,6 +35,6 @@ type Configuration struct {
 	Connection         Connection
 	ScannerPreferences ScannerPreferences
 	Preferences        Preferences
-	Sensor			Sensor
-	Director Director
+	Sensor             Sensor
+	Director           Director
 }

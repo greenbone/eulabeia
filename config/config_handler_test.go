@@ -9,9 +9,9 @@ import (
 )
 
 func check(e error) {
-    if e != nil {
-        panic(e)
-    }
+	if e != nil {
+		panic(e)
+	}
 }
 
 func writeFile(path string, content []byte) {
@@ -57,7 +57,6 @@ niceness = 10`)
 		t.Errorf("Connection.Timeout should be %d", timeout)
 	}
 
-	
 	if confHandler.Configuration.Sensor.Id != "" {
 		t.Errorf("Connection.Sensor.Id should not be set.")
 	}

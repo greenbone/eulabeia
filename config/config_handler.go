@@ -51,7 +51,6 @@ func findConfigFile(path string, module string) string {
 	panic(errors.New("no config file found"))
 }
 
-
 // This functions sets the device ID in the config file,
 // iff it is not set
 // This will only be used for sensor and director for now
