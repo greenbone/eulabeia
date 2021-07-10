@@ -52,17 +52,36 @@ func findConfigFile(path string, module string) string {
 }
 
 
-// This
+// This functions sets the device ID in the config file,
+// iff it is not set
+// This will only be used for sensor and director for now
 func (c *ConfigurationHandler) SetId(device string) {
 	switch device {
 	case "sensor":
-		c.Configuration.Sensor.Id = uuid.NewString()
+		if c.Configuration.Sensor.Id == "" {
+			c.Configuration.Sensor.Id = uuid.NewString()
+		}
 		break
 	case "director":
-		c.Configuration.Director.Id = uuid.NewString()
+		if c.Configuration.Director.Id == "" {
+			c.Configuration.Director.Id = uuid.NewString()
+		}
 		break
 	default:
 		// TODO
+	}
+}
+
+// Save the Configuration in its current state
+// into the stored file path
+func (c *ConfigurationHandler) Save() {
+	bytes, err := toml.Marshal(&c.Configuration)
+	if err != nil {
+		// TODO error handling
+	}
+	err = ioutil.WriteFile(c.path, bytes, 0644) //TODO what permissions for the file?
+	if err != nil {
+		// TODO error handling
 	}
 }
 
