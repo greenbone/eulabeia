@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -60,12 +59,10 @@ func (c *ConfigurationHandler) SetId(device string) {
 		if c.Configuration.Sensor.Id == "" {
 			c.Configuration.Sensor.Id = uuid.NewString()
 		}
-		break
 	case "director":
 		if c.Configuration.Director.Id == "" {
 			c.Configuration.Director.Id = uuid.NewString()
 		}
-		break
 	default:
 		// TODO
 	}
@@ -77,10 +74,12 @@ func (c *ConfigurationHandler) Save() {
 	bytes, err := toml.Marshal(&c.Configuration)
 	if err != nil {
 		// TODO error handling
+		panic(err)
 	}
 	err = ioutil.WriteFile(c.path, bytes, 0644) //TODO what permissions for the file?
 	if err != nil {
 		// TODO error handling
+		panic(err)
 	}
 }
 
@@ -95,8 +94,6 @@ func (c *ConfigurationHandler) Load(path string, module string) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf(string(bytes))
 
 	toml.Unmarshal(bytes, &c.Configuration)
-	fmt.Printf(c.Configuration.Connection.Server)
 }
