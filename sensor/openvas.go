@@ -38,7 +38,7 @@ func StartScan(scan string, niceness int) error {
 
 	err := cmd.Start()
 	if err != nil {
-		return errors.New(fmt.Sprintf("Unable to start openvas process: %s", err))
+		return fmt.Errorf("Unable to start openvas process: %s", err)
 	}
 	go waitForProcessToEnd(cmd.Process, scan)
 	return nil
