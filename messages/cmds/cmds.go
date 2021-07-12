@@ -10,6 +10,12 @@ func (eventType) Event() messages.EventType {
 	return messages.CMD
 }
 
+// IDCMD is a command with just an ID to identify a specific entity
+type IDCMD struct {
+	eventType
+	messages.Identifier
+}
+
 // Create indicates that a new entity should be created.
 // The type of of entity is indicated by `message_type`
 // e.g. "message_type": "create.target" creates a target.
@@ -21,26 +27,17 @@ type Create struct {
 // Get is used by a client to get the latest snapshot of an aggregate.
 //
 // The response for Get is usually the aggragte with Message information and can be found within a model.
-type Get struct {
-	eventType
-	messages.Identifier
-}
+type Get IDCMD
 
 // Delete is used by a client to delete the latest snapshot of an aggregate.
 //
 // The response of Delete is Deleted.
-type Delete struct {
-	eventType
-	messages.Identifier
-}
+type Delete IDCMD
 
 // Start indicates that something with the ID should be started.
 //
 // As an example an event with the stype start.scan with the id 1 would start scan id 1
-type Start struct {
-	eventType
-	messages.Identifier
-}
+type Start IDCMD
 
 // Modify indicates that a entity should be modified.
 //
