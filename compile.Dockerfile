@@ -8,8 +8,4 @@ RUN apt-get remove --purge --auto-remove -y &&\
 	rm -rf /var/lib/apt/lists/*
 COPY . /usr/local/src
 WORKDIR /usr/local/src
-RUN go mod tidy
-RUN go mod download
-RUN go build --race -o /usr/local/bin/example-client cmd/example-client/main.go
-RUN go build --race -o /usr/local/bin/eulabeia-sensor cmd/eulabia-sensor/main.go
-RUN go build --race -o /usr/local/bin/eulabeia-director cmd/eulabia-director/main.go
+RUN DESTDIR="/usr/local/" make test build
