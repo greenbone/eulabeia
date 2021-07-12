@@ -1,10 +1,17 @@
+// This example will create and modify
+// 1. a target
+// 2. a scan
+// when a scan has been modified it starts a scan.
 package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/config"
@@ -12,107 +19,98 @@ import (
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
+	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/messages/info"
-	"github.com/greenbone/eulabeia/process"
-	"github.com/tidwall/gjson"
 )
 
-type OnEvent interface {
-	On(string, []byte) (interface{}, error)
-}
+const context = "eulabeia"
+const topic = context + "/+/info"
 
+const (
+	CREATED_TARGET  = "created.target"
+	MODIFIED_TARGET = "modified.target"
+	MODIFIED_SCAN   = "modified.scan"
+)
+
+// ExampleHandler parses the message and calls corresponding function of MessageType within do map.
 type ExampleHandler struct {
-	handler []OnEvent
+	do      map[string]func(info.IDInfo) *connection.SendResponse
+	handled []string
+	exit    chan os.Signal
 }
 
-func (e ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse, error) {
-	messageType := gjson.GetBytes(msg, "message_type")
-	for _, h := range e.handler {
-		if _, err := h.On(messageType.String(), msg); err != nil {
-			return nil, err
+func (e *ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse, error) {
+	mt, err := handler.ParseMessageType(msg)
+	if err != nil {
+		// In this example we end the program on a unexpected message so that we can
+		// reuse it as a smoke test.
+		// However in a production environment you want to either log and ignore or
+		// just ignore unparseable messages.
+		panic(err)
+	}
+	log.Printf("Got message: %s", mt)
+	var infoMSG info.IDInfo
+	if err := json.Unmarshal(msg, &infoMSG); err != nil {
+		log.Panicf("Unable to parse %s to info.IDInfo (%s)", msg, err)
+	}
+	f, ok := e.do[mt.String()]
+	if !ok {
+		log.Panicf("No handler for %s found", mt)
+	}
+	response := f(infoMSG)
+	e.handled = append(e.handled, mt.String())
+	// We assume that if there is no response message that the test scenario is finished
+	if response == nil {
+		e.exit <- syscall.SIGCONT
+	}
+	return response, nil
+}
+
+func ModifyTarget(msg info.IDInfo) *connection.SendResponse {
+	modify := cmds.NewModify(
+		"target",
+		msg.ID,
+		map[string]interface{}{"sensor": "openvas"},
+		"director",
+		msg.GroupID)
+	return messages.EventToResponse(context, modify)
+}
+
+func CreateScan(msg info.IDInfo) *connection.SendResponse {
+	// We use the principle modify over create to directly create a scan with a target ID.
+	// Otherwise we need to store the target ID and reuse it on created.scan.
+	modify := cmds.NewModify(
+		"scan",
+		uuid.NewString(),
+		map[string]interface{}{"target": msg.ID},
+		"director",
+		msg.GroupID)
+	return messages.EventToResponse(context, modify)
+}
+
+func Done(_ info.IDInfo) *connection.SendResponse {
+	return nil
+}
+
+func Verify(eh *ExampleHandler) {
+	var difference []string
+	for k := range eh.do {
+		found := false
+		for _, v := range eh.handled {
+			if k == v {
+				found = true
+				break
+			}
+		}
+		if !found {
+			difference = append(difference, k)
 		}
 	}
-	return nil, nil
-}
-
-type OnCreatedTarget struct {
-	publisher     connection.Publisher
-	modifyMSGChan chan cmds.Modify
-}
-
-const topic = "eulabeia/+/#"
-
-func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, error) {
-	if messageType != "created.target" {
-		return nil, nil
+	if len(difference) > 0 {
+		log.Fatalf("FAILURE: %s were not handled.", difference)
+	} else {
+		log.Println("SUCCESS")
 	}
-	var created info.Created
-	if err := json.Unmarshal(message, &created); err != nil {
-		return nil, err
-	}
-	modify := cmds.Modify{
-		Identifier: messages.Identifier{
-			Message: messages.NewMessage("modify.target", "", created.GroupID),
-			ID:      created.ID,
-		},
-		Values: map[string]interface{}{
-			"hosts":   []string{"localhorst", "nebenan"},
-			"plugins": []string{"someoids"},
-			"credentials": map[string]string{
-				"username": "admin",
-				"password": "admin",
-			},
-		},
-	}
-	if err := oct.publisher.Publish("eulabeia/target/cmd/director", modify); err != nil {
-		return nil, err
-	}
-	oct.modifyMSGChan <- modify
-	return nil, nil
-}
-
-type OnModifiedTarget struct {
-	publisher     connection.Publisher
-	modifyMSGChan chan cmds.Modify
-}
-
-func (omt OnModifiedTarget) On(messageType string, message []byte) (interface{}, error) {
-	if messageType != "modified.target" {
-		return nil, nil
-	}
-	original, ok := <-omt.modifyMSGChan
-	if !ok {
-		return nil, errors.New("closed modify channel")
-	}
-	var modified info.Modified
-	if err := json.Unmarshal(message, &modified); err != nil {
-		return nil, err
-	}
-	log.Printf("original message id %v", original.MessageID)
-	log.Printf("modified message id %v", modified.MessageID)
-	if original.MessageID != modified.MessageID {
-		omt.modifyMSGChan <- original
-		return nil, nil
-	}
-	log.Printf("target: %s modified", original.ID)
-	omt.publisher.Publish("eulabeia/target/cmd/director", cmds.Get{
-		Identifier: messages.Identifier{
-
-			Message: messages.NewMessage("get.target", "", ""),
-			ID:      original.ID,
-		},
-	})
-	return nil, nil
-}
-
-type OnGotTarget struct{}
-
-func (ogt OnGotTarget) On(messageType string, message []byte) (interface{}, error) {
-	if messageType != "got.target" {
-		return nil, nil
-	}
-	log.Printf("Got target:\n%s\n", message)
-	return nil, nil
 }
 
 func main() {
@@ -131,36 +129,37 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
+	defer c.Close()
 	err = c.Connect()
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	err = c.Publish("eulabeia/target/cmd/director", cmds.Create{
-		Message: messages.Message{
-			Type:      "create.target",
-			Created:   7774,
-			MessageID: "1",
-			GroupID:   "12",
-		},
-	})
+	err = c.Publish("eulabeia/target/cmd/director", cmds.NewCreate("target", "director", ""))
 	if err != nil {
 		log.Panicf("Failed to publish: %s", err)
 	}
-	modifyChan := make(chan cmds.Modify, 1)
-	defer close(modifyChan)
+	ic := make(chan os.Signal, 1)
+	defer close(ic)
 	mh := ExampleHandler{
-		handler: []OnEvent{
-			OnCreatedTarget{publisher: c, modifyMSGChan: modifyChan},
-			OnModifiedTarget{publisher: c, modifyMSGChan: modifyChan},
-			OnGotTarget{},
+		do: map[string]func(info.IDInfo) *connection.SendResponse{
+			CREATED_TARGET:  ModifyTarget,
+			MODIFIED_TARGET: CreateScan,
+			MODIFIED_SCAN:   Done,
 		},
+		exit: ic,
 	}
-	if err != nil {
-		log.Panicf("Failed to create handler: %s", err)
-	}
-	err = c.Subscribe(map[string]connection.OnMessage{topic: mh})
+	defer Verify(&mh)
+	err = c.Subscribe(map[string]connection.OnMessage{topic: &mh})
 	if err != nil {
 		panic(err)
 	}
-	process.Block(c)
+	timer := time.NewTimer(1 * time.Minute)
+	defer timer.Stop()
+	go func() {
+		<-timer.C
+		ic <- syscall.SIGABRT
+	}()
+	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
+	<-ic
+	log.Printf("After handling %s it is time to say good bye", mh.handled)
 }
