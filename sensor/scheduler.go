@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
+	"github.com/greenbone/eulabeia/messages/info"
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/sensor/handler"
@@ -43,11 +45,13 @@ func schedule() {
 			select {
 			case scan := <-startChan: // start scan
 				queue = append(queue, scan)
-				handler.MQTT.Publish("eulabeia/scan/info", messages.ScanInfo{
-					ID:       scan,
+				handler.MQTT.Publish("eulabeia/scan/info", info.ScanInfo{
+					Identifier: messages.Identifier{
+						ID:      scan,
+						Message: messages.NewMessage("scan.info", "", ""),
+					},
 					InfoType: "status",
 					Info:     "queued",
-					Message:  messages.NewMessage("scan.info", "", ""),
 				})
 
 			case scan := <-stopChan: // stop scan
@@ -68,11 +72,13 @@ func schedule() {
 						continue
 					}
 				}
-				handler.MQTT.Publish("eulabeia/scan/info", messages.ScanInfo{
-					ID:       scan,
+				handler.MQTT.Publish("eulabeia/scan/info", info.ScanInfo{
+					Identifier: messages.Identifier{
+						ID:      scan,
+						Message: messages.NewMessage("scan.info", "", ""),
+					},
 					InfoType: "status",
 					Info:     "stopped",
-					Message:  messages.NewMessage("scan.info", "", ""),
 				})
 
 			case scan := <-runChan: // scan runs
@@ -90,11 +96,13 @@ func schedule() {
 				} else {
 					ret = ver
 				}
-				handler.MQTT.Publish("eulabeia/scan/info", messages.ScanInfo{
-					ID:       "",
+				handler.MQTT.Publish("eulabeia/scan/info", info.ScanInfo{
+					Identifier: messages.Identifier{
+						ID:      "",
+						Message: messages.NewMessage("scan.version", "", ""),
+					},
 					InfoType: "version",
 					Info:     ret,
-					Message:  messages.NewMessage("scan.version", "", ""),
 				})
 
 			case <-vtsChan:
@@ -139,11 +147,13 @@ func schedule() {
 			log.Printf("%s: Scan could not start: %s", queue[0], err)
 			continue
 		}
-		handler.MQTT.Publish("eulabeia/scan/info", messages.ScanInfo{
-			ID:       queue[0],
+		handler.MQTT.Publish("eulabeia/scan/info", info.ScanInfo{
+			Identifier: messages.Identifier{
+				ID:      queue[0],
+				Message: messages.NewMessage("scan.info", "", ""),
+			},
 			InfoType: "status",
 			Info:     "init",
-			Message:  messages.NewMessage("scan.info", "", ""),
 		})
 		init = append(init, queue[0])
 		queue = queue[1:]
@@ -159,10 +169,12 @@ func register(mqtt connection.PubSub, id string) {
 		},
 	})
 	for {
-		mqtt.Publish("eulabeia/sensor/cmd/director", messages.Command{
-			ID:      "myID",
-			Cmd:     "register",
-			Message: messages.NewMessage("sensor.register", "", ""),
+		mqtt.Publish("eulabeia/sensor/cmd/director", cmds.Command{
+			Identifier: messages.Identifier{
+				ID:      "myID",
+				Message: messages.NewMessage("sensor.register", "", ""),
+			},
+			Cmd: "register",
 		})
 		select {
 		case <-regChan:

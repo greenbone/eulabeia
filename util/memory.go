@@ -6,10 +6,12 @@ import (
 	mem "github.com/mackerelio/go-osstat/memory"
 )
 
-type Memory uint64
+type Memory struct {
+	Bytes uint64
+}
 
 func (m Memory) String() string {
-	calc := float64(m)
+	calc := float64(m.Bytes)
 	i := 0
 	for ; calc > 1024; i++ {
 		calc /= 1024
@@ -36,7 +38,7 @@ func (m Memory) String() string {
 func GetAvailableMemory() (Memory, error) {
 	s, err := mem.Get()
 	if err != nil {
-		return 0, err
+		return Memory{0}, err
 	}
-	return Memory(s.Available), nil
+	return Memory{s.Available}, nil
 }
