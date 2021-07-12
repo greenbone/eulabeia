@@ -6,52 +6,53 @@ import (
 	"log"
 
 	"github.com/google/uuid"
-	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/director/target"
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/handler"
+	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
 	"github.com/greenbone/eulabeia/storage"
 )
 
 type scanAggregate struct {
-	storage     Storage
-	target      target.Storage
-	sensorTopic string
+	storage Storage
+	target  target.Storage
 }
 
-func (t scanAggregate) Start(s messages.Start) (interface{}, *messages.Failure, error) {
+func (t scanAggregate) Start(s cmds.Start) (messages.Event, *info.Failure, error) {
 	scan, err := t.storage.Get(s.ID)
 	if err != nil {
 		return nil, nil, err
 	}
 	if scan == nil {
-		return nil, messages.GetFailureResponse(s.Message, "scan", s.ID), nil
+		return nil, info.GetFailureResponse(s.Message, "scan", s.ID), nil
 	}
 
-	return &connection.SendResponse{
-		MSG: &messages.Start{
+	return &cmds.Start{
+		Identifier: messages.Identifier{
 			Message: messages.NewMessage(fmt.Sprintf("start.scan.%s", scan.Sensor), s.MessageID, s.GroupID),
 			ID:      s.ID,
 		},
-		Topic: t.sensorTopic,
 	}, nil, nil
 }
 
-func (t scanAggregate) Create(c messages.Create) (*messages.Created, error) {
+func (t scanAggregate) Create(c cmds.Create) (*info.Created, error) {
 	scan := models.Scan{
 		ID: uuid.NewString(),
 	}
 	if err := t.storage.Put(scan); err != nil {
 		return nil, err
 	}
-	return &messages.Created{
-		ID:      scan.ID,
-		Message: messages.NewMessage("created.scan", c.MessageID, c.GroupID),
+	return &info.Created{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("created.scan", c.MessageID, c.GroupID),
+			ID:      scan.ID,
+		},
 	}, nil
 }
 
-func (t scanAggregate) Modify(m messages.Modify) (*messages.Modified, *messages.Failure, error) {
+func (t scanAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, error) {
 	var scan *models.Scan
 	scan, err := t.storage.Get(m.ID)
 	if err != nil {
@@ -89,28 +90,32 @@ func (t scanAggregate) Modify(m messages.Modify) (*messages.Modified, *messages.
 		return nil, nil, err
 	}
 
-	return &messages.Modified{
-		ID:      m.ID,
-		Message: messages.NewMessage("modified.scan", m.MessageID, m.GroupID),
+	return &info.Modified{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("modified.scan", m.MessageID, m.GroupID),
+			ID:      m.ID,
+		},
 	}, nil, nil
 
 }
 
-func (t scanAggregate) Delete(d messages.Delete) (*messages.Deleted, *messages.Failure, error) {
+func (t scanAggregate) Delete(d cmds.Delete) (*info.Deleted, *info.Failure, error) {
 	if err := t.storage.Delete(d.ID); err != nil {
-		return nil, messages.DeleteFailureResponse(d.Message, "target", d.ID), nil
+		return nil, info.DeleteFailureResponse(d.Message, "target", d.ID), nil
 	}
-	return &messages.Deleted{
-		Message: messages.NewMessage("deleted.target", d.MessageID, d.GroupID),
-		ID:      d.ID,
+	return &info.Deleted{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("deleted.target", d.MessageID, d.GroupID),
+			ID:      d.ID,
+		},
 	}, nil, nil
 }
 
-func (t scanAggregate) Get(g messages.Get) (interface{}, *messages.Failure, error) {
+func (t scanAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) {
 	if scan, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if scan == nil {
-		return nil, messages.GetFailureResponse(g.Message, "scan", g.ID), nil
+		return nil, info.GetFailureResponse(g.Message, "scan", g.ID), nil
 	} else {
 		return &models.GotScan{
 			Message: messages.NewMessage("got.scan", g.MessageID, g.GroupID),
@@ -120,11 +125,10 @@ func (t scanAggregate) Get(g messages.Get) (interface{}, *messages.Failure, erro
 }
 
 // New returns the type of aggregate as string and Aggregate
-func New(sensorTopic string, storage storage.Json) handler.Holder {
+func New(storage storage.Json) handler.Holder {
 	s := scanAggregate{
-		sensorTopic: sensorTopic,
-		storage:     NewStorage(storage),
-		target:      target.NewStorage(storage)}
+		storage: NewStorage(storage),
+		target:  target.NewStorage(storage)}
 	h := handler.FromAggregate("scan", s)
 	h.Starter = s
 	return h

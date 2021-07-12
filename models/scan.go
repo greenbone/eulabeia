@@ -1,6 +1,9 @@
 package models
 
-import "github.com/greenbone/eulabeia/messages"
+import (
+	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/info"
+)
 
 // Scan contains Target as well as volatile information for a specific scan
 type Scan struct {
@@ -20,12 +23,14 @@ type Sensor struct {
 // GotSensor is a response for get.sensor
 type GotSensor struct {
 	messages.Message
+	info.EventType
 	Sensor
 }
 
 // GotScan is a response for get.scan
 type GotScan struct {
 	messages.Message
+	info.EventType
 	Scan
 }
 
@@ -35,6 +40,7 @@ type GotScan struct {
 // memory should be started
 type GotMemory struct {
 	messages.Message
+	info.EventType
 	ID     string `json:"id"`     // Contains the ID from get event, usually sensor use the scanid
 	Total  string `json:"total"`  // Total memory in bytes available
 	Used   string `json:"used"`   // Used memory in bytes
