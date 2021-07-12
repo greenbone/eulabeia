@@ -12,5 +12,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - Split cmds and info messages into own module [8](https://github.com/greenbone/eulabeia/pull/8)
 - Normalized topic structure to `group/aggregate/event/destination`; setting topic based on return message rather than configuration [8](https://github.com/greenbone/eulabeia/pull/8)
+- Simplified block until sigterm handling [8](https://github.com/greenbone/eulabeia/pull/8)
 ### Fixed
 ### Removed
