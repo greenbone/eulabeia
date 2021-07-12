@@ -1,10 +1,11 @@
 package sensor
 
 import (
-	"github.com/greenbone/eulabeia/messages"
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/greenbone/eulabeia/messages"
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/sensor/handler"
@@ -25,6 +26,7 @@ var runChan = make(chan string)   // Channel to delete scan from init and insert
 var finChan = make(chan string)   // Channel to delete scan from running
 var verChan = make(chan struct{}) // Channel to get OpenVAS Version
 var vtsChan = make(chan struct{}) // Channel to load VTs into Redis (via OpenVAS)
+var regChan = make(chan struct{}) // Channel to mark Sensor as registered
 
 func schedule() {
 	queue := make([]string, 0)
@@ -36,10 +38,10 @@ func schedule() {
 			case scan := <-startChan: // start scan
 				queue = append(queue, scan)
 				handler.MQTT.Publish("eulabeia/scan/info", messages.ScanInfo{
-					ID: scan
-					InfoType: "status"
-					Info: "queued"
-					Message: messages.NewMessage("scan.info", "", "")
+					ID:       scan,
+					InfoType: "status",
+					Info:     "queued",
+					Message:  messages.NewMessage("scan.info", "", ""),
 				})
 
 			case scan := <-stopChan: // stop scan
@@ -61,10 +63,10 @@ func schedule() {
 					}
 				}
 				handler.MQTT.Publish("eulabeia/scan/info", messages.ScanInfo{
-					ID: scan
-					InfoType: "status"
-					Info: "stopped"
-					Message: messages.NewMessage("scan.info", "", "")
+					ID:       scan,
+					InfoType: "status",
+					Info:     "stopped",
+					Message:  messages.NewMessage("scan.info", "", ""),
 				})
 
 			case scan := <-runChan: // scan runs
@@ -83,16 +85,19 @@ func schedule() {
 					ret = ver
 				}
 				handler.MQTT.Publish("eulabeia/scan/info", messages.ScanInfo{
-					ID: ""
-					InfoType: "version"
-					Info: ret
-					Message: messages.NewMessage("scan.version", "", "")
+					ID:       "",
+					InfoType: "version",
+					Info:     ret,
+					Message:  messages.NewMessage("scan.version", "", ""),
 				})
 
 			case <-vtsChan:
 				go LoadVTsIntoRedis()
 
-			// TODO: Clear all openvas Processes when terminating the sensor and interrupt all scans
+			// TODO: Clear all openvas Processes when terminating the sensor
+			// and interrupt all scans
+			// TODO: When connection to Director breaks stop all scans, clear
+			// all lists and try to register scheduler again
 
 			case <-time.After(time.Second):
 				continue
@@ -125,10 +130,10 @@ func schedule() {
 			continue
 		}
 		handler.MQTT.Publish("eulabeia/scan/info", messages.ScanInfo{
-			ID: queue[0]
-			InfoType: "status"
-			Info: "init"
-			Message: messages.NewMessage("scan.info", "", "")
+			ID:       queue[0],
+			InfoType: "status",
+			Info:     "init",
+			Message:  messages.NewMessage("scan.info", "", ""),
 		})
 		init = append(init, queue[0])
 		queue = queue[1:]
@@ -136,25 +141,48 @@ func schedule() {
 	}
 }
 
-// Init MQTT Message handling
-func start(mqtt connection.PubSub, id string) {
+// register loops until its ID is registrated
+func register(mqtt connection.PubSub, id string) {
+	mqtt.Subscribe(map[string]connection.OnMessage{
+		fmt.Sprintf("eulabeia/sensor/info/%s", id): handler.RegisterHandler{
+			RegChan: regChan,
+		},
+	})
+	for {
+		mqtt.Publish("eulabeia/sensor/cmd/director", messages.Command{
+			ID:      "myID",
+			Cmd:     "register",
+			Message: messages.NewMessage("sensor.register", "", ""),
+		})
+		select {
+		case <-regChan:
+			return
+		case <-time.After(time.Second):
+		}
+	}
+}
+
+// Start MQTT Message handling
+func Start(mqtt connection.PubSub, id string) {
+	// Register Sensor
+	register(mqtt, id)
 	// MQTT OnMessage Types
 	var cmdHandler = handler.CommandHandler{
-		startChan: startChan,
-		stopChan: stopChan,
-		verChan: verChan,
-		vtsChan: vtsChan,
+		StartChan: startChan,
+		StopChan:  stopChan,
+		VerChan:   verChan,
+		VtsChan:   vtsChan,
 	}
 
 	var infoHandler = handler.InfoHandler{
-		runChan: runChan,
-		finChan: finChan,
+		RunChan: runChan,
+		FinChan: finChan,
 	}
 
 	// MQTT Subscription Map
 	var subMap = map[string]connection.OnMessage{
 		fmt.Sprintf("eulabeia/scan/cmd/%s", id): cmdHandler,
-		fmt.Sprintf("eulabeia/scan/info", id): infoHandler,
+		"eulabeia/scan/info":                    infoHandler,
 	}
 
 	err := mqtt.Subscribe(subMap)
