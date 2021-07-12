@@ -9,10 +9,8 @@ import (
 	"syscall"
 
 	"github.com/google/uuid"
-	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
-	"github.com/greenbone/eulabeia/messages/handler"
 )
 
 func main() {
@@ -44,9 +42,9 @@ func main() {
 			"type": "undefined",
 		},
 	})
-	err = client.Subscribe(map[string]connection.OnMessage{
-		topic: handler.New(memory.New()),
-	})
+	// err = client.Subscribe(map[string]connection.OnMessage{
+	// 	topic: handler.New(memory.New()),
+	// })
 	if err != nil {
 		panic(err)
 	}
@@ -55,7 +53,7 @@ func main() {
 	<-ic
 	fmt.Println("signal received, exiting")
 	if client != nil {
-		err = c.Close()
+		err = client.Close()
 		if err != nil {
 			log.Fatalf("failed to send Disconnect: %s", err)
 		}
