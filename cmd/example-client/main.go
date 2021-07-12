@@ -5,9 +5,6 @@ import (
 	"errors"
 	"flag"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/connection"
@@ -15,6 +12,7 @@ import (
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/info"
+	"github.com/greenbone/eulabeia/process"
 	"github.com/tidwall/gjson"
 )
 
@@ -157,21 +155,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	ic := make(chan os.Signal, 1)
-	defer close(ic)
-	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
-	<-ic
-	log.Println("signal received, exiting")
-	if c != nil {
-		err = c.Close()
-		if err != nil {
-			log.Fatalf("failed to send Disconnect: %s", err)
-		}
-	}
-	<-ic
-	log.Println("Received message, exiting")
-	err = c.Close()
-	if err != nil {
-		log.Panicf("Error while closing connection")
-	}
+	process.Block(c)
 }

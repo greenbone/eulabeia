@@ -2,11 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
@@ -14,6 +10,7 @@ import (
 	"github.com/greenbone/eulabeia/director/sensor"
 	"github.com/greenbone/eulabeia/director/target"
 	"github.com/greenbone/eulabeia/messages/handler"
+	"github.com/greenbone/eulabeia/process"
 	"github.com/greenbone/eulabeia/storage"
 )
 
@@ -41,14 +38,5 @@ func main() {
 		panic(err)
 	}
 
-	ic := make(chan os.Signal, 1)
-	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
-	<-ic
-	fmt.Println("signal received, exiting")
-	if client != nil {
-		err = client.Close()
-		if err != nil {
-			log.Fatalf("failed to send Disconnect: %s", err)
-		}
-	}
+	process.Block(client)
 }
