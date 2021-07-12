@@ -24,6 +24,15 @@ type Create struct {
 	messages.Message
 }
 
+// NewCreate creates a new Create message for given aggregate in given groupID
+//
+// When the groupID is empty then a random uuid will be chosen.
+func NewCreate(aggregate string, groupID string) Create {
+	return Create{
+		Message: messages.NewMessage("create." + aggregate, "", groupID),
+	}
+}
+
 // Get is used by a client to get the latest snapshot of an aggregate.
 //
 // The response for Get is usually the aggragte with Message information and can be found within a model.

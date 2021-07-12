@@ -3,6 +3,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -169,38 +170,43 @@ func getMethodOfHolder(h Holder, method string) (messages.Event, func() (message
 	}
 }
 
-func (om onMessage) On(topic string, message []byte) (*connection.SendResponse, error) {
+// ParseMessageType tries to parse the messages.MessageType based on a []byte message
+func ParseMessageType(message []byte) (*messages.MessageType, error) {
 	messageType := gjson.GetBytes(message, "message_type")
 	if messageType.Type == gjson.Null {
-		return asResponse(info.Failure{
-			Message: messages.NewMessage("failure", "", ""),
-			Error:   "unable to find message_type",
-		}), nil
+		return nil, errors.New("unable to find message_type")
 	}
 	mt, err := messages.ParseMessageType(messageType.String())
 	if err != nil {
+		return nil, fmt.Errorf("incorrect message_type %s", messageType.String())
+	}
+	return mt, nil
+}
+
+func (om onMessage) On(topic string, message []byte) (*connection.SendResponse, error) {
+	mt, err := ParseMessageType(message)
+	if err != nil {
 		return asResponse(info.Failure{
 			Message: messages.NewMessage("failure", "", ""),
-			Error:   fmt.Sprintf("incorrect message_type %s", messageType.String()),
+			Error:   fmt.Sprintf("%s", err),
 		}), nil
-
 	}
 	if h, ok := om.lookup[mt.Aggregate]; ok {
 		use, fuse := getMethodOfHolder(h, mt.Function)
-		if e := json.Unmarshal(message, use); e != nil {
+		if err := json.Unmarshal(message, use); err != nil {
 			return asResponse(info.Failure{
 				Message: messages.NewMessage("failure", "", ""),
-				Error:   fmt.Sprintf("unable to parse %s: %s", mt, e),
+				Error:   fmt.Sprintf("unable to parse %s: %s", mt, err),
 			}), nil
 		}
-		r, f, e := fuse()
-		if e != nil {
-			return nil, e
+		r, f, err := fuse()
+		if err != nil {
+			return nil, err
 		}
 		if f != nil {
-			return asResponse(f), e
+			return asResponse(f), err
 		}
-		return asResponse(r), e
+		return asResponse(r), err
 
 	}
 	log.Printf("unable to identify entity %s", mt)
