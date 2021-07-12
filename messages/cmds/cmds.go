@@ -51,3 +51,15 @@ type Modify struct {
 	messages.Identifier
 	Values map[string]interface{} `json:"values"`
 }
+
+// Command is used by the director to run a command on a sensor. Possible
+// commands are:
+//  - start
+//  - stop
+//  - version
+//  - loadvts
+type Command struct {
+	eventType
+	messages.Identifier
+	Cmd string `json:"cmd"`
+}

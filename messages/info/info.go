@@ -2,6 +2,7 @@ package info
 
 import (
 	"fmt"
+
 	"github.com/greenbone/eulabeia/messages"
 )
 
@@ -42,6 +43,15 @@ type Modified struct {
 type Deleted struct {
 	EventType
 	messages.Identifier
+}
+
+// ScanInfo contains information about a scan. As info type there can be:
+//  - status, which reports the status of the scan (queued, init, running...)
+//  - progress, which reports the actual progress when a scan is running
+type ScanInfo struct {
+	messages.Identifier
+	InfoType string `json:"type"`
+	Info     string `json:"info"`
 }
 
 // DeleteFailureResponse is a conenvience method to return a Failure as Unable to delete

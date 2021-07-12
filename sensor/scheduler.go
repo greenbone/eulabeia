@@ -20,6 +20,7 @@ const (
 	NICENESS        = 10
 )
 
+// TODO: Remove Globals
 var startChan = make(chan string) // Channel to insert scan into queue
 var stopChan = make(chan string)  // Channel to delete scan from queue
 var runChan = make(chan string)   // Channel to delete scan from init and insert it into running
@@ -32,8 +33,13 @@ func schedule() {
 	queue := make([]string, 0)
 	init := make([]string, 0)
 	running := make([]string, 0)
+
+	var vtsLoadedChan = make(chan struct{})
+	vtsLoading := true
+	go LoadVTsIntoRedis(vtsLoadedChan)
+
 	for { // Infinite scheduler Loop
-		for len(queue) == 0 { // Check for new stuff in Channels
+		for vtsLoading || len(queue) == 0 { // Check for new stuff in Channels
 			select {
 			case scan := <-startChan: // start scan
 				queue = append(queue, scan)
@@ -92,7 +98,11 @@ func schedule() {
 				})
 
 			case <-vtsChan:
-				go LoadVTsIntoRedis()
+				go LoadVTsIntoRedis(vtsLoadedChan)
+				vtsLoading = true
+
+			case <-vtsLoadedChan:
+				vtsLoading = false
 
 			// TODO: Clear all openvas Processes when terminating the sensor
 			// and interrupt all scans
@@ -106,7 +116,7 @@ func schedule() {
 
 		// Check for free scanner slot
 		if len(init)+len(running) == MAX_SCANS {
-			log.Printf("Unable to start a scan from queue, no free slots.\n")
+			log.Printf("Unable to start a scan from queue, Max number of scans reached.\n")
 			continue
 		}
 

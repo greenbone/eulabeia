@@ -1,6 +1,7 @@
 package sensor
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -12,17 +13,8 @@ import (
 var processes = make(map[string]*os.Process)
 var mutex = &sync.Mutex{}
 
-var endProcessChan = make(chan string)
-
+// TODO: Remove global
 var sudo bool
-
-type Error struct {
-	What string
-}
-
-func (e *Error) Error() string {
-	return e.What
-}
 
 // StartScan starts scan with given scan-ID and process priority (-20 - 19,
 // lower is more prioritized)
@@ -46,9 +38,7 @@ func StartScan(scan string, niceness int) error {
 
 	err := cmd.Start()
 	if err != nil {
-		return &Error{
-			fmt.Sprintf("Unable to start openvas process: %s", err),
-		}
+		return errors.New(fmt.Sprintf("Unable to start openvas process: %s", err))
 	}
 	go waitForProcessToEnd(cmd.Process, scan)
 	return nil
@@ -61,7 +51,7 @@ func StopScan(scan string) error {
 		return err
 	}
 	log.Printf("%s: Stopping scan.\n", scan)
-	// TODO: End openvas process
+
 	cmdString := make([]string, 0)
 
 	if sudo {
@@ -83,7 +73,7 @@ func StopScan(scan string) error {
 	return nil
 }
 
-// EndScan must be called when a Scan Process succesfully finished
+// EndScan must be called when a Openvas Process succesfully finished
 func EndScan(scan string) {
 	removeProcess(scan)
 	log.Printf("%s: Scan successfully finished.\n", scan)
@@ -118,7 +108,7 @@ func GetSettings() (map[string]string, error) {
 }
 
 // LoadVTsIntoRedis starts openvas which then loads new VTs into Redis
-func LoadVTsIntoRedis() {
+func LoadVTsIntoRedis(loadedChan chan struct{}) {
 	log.Printf("Loading VTs into Redis DB...\n")
 
 	err := exec.Command("openvas", "--update-vt-info").Run()
@@ -127,6 +117,18 @@ func LoadVTsIntoRedis() {
 		return
 	}
 	log.Printf("Finished loading VTs into Redis DB.\n")
+	loadedChan <- struct{}{}
+}
+
+// IsSudo checks for sudo permissions
+func IsSudo() bool {
+	cmd := exec.Command("sudo", []string{"-n", "openvas", "-s"}...)
+	err := cmd.Run()
+	if err != nil {
+		log.Printf("Cannot start openvas as sudo: %s", err)
+		return false
+	}
+	return true
 }
 
 // waitForProcessToEnd gets Called as go-routine after OpenVAS Scan Process was
@@ -148,9 +150,7 @@ func addProcess(scan string, p *os.Process) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 	if _, ok := processes[scan]; ok {
-		return &Error{
-			"process already exist",
-		}
+		return errors.New("process already exist")
 	}
 	processes[scan] = p
 	return nil
@@ -161,9 +161,7 @@ func removeProcess(scan string) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 	if _, ok := processes[scan]; !ok {
-		return &Error{
-			"process does not exist",
-		}
+		return errors.New("process does not exist")
 	}
 	delete(processes, scan)
 	return nil
@@ -171,12 +169,5 @@ func removeProcess(scan string) error {
 
 func init() {
 	// Check for sudo rights
-	cmd := exec.Command("sudo", []string{"-n", "openvas", "-s"}...)
-	err := cmd.Run()
-	if err != nil {
-		log.Printf("Cannot start openvas as sudo: %s", err)
-		sudo = false
-	} else {
-		sudo = true
-	}
+	sudo = IsSudo()
 }

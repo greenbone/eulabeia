@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/greenbone/eulabeia/messages"
-
 	"github.com/greenbone/eulabeia/connection"
+	"github.com/greenbone/eulabeia/messages/cmds"
+	"github.com/greenbone/eulabeia/messages/info"
 )
 
 var MQTT connection.PubSub
@@ -34,7 +34,7 @@ type CommandHandler struct {
 
 // Implementation for the On method for handling incoming messages via MQTT
 func (handler CommandHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
-	var data messages.Command
+	var data cmds.Command
 	if err := json.Unmarshal(message, &data); err != nil {
 		log.Printf("Sensor cannot read command on Topic %s\n", topic)
 		return nil, err
@@ -64,7 +64,7 @@ type InfoHandler struct {
 }
 
 func (handler InfoHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
-	var data messages.ScanInfo
+	var data info.ScanInfo
 	if err := json.Unmarshal(message, &data); err != nil {
 		log.Printf("Sensor cannot read info on topic %s\n", topic)
 		return nil, err
