@@ -9,6 +9,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mackerelio/go-osstat v0.2.0
+	github.com/pelletier/go-toml v1.9.3
 	github.com/tidwall/gjson v1.8.1
 	github.com/tidwall/pretty v1.2.0 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect

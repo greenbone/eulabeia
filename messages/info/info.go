@@ -12,37 +12,29 @@ func (EventType) Event() messages.EventType {
 	return messages.INFO
 }
 
-// Started is returned by a start event and contains the `id` as an identifier for the scan entity.
-type Started struct {
-	messages.Identifier
-}
-
-// Created is returned by a create event and contains the `id` as an identifier for the created entity.
-//
-// The type of entity is indicated by `message_type`.
-// e.g. on "message_type": "created.target" the `id` is a identifier for a target.
-type Created struct {
+// IDInfo is an Info message with just an entity ID
+type IDInfo struct {
 	EventType
 	messages.Identifier
 }
+
+// Started is the success response of a cmd.Start
+type Started IDInfo
+
+// Created is the success response of a cmd.Create
+type Created IDInfo
+
+// Modified is the success response of a cmd.Modify
+type Modified IDInfo
+
+// Deleted is the success response of a cmd.Delete
+type Deleted IDInfo
 
 // Failure is returned when an error occured while processing a message
 type Failure struct {
 	EventType
 	messages.Message
 	Error string `json:"error"`
-}
-
-// Modified is returned by a modify event and contains the `id` as an identifier for the modified entity.
-type Modified struct {
-	EventType
-	messages.Identifier
-}
-
-// Deleted is the success response of Delete.
-type Deleted struct {
-	EventType
-	messages.Identifier
 }
 
 // Contains the status of a scan

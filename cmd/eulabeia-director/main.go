@@ -2,28 +2,32 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
 
+	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/director/scan"
 	"github.com/greenbone/eulabeia/director/sensor"
 	"github.com/greenbone/eulabeia/director/target"
 	"github.com/greenbone/eulabeia/messages/handler"
+	"github.com/greenbone/eulabeia/process"
 	"github.com/greenbone/eulabeia/storage"
 )
 
 func main() {
-	server := flag.String("server", "localhost:1883", "A clientid for the connection")
 	clientid := flag.String("clientid", "", "A clientid for the connection")
+	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
 	flag.Parse()
+	configuration, err := config.New(*configPath, "eulabeia")
+	if err != nil {
+		panic(err)
+	}
+	config.OverrideViaENV(configuration)
+	server := configuration.Connection.Server
 
 	log.Println("Starting director")
-	client, err := mqtt.New(*server, *clientid, "", "", nil)
+	client, err := mqtt.New(server, *clientid, "", "", nil)
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
@@ -32,23 +36,15 @@ func main() {
 		log.Panicf("Failed to connect: %s", err)
 	}
 	device := storage.File{Dir: "/tmp/"}
+	context := configuration.Context
 	err = client.Subscribe(map[string]connection.OnMessage{
-		"eulabeia/sensor/cmd/director": handler.New(sensor.New(device)),
-		"eulabeia/target/cmd/director": handler.New(target.New(device)),
-		"eulabeia/scan/cmd/director":   handler.New(scan.New(device)),
+		"eulabeia/sensor/cmd/director": handler.New(context, sensor.New(device)),
+		"eulabeia/target/cmd/director": handler.New(context, target.New(device)),
+		"eulabeia/scan/cmd/director":   handler.New(context, scan.New(device)),
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	ic := make(chan os.Signal, 1)
-	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
-	<-ic
-	fmt.Println("signal received, exiting")
-	if client != nil {
-		err = client.Close()
-		if err != nil {
-			log.Fatalf("failed to send Disconnect: %s", err)
-		}
-	}
+	process.Block(client)
 }

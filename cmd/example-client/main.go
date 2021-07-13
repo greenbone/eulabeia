@@ -5,16 +5,15 @@ import (
 	"errors"
 	"flag"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/google/uuid"
+	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/info"
+	"github.com/greenbone/eulabeia/process"
 	"github.com/tidwall/gjson"
 )
 
@@ -117,12 +116,18 @@ func (ogt OnGotTarget) On(messageType string, message []byte) (interface{}, erro
 }
 
 func main() {
-
-	server := flag.String("server", "localhost:1883", "A clientid for the connection")
 	clientid := flag.String("clientid", "", "A clientid for the connection")
+	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
 	flag.Parse()
+	configuration, err := config.New(*configPath, "eulabeia")
+	if err != nil {
+		panic(err)
+	}
+	config.OverrideViaENV(configuration)
+	server := configuration.Connection.Server
+
 	log.Println("Starting example client")
-	c, err := mqtt.New(*server, *clientid+uuid.NewString(), "", "", nil)
+	c, err := mqtt.New(server, *clientid+uuid.NewString(), "", "", nil)
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
@@ -157,21 +162,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	ic := make(chan os.Signal, 1)
-	defer close(ic)
-	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
-	<-ic
-	log.Println("signal received, exiting")
-	if c != nil {
-		err = c.Close()
-		if err != nil {
-			log.Fatalf("failed to send Disconnect: %s", err)
-		}
-	}
-	<-ic
-	log.Println("Received message, exiting")
-	err = c.Close()
-	if err != nil {
-		log.Panicf("Error while closing connection")
-	}
+	process.Block(c)
 }

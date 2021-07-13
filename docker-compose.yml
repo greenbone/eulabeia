@@ -16,12 +16,12 @@ services:
       dockerfile: compile.Dockerfile
   director:
     image: eulabeia_build-cmds:latest
-    command: eulabeia-director --clientid director --server broker:9138
+    command: eulabeia-director --clientid director
     depends_on:
       - build-cmds
   sensor:
     image: eulabeia_build-cmds:latest
-    command: eulabeia-sensor --clientid sensor --server broker:9138
+    command: eulabeia-sensor
     depends_on:
       - build-cmds
     depends_on:
@@ -29,7 +29,7 @@ services:
       - director
   example:
     image: eulabeia_build-cmds:latest
-    command: example-client --clientid client1 --server broker:9138
+    command: example-client --clientid client1
     depends_on:
       - build-cmds
       - sensor
