@@ -15,6 +15,12 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// Context is setting the first path of a topic
+//
+// It is used to define the bounded context of a message.
+// Usually a handler is bound to one context.
+var Context = "eulabeia"
+
 // Starter is the interface that wraps the basic Start method.
 //
 // Start is used to start an new event chain (e.g. start.scan)
@@ -120,21 +126,6 @@ type onMessage struct {
 	lookup map[string]Holder
 }
 
-func asResponse(e messages.Event) *connection.SendResponse {
-	if e == nil {
-		return nil
-	}
-	mt := e.MessageType()
-	topic := fmt.Sprintf("eulabeia/%s/%s", mt.Aggregate, e.Event())
-	if mt.Destination != "" {
-		topic = fmt.Sprintf("%s.%s", topic, mt.Destination)
-	}
-	return &connection.SendResponse{
-		Topic: topic,
-		MSG:   e,
-	}
-}
-
 func getMethodOfHolder(h Holder, method string) (messages.Event, func() (messages.Event, *info.Failure, error)) {
 	var del cmds.Delete
 	var create cmds.Create
@@ -172,14 +163,14 @@ func getMethodOfHolder(h Holder, method string) (messages.Event, func() (message
 func (om onMessage) On(topic string, message []byte) (*connection.SendResponse, error) {
 	messageType := gjson.GetBytes(message, "message_type")
 	if messageType.Type == gjson.Null {
-		return asResponse(info.Failure{
+		return messages.EventToResponse(Context, info.Failure{
 			Message: messages.NewMessage("failure", "", ""),
 			Error:   "unable to find message_type",
 		}), nil
 	}
 	mt, err := messages.ParseMessageType(messageType.String())
 	if err != nil {
-		return asResponse(info.Failure{
+		return messages.EventToResponse(Context, info.Failure{
 			Message: messages.NewMessage("failure", "", ""),
 			Error:   fmt.Sprintf("incorrect message_type %s", messageType.String()),
 		}), nil
@@ -188,7 +179,7 @@ func (om onMessage) On(topic string, message []byte) (*connection.SendResponse, 
 	if h, ok := om.lookup[mt.Aggregate]; ok {
 		use, fuse := getMethodOfHolder(h, mt.Function)
 		if e := json.Unmarshal(message, use); e != nil {
-			return asResponse(info.Failure{
+			return messages.EventToResponse(Context, info.Failure{
 				Message: messages.NewMessage("failure", "", ""),
 				Error:   fmt.Sprintf("unable to parse %s: %s", mt, e),
 			}), nil
@@ -198,9 +189,9 @@ func (om onMessage) On(topic string, message []byte) (*connection.SendResponse, 
 			return nil, e
 		}
 		if f != nil {
-			return asResponse(f), e
+			return messages.EventToResponse(Context, f), e
 		}
-		return asResponse(r), e
+		return messages.EventToResponse(Context, r), e
 
 	}
 	log.Printf("unable to identify entity %s", mt)
