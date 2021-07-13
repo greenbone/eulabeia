@@ -116,7 +116,6 @@ func (ogt OnGotTarget) On(messageType string, message []byte) (interface{}, erro
 }
 
 func main() {
-	topic := "greenbone.sensor"
 	clientid := flag.String("clientid", "", "A clientid for the connection")
 	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
 	flag.Parse()
