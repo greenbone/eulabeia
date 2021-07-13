@@ -136,9 +136,9 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 		}
 
 		// get memory stats and check for memory
-		if conf.ScanMem > 0 {
+		if conf.MinFreeMemScanQueue > 0 {
 			m, err := util.GetAvailableMemory()
-			memoryNeeded := m.Bytes + uint64(len(init))*conf.ScanMem
+			memoryNeeded := m.Bytes + uint64(len(init))*conf.MinFreeMemScanQueue
 			if err != nil {
 				log.Panicf("Unable to get memory stats: %s\n", err)
 			}

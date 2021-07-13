@@ -11,11 +11,11 @@ type Connection struct {
 }
 
 type ScannerPreferences struct {
-	ScanInfoStoreTime int64  // TODO
-	MaxScan           int64  // TODO
-	MaxQueuedScans    int64  // Maximum number of scans that can be queued
-	Niceness          int64  // TODO
-	ScanMem           uint64 // TODO
+	ScanInfoStoreTime   int64  // Time (h) before a scan is considere forgotten
+	MaxScan             int64  // Maxi number of parallel scans
+	MaxQueuedScans      int64  // Maxi number of scans that can be queued
+	Niceness            int64  // Niceness of the openvas Process
+	MinFreeMemScanQueue uint64 // Min Memory necessary for a Scan to start
 }
 
 type Preferences struct {
