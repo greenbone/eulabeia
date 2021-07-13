@@ -57,9 +57,6 @@ func main() {
 			"type": "undefined",
 		},
 	})
-	// err = client.Subscribe(map[string]connection.OnMessage{
-	// 	topic: handler.New(configuration.Context, memory.New()),
-	// })
 	if err != nil {
 		panic(err)
 	}

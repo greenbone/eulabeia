@@ -100,9 +100,8 @@ func StopScan(scan string, sudo bool) error {
 }
 
 // EndScan must be called when a Openvas Process succesfully finished
-func EndScan(scan string) {
-	processes.removeProcess(scan)
-	log.Printf("%s: Scan successfully finished.\n", scan)
+func EndScan(scan string) error {
+	return processes.removeProcess(scan)
 }
 
 // GetVersion returns the Version of OpenVAS
@@ -134,16 +133,8 @@ func GetSettings() (map[string]string, error) {
 }
 
 // LoadVTsIntoRedis starts openvas which then loads new VTs into Redis
-func LoadVTsIntoRedis(loadedChan chan struct{}) {
-	log.Printf("Loading VTs into Redis DB...\n")
-
-	err := exec.Command("openvas", "--update-vt-info").Run()
-	if err != nil {
-		log.Printf("OpenVAS Scanner failed to load VTs: %s", err)
-		return
-	}
-	log.Printf("Finished loading VTs into Redis DB.\n")
-	loadedChan <- struct{}{}
+func LoadVTsIntoRedis() error {
+	return exec.Command("openvas", "--update-vt-info").Run()
 }
 
 // IsSudo checks for sudo permissions

@@ -14,46 +14,8 @@ type StartStop struct {
 	StopChan  chan string
 }
 
-// // Function to determine the message type
-// func getMessageType(message []byte) (string, error) {
-// 	var msg messages.Message
-// 	err := json.Unmarshal(message, &msg)
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	return msg.Type, nil
-// }
-
-// func (handler StartStop) On(topic string, message []byte) (*connection.SendResponse, error) {
-// 	messageType, err := getMessageType(message)
-// 	if err != nil {
-// 		log.Printf("unable to read message on Topic %s", topic)
-// 		return nil, err
-// 	}
-// 	switch messageType {
-// 	case "scan.start":
-// 		var start cmds.Start
-// 		err = json.Unmarshal(message, &start)
-// 		if err != nil {
-// 			log.Printf("unable to read message on Topic %s", topic)
-// 			return nil, err
-// 		}
-// 		handler.startChan <- start.ID
-
-// 	case "scan.stop":
-// 		var stop cmds.Stop
-// 		err = json.Unmarshal(message, &stop)
-// 		if err != nil {
-// 			log.Printf("unable to read message on Topic %s", topic)
-// 			return nil, err
-// 		}
-// 		handler.startChan <- stop.ID
-// 	}
-// 	return nil, nil
-// }
-
 func (handler StartStop) On(topic string, message []byte) (*connection.SendResponse, error) {
-	var msg cmds.Start
+	var msg cmds.IDCMD
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
 		return nil, err

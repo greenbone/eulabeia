@@ -28,6 +28,16 @@ type schedulerChannels struct {
 	discChan  chan struct{} // Channel to mark disconnected director
 }
 
+// loadVTs commands openvas to load VTs into redis
+func loadVTs(vtsLoadedChan chan struct{}) {
+	log.Printf("Loading VTs into Redis DB...\n")
+	err := LoadVTsIntoRedis()
+	if err != nil {
+		log.Panicf("Unable to load VTs into redis: %s", err)
+	}
+	vtsLoadedChan <- struct{}{}
+}
+
 // Checks for new instructions for the sensor and starts queued scans.
 func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.ScannerPreferences) {
 	queue := make([]string, 0)
@@ -37,7 +47,7 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 
 	var vtsLoadedChan = make(chan struct{})
 	vtsLoading := true
-	go LoadVTsIntoRedis(vtsLoadedChan)
+	go loadVTs(vtsLoadedChan)
 
 	for { // Infinite scheduler Loop
 		for vtsLoading || len(queue) == 0 { // Check for new stuff in Channels
@@ -102,7 +112,7 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 				})
 
 			case <-channels.vtsChan:
-				go LoadVTsIntoRedis(vtsLoadedChan)
+				go loadVTs(vtsLoadedChan)
 				vtsLoading = true
 
 			case <-vtsLoadedChan:
