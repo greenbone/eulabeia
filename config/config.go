@@ -31,6 +31,7 @@ type Director struct {
 }
 
 type Configuration struct {
+	Context            string
 	Certificate        Certificate
 	Connection         Connection
 	ScannerPreferences ScannerPreferences

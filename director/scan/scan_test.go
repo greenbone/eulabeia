@@ -11,7 +11,7 @@ import (
 )
 
 func TestCreateScan(t *testing.T) {
-	h := handler.New(New(storage.Noop{}))
+	h := handler.New("eulabeia", New(storage.Noop{}))
 	tests := []test.HandleTests{
 		{
 			Input: cmds.Create{

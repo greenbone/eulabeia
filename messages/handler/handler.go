@@ -3,6 +3,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -14,12 +15,6 @@ import (
 	"github.com/greenbone/eulabeia/models"
 	"github.com/tidwall/gjson"
 )
-
-// Context is setting the first path of a topic
-//
-// It is used to define the bounded context of a message.
-// Usually a handler is bound to one context.
-var Context = "eulabeia"
 
 // Starter is the interface that wraps the basic Start method.
 //
@@ -116,6 +111,19 @@ type Aggregate interface {
 	Getter
 }
 
+// ParseMessageType tries to parse the messages.MessageType based on a []byte message
+func ParseMessageType(message []byte) (*messages.MessageType, error) {
+	messageType := gjson.GetBytes(message, "message_type")
+	if messageType.Type == gjson.Null {
+		return nil, errors.New("unable to find message_type")
+	}
+	mt, err := messages.ParseMessageType(messageType.String())
+	if err != nil {
+		return nil, fmt.Errorf("incorrect message_type %s", messageType.String())
+	}
+	return mt, nil
+}
+
 // onMessage is a struct containing aggregates for registered types.
 //
 // The messages.MessageType is normalized like what.on e.g. create.target
@@ -123,7 +131,8 @@ type Aggregate interface {
 // messages.Modify, messages.Get then tries to find via MessageType the
 // Aggregate via handler.
 type onMessage struct {
-	lookup map[string]Holder
+	lookup  map[string]Holder
+	context string
 }
 
 func getMethodOfHolder(h Holder, method string) (messages.Event, func() (messages.Event, *info.Failure, error)) {
@@ -161,25 +170,17 @@ func getMethodOfHolder(h Holder, method string) (messages.Event, func() (message
 }
 
 func (om onMessage) On(topic string, message []byte) (*connection.SendResponse, error) {
-	messageType := gjson.GetBytes(message, "message_type")
-	if messageType.Type == gjson.Null {
-		return messages.EventToResponse(Context, info.Failure{
-			Message: messages.NewMessage("failure", "", ""),
-			Error:   "unable to find message_type",
-		}), nil
-	}
-	mt, err := messages.ParseMessageType(messageType.String())
+	mt, err := ParseMessageType(message)
 	if err != nil {
-		return messages.EventToResponse(Context, info.Failure{
+		return messages.EventToResponse(om.context, info.Failure{
 			Message: messages.NewMessage("failure", "", ""),
-			Error:   fmt.Sprintf("incorrect message_type %s", messageType.String()),
+			Error:   fmt.Sprintf("%s", err),
 		}), nil
-
 	}
 	if h, ok := om.lookup[mt.Aggregate]; ok {
 		use, fuse := getMethodOfHolder(h, mt.Function)
 		if e := json.Unmarshal(message, use); e != nil {
-			return messages.EventToResponse(Context, info.Failure{
+			return messages.EventToResponse(om.context, info.Failure{
 				Message: messages.NewMessage("failure", "", ""),
 				Error:   fmt.Sprintf("unable to parse %s: %s", mt, e),
 			}), nil
@@ -189,9 +190,9 @@ func (om onMessage) On(topic string, message []byte) (*connection.SendResponse, 
 			return nil, e
 		}
 		if f != nil {
-			return messages.EventToResponse(Context, f), e
+			return messages.EventToResponse(om.context, f), e
 		}
-		return messages.EventToResponse(Context, r), e
+		return messages.EventToResponse(om.context, r), e
 
 	}
 	log.Printf("unable to identify entity %s", mt)
@@ -228,13 +229,14 @@ func FromGetter(topic string, a Getter) Holder {
 }
 
 // New returns a new connection.OnMessage handler
-func New(holder ...Holder) connection.OnMessage {
+func New(context string, holder ...Holder) connection.OnMessage {
 	lookup := map[string]Holder{}
 
 	for _, h := range holder {
 		lookup[h.Topic] = h
 	}
 	return onMessage{
-		lookup: lookup,
+		lookup:  lookup,
+		context: context,
 	}
 }
