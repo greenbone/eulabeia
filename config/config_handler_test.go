@@ -37,53 +37,51 @@ func TestConfigurationHandler(t *testing.T) {
 		t.Errorf("File write should have worked.")
 	}
 
-	confHandler := ConfigurationHandler{}
-
-	confHandler.Load(path, "eulabeia")
+	config := New(path, "eulabeia")
 
 	// Check some Config fields
-	if confHandler.Configuration.Connection.Server != server {
+	if config.Connection.Server != server {
 		t.Errorf("Connection.Server should be %s", server)
 	}
 
-	if confHandler.Configuration.Connection.Timeout != timeout {
+	if config.Connection.Timeout != timeout {
 		t.Errorf("Connection.Timeout should be %d", timeout)
 	}
 
-	if confHandler.Configuration.Sensor.Id != "" {
+	if config.Sensor.Id != "" {
 		t.Errorf("Connection.Sensor.Id should not be set.")
 	}
 
 	// Set and check sensor ID in TOML strcut
-	confHandler.SetId("sensor")
-	if confHandler.Configuration.Sensor.Id == "" {
+	config.Sensor.Id = uuid.NewString()
+	if config.Sensor.Id == "" {
 		t.Errorf("Connection.Sensor.Id should be set.")
 	}
-	_, err = uuid.Parse(confHandler.Configuration.Sensor.Id)
+	_, err = uuid.Parse(config.Sensor.Id)
 	if err != nil {
 		t.Errorf("Connection.Sensor.Id should be an uuid.")
 	}
 
 	// Save TOML struct back to file
-	confHandler.Save()
+	Save(config)
 
 	// Reload file
-	confHandler.Load(path, "eulabeia")
+	config = New(path, "eulabeia")
 
-	if confHandler.Configuration.Sensor.Id == "" {
+	if config.Sensor.Id == "" {
 		t.Errorf("Connection.Sensor.Id should be set.")
 	}
-	_, err = uuid.Parse(confHandler.Configuration.Sensor.Id)
+	_, err = uuid.Parse(config.Sensor.Id)
 	if err != nil {
 		t.Errorf("Connection.Sensor.Id should be an uuid.")
 	}
 
 	// Set director ID in TOML strcut
-	confHandler.SetId("director")
-	if confHandler.Configuration.Sensor.Id == "" {
+	config.Director.Id = uuid.NewString()
+	if config.Director.Id == "" {
 		t.Errorf("Connection.Director.Id should be set.")
 	}
-	_, err = uuid.Parse(confHandler.Configuration.Sensor.Id)
+	_, err = uuid.Parse(config.Director.Id)
 	if err != nil {
 		t.Errorf("Connection.Director.Id should be an uuid.")
 	}

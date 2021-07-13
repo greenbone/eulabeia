@@ -37,4 +37,5 @@ type Configuration struct {
 	Preferences        Preferences
 	Sensor             Sensor
 	Director           Director
+	path               string
 }

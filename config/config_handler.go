@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/google/uuid"
 	"github.com/pelletier/go-toml"
 )
 
@@ -50,28 +49,10 @@ func findConfigFile(path string, module string) string {
 	panic(errors.New("no config file found"))
 }
 
-// This functions sets the device ID in the config file,
-// iff it is not set
-// This will only be used for sensor and director for now
-func (c *ConfigurationHandler) SetId(device string) {
-	switch device {
-	case "sensor":
-		if c.Configuration.Sensor.Id == "" {
-			c.Configuration.Sensor.Id = uuid.NewString()
-		}
-	case "director":
-		if c.Configuration.Director.Id == "" {
-			c.Configuration.Director.Id = uuid.NewString()
-		}
-	default:
-		// TODO
-	}
-}
-
 // Save the Configuration in its current state
 // into the stored file path
-func (c *ConfigurationHandler) Save() {
-	bytes, err := toml.Marshal(&c.Configuration)
+func Save(c *Configuration) {
+	bytes, err := toml.Marshal(c)
 	if err != nil {
 		// TODO error handling
 		panic(err)
@@ -83,10 +64,9 @@ func (c *ConfigurationHandler) Save() {
 	}
 }
 
-// Load the config file after startup
-func (c *ConfigurationHandler) Load(path string, module string) {
-	c.module = module
-	c.Configuration = Configuration{}
+// Returns a filled Configuration struct
+func New(path string, module string) *Configuration {
+	c := Configuration{}
 	c.path = findConfigFile(path, module)
 
 	// Read the config file
@@ -95,5 +75,7 @@ func (c *ConfigurationHandler) Load(path string, module string) {
 		panic(err)
 	}
 
-	toml.Unmarshal(bytes, &c.Configuration)
+	toml.Unmarshal(bytes, &c)
+
+	return &c
 }
