@@ -1,0 +1,23 @@
+title = "eulabeia config"
+
+[Cert]
+defaultKeyFile = "/usr/var/lib/gvm/private/CA/serverkey.pem"
+defaultCertFile = "/usr/var/lib/gvm/CA/servercert.pem"
+defaultCaFile = "/usr/var/lib/gvm/CA/cacert.pem"
+
+[Connection]
+# server = "0.0.0.0:0"
+server = "broker:9138"
+timeout = 10 # in seconds
+
+[ScannerPreferences]
+scanInfoStoreTime = 0 # in hours
+maxScan = 0  # 0 = disabled
+minFreeMemScanQueue = 0  # 0 = disabled
+maxQueuedScans = 0  # 0 = disabled
+niceness = 10
+
+[Preferences]
+config = "~/.eulabeia/config.toml"
+logFile = ""
+logLevel = ""

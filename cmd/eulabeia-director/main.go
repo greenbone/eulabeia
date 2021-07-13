@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 
+	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/director/scan"
@@ -15,12 +16,14 @@ import (
 )
 
 func main() {
-	server := flag.String("server", "localhost:1883", "A clientid for the connection")
 	clientid := flag.String("clientid", "", "A clientid for the connection")
+	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
 	flag.Parse()
+	configuration := config.New(*configPath, "eulabeia")
+	server := configuration.Connection.Server
 
 	log.Println("Starting director")
-	client, err := mqtt.New(*server, *clientid, "", "", nil)
+	client, err := mqtt.New(server, *clientid, "", "", nil)
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}

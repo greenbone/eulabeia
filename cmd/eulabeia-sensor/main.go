@@ -3,8 +3,9 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
 
-	"github.com/google/uuid"
+	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
@@ -16,19 +17,27 @@ import (
 
 func main() {
 	topic := "eulabeia/+/+/sensor"
-	server := flag.String("server", "localhost:1883", "A clientid for the connection")
-	clientid := flag.String("clientid", "", "A clientid for the connection")
-	sensorID := flag.String("sensorID", "bla", "A sensorID for the registration")
+	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
 	flag.Parse()
+	configuration := config.New(*configPath, "eulabeia")
+
+	server := configuration.Connection.Server
+	if configuration.Sensor.Id == "" {
+		sensor_id, err := os.Hostname()
+		if err != nil {
+			panic(err)
+		}
+		configuration.Sensor.Id = sensor_id
+	}
 
 	log.Println("Starting sensor")
-	c, err := mqtt.New(*server, *clientid+uuid.NewString(), "", "",
+	c, err := mqtt.New(server, configuration.Sensor.Id, "", "",
 		&mqtt.LastWillMessage{
 			Topic: "eulabeia/sensor/cmd/director",
 			MSG: cmds.Delete{
 				Identifier: messages.Identifier{
 					Message: messages.NewMessage("delete.sensor", "", ""),
-					ID:      *sensorID,
+					ID:      configuration.Sensor.Id,
 				},
 			}})
 	if err != nil {
@@ -41,7 +50,7 @@ func main() {
 	c.Publish("eulabeia/sensor/cmd/director", cmds.Modify{
 		Identifier: messages.Identifier{
 			Message: messages.NewMessage("modify.sensor", "", ""),
-			ID:      *sensorID,
+			ID:      configuration.Sensor.Id,
 		},
 		Values: map[string]interface{}{
 			"type": "undefined",
