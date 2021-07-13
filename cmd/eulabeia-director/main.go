@@ -42,5 +42,5 @@ func main() {
 		panic(err)
 	}
 
-	process.Block(client)
+	process.BlockAndClose(client)
 }

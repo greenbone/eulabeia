@@ -62,5 +62,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	process.Block(c)
+	process.BlockAndClose(c)
 }
