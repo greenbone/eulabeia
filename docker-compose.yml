@@ -21,7 +21,7 @@ services:
       - build-cmds
   sensor:
     image: eulabeia_build-cmds:latest
-    command: eulabeia-sensor --clientid sensor
+    command: eulabeia-sensor
     depends_on:
       - build-cmds
     depends_on:
