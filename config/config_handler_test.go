@@ -37,7 +37,7 @@ func TestConfigurationHandler(t *testing.T) {
 		t.Errorf("File write should have worked.")
 	}
 
-	config := New(path, "eulabeia")
+	config, _ := New(path, "eulabeia")
 
 	// Check some Config fields
 	if config.Connection.Server != server {
@@ -66,7 +66,7 @@ func TestConfigurationHandler(t *testing.T) {
 	Save(config)
 
 	// Reload file
-	config = New(path, "eulabeia")
+	config, _ = New(path, "eulabeia")
 
 	if config.Sensor.Id == "" {
 		t.Errorf("Connection.Sensor.Id should be set.")
