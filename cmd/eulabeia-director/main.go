@@ -32,10 +32,11 @@ func main() {
 		log.Panicf("Failed to connect: %s", err)
 	}
 	device := storage.File{Dir: "/tmp/"}
+	context := configuration.Context
 	err = client.Subscribe(map[string]connection.OnMessage{
-		"eulabeia/sensor/cmd/director": handler.New(sensor.New(device)),
-		"eulabeia/target/cmd/director": handler.New(target.New(device)),
-		"eulabeia/scan/cmd/director":   handler.New(scan.New(device)),
+		"eulabeia/sensor/cmd/director": handler.New(context, sensor.New(device)),
+		"eulabeia/target/cmd/director": handler.New(context, target.New(device)),
+		"eulabeia/scan/cmd/director":   handler.New(context, scan.New(device)),
 	})
 	if err != nil {
 		panic(err)

@@ -145,7 +145,7 @@ func TestAggragteHandler(t *testing.T) {
 				t.Errorf("[%s][%s] failed to create json", k, j)
 			}
 			fmt.Printf("[%s][%s] running\n", k, j)
-			h := New(FromAggregate("target", exampleAggregate{}))
+			h := New("", FromAggregate("target", exampleAggregate{}))
 			r, err := h.On("", b)
 			switch j {
 			case SUCCESS:

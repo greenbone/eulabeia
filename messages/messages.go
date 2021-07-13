@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/greenbone/eulabeia/connection"
 )
 
 // EventType is used to identify a message
@@ -19,6 +20,22 @@ const (
 type Event interface {
 	Event() EventType
 	MessageType() MessageType
+}
+
+// EventToResponse is using given context and Event to calculate the topic
+func EventToResponse(context string, e Event) *connection.SendResponse {
+	if e == nil {
+		return nil
+	}
+	mt := e.MessageType()
+	topic := fmt.Sprintf("%s/%s/%s", context, mt.Aggregate, e.Event())
+	if mt.Destination != "" {
+		topic = fmt.Sprintf("%s/%s", topic, mt.Destination)
+	}
+	return &connection.SendResponse{
+		Topic: topic,
+		MSG:   e,
+	}
 }
 
 // Message contains the meta data for each sent message.

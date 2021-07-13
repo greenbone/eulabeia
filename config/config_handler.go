@@ -71,6 +71,9 @@ func New(path string, module string) *Configuration {
 	}
 
 	toml.Unmarshal(bytes, &c)
+	if c.Context == "" {
+		c.Context = module
+	}
 
 	return &c
 }
