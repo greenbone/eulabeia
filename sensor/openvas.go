@@ -11,10 +11,38 @@ import (
 	"sync"
 )
 
-var processes = make(map[string]*os.Process)
-var mutex = &sync.Mutex{}
+// rocessList represents a list of processes. It is used to manage processes
+// within different go routines.
+type processList struct {
+	procs map[string]*os.Process
+	mutex *sync.Mutex
+}
 
-// StartScan starts scan with given scan-ID and process priority (-20 - 19,
+// addProcess adds a Process to the Process list
+func (pl processList) addProcess(scan string, p *os.Process) error {
+	pl.mutex.Lock()
+	defer pl.mutex.Unlock()
+	if _, ok := pl.procs[scan]; ok {
+		return errors.New("process already exist")
+	}
+	pl.procs[scan] = p
+	return nil
+}
+
+// removeProcess removes a Process from the Process list
+func (pl processList) removeProcess(scan string) error {
+	pl.mutex.Lock()
+	defer pl.mutex.Unlock()
+	if _, ok := pl.procs[scan]; !ok {
+		return errors.New("process does not exist")
+	}
+	delete(pl.procs, scan)
+	return nil
+}
+
+var processes processList
+
+// StartScan starts scan with given scan-ID and process priority (-20 to 19,
 // lower is more prioritized)
 func StartScan(scan string, niceness int, sudo bool) error {
 	cmdString := make([]string, 0)
@@ -44,7 +72,7 @@ func StartScan(scan string, niceness int, sudo bool) error {
 
 // StopScan stops a scan with given scan-ID
 func StopScan(scan string, sudo bool) error {
-	err := removeProcess(scan)
+	err := processes.removeProcess(scan)
 	if err != nil {
 		return err
 	}
@@ -73,7 +101,7 @@ func StopScan(scan string, sudo bool) error {
 
 // EndScan must be called when a Openvas Process succesfully finished
 func EndScan(scan string) {
-	removeProcess(scan)
+	processes.removeProcess(scan)
 	log.Printf("%s: Scan successfully finished.\n", scan)
 }
 
@@ -132,9 +160,9 @@ func IsSudo() bool {
 // waitForProcessToEnd gets Called as go-routine after OpenVAS Scan Process was
 // started
 func waitForProcessToEnd(p *os.Process, scan string) {
-	addProcess(scan, p)
+	processes.addProcess(scan, p)
 	p.Wait()
-	err := removeProcess(scan)
+	err := processes.removeProcess(scan)
 	if err == nil {
 		log.Printf("%s: Scan process got unexpectedly stopped or killed.\n", scan)
 		// TODO: Interrupt scan
@@ -143,24 +171,9 @@ func waitForProcessToEnd(p *os.Process, scan string) {
 	log.Printf("%s: Scan process with PID %v terminated correctly.\n", scan, p.Pid)
 }
 
-// addProcess adds a Process to the Process list
-func addProcess(scan string, p *os.Process) error {
-	mutex.Lock()
-	defer mutex.Unlock()
-	if _, ok := processes[scan]; ok {
-		return errors.New("process already exist")
+func init() {
+	processes = processList{
+		procs: make(map[string]*os.Process),
+		mutex: &sync.Mutex{},
 	}
-	processes[scan] = p
-	return nil
-}
-
-// removeProcess removes a Process from the Process list
-func removeProcess(scan string) error {
-	mutex.Lock()
-	defer mutex.Unlock()
-	if _, ok := processes[scan]; !ok {
-		return errors.New("process does not exist")
-	}
-	delete(processes, scan)
-	return nil
 }
