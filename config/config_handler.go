@@ -8,12 +8,6 @@ import (
 	"github.com/pelletier/go-toml"
 )
 
-type ConfigurationHandler struct {
-	Configuration Configuration // The configuration object
-	module        string        // The module name
-	path          string        // Path to the configuration file
-}
-
 // Check if file exists
 // Returns true if file exists, false else
 func fileExists(path string) bool {
