@@ -3,89 +3,104 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/info"
 )
 
-var MQTT connection.PubSub
-
-type InvalidCommandError struct {
-	cmd string
-}
-
-func (err InvalidCommandError) Error() string {
-	if err.cmd == "" {
-		return "missing command"
-	}
-	return fmt.Sprintf("invalid command %s used", err.cmd)
-}
-
-// Handler for Messages regardings commands running scanner
-type CommandHandler struct {
+type StartStop struct {
 	StartChan chan string
 	StopChan  chan string
-	VerChan   chan struct{}
-	VtsChan   chan struct{}
 }
 
-// Implementation for the On method for handling incoming messages via MQTT
-func (handler CommandHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
-	var data cmds.Command
-	if err := json.Unmarshal(message, &data); err != nil {
-		log.Printf("Sensor cannot read command on Topic %s\n", topic)
+// // Function to determine the message type
+// func getMessageType(message []byte) (string, error) {
+// 	var msg messages.Message
+// 	err := json.Unmarshal(message, &msg)
+// 	if err != nil {
+// 		return "", err
+// 	}
+// 	return msg.Type, nil
+// }
+
+// func (handler StartStop) On(topic string, message []byte) (*connection.SendResponse, error) {
+// 	messageType, err := getMessageType(message)
+// 	if err != nil {
+// 		log.Printf("unable to read message on Topic %s", topic)
+// 		return nil, err
+// 	}
+// 	switch messageType {
+// 	case "scan.start":
+// 		var start cmds.Start
+// 		err = json.Unmarshal(message, &start)
+// 		if err != nil {
+// 			log.Printf("unable to read message on Topic %s", topic)
+// 			return nil, err
+// 		}
+// 		handler.startChan <- start.ID
+
+// 	case "scan.stop":
+// 		var stop cmds.Stop
+// 		err = json.Unmarshal(message, &stop)
+// 		if err != nil {
+// 			log.Printf("unable to read message on Topic %s", topic)
+// 			return nil, err
+// 		}
+// 		handler.startChan <- stop.ID
+// 	}
+// 	return nil, nil
+// }
+
+func (handler StartStop) On(topic string, message []byte) (*connection.SendResponse, error) {
+	var msg cmds.Start
+	err := json.Unmarshal(message, &msg)
+	if err != nil {
 		return nil, err
 	}
-
-	switch data.Cmd {
-	case "start":
-		handler.StartChan <- data.ID
-	case "stop":
-		handler.StopChan <- data.ID
-	case "version":
-		handler.VerChan <- struct{}{}
-	case "loadvts":
-		handler.VtsChan <- struct{}{}
-	default:
-		return nil, &InvalidCommandError{
-			cmd: data.Cmd,
-		}
+	switch msg.Type {
+	case "scan.start":
+		handler.StartChan <- msg.ID
+	case "scan.stop":
+		handler.StopChan <- msg.ID
 	}
 	return nil, nil
 }
 
-// Handler for Messages which do not regard scans (e.g. get version)
-type InfoHandler struct {
+type Registered struct {
+	RegChan chan struct{}
+}
+
+func (handler Registered) On(topic string, message []byte) (*connection.SendResponse, error) {
+	handler.RegChan <- struct{}{}
+	return nil, nil
+}
+
+type Status struct {
 	RunChan chan string
 	FinChan chan string
 }
 
-func (handler InfoHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
-	var data info.ScanInfo
-	if err := json.Unmarshal(message, &data); err != nil {
-		log.Printf("Sensor cannot read info on topic %s\n", topic)
+func (handler Status) On(topic string, message []byte) (*connection.SendResponse, error) {
+	var msg info.Status
+	err := json.Unmarshal(message, &msg)
+	if err != nil {
 		return nil, err
 	}
-
-	if data.InfoType == "status" {
-		switch data.Info {
-		case "running":
-			handler.RunChan <- data.ID
-		case "finished":
-			handler.FinChan <- data.ID
-		}
+	switch msg.Status {
+	case "running":
+		handler.RunChan <- msg.ID
+	case "stopped", "finished", "interrupted":
+		handler.FinChan <- msg.ID
 	}
 	return nil, nil
 }
 
-type RegisterHandler struct {
-	RegChan chan struct{}
+type LoadVTs struct {
+	VtsChan chan struct{}
 }
 
-func (handler RegisterHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
-	handler.RegChan <- struct{}{}
+func (handler LoadVTs) On(topic string, message []byte) (*connection.SendResponse, error) {
+	handler.VtsChan <- struct{}{}
 	return nil, nil
 }

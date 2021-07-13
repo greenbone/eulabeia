@@ -1,3 +1,4 @@
+// Scheduler component of the sensor. This module is responsible for handling request from the director.
 package sensor
 
 import (
@@ -33,10 +34,12 @@ type schedulerChannels struct {
 	discChan  chan struct{} // Channel to mark disconnected director
 }
 
-func schedule(channels schedulerChannels) {
+// Checks for new instructions for the sensor and starts queued scans.
+func schedule(channels schedulerChannels, mqtt connection.PubSub) {
 	queue := make([]string, 0)
 	init := make([]string, 0)
 	running := make([]string, 0)
+	sudo := IsSudo()
 
 	var vtsLoadedChan = make(chan struct{})
 	vtsLoading := true
@@ -47,13 +50,12 @@ func schedule(channels schedulerChannels) {
 			select {
 			case scan := <-channels.startChan: // start scan
 				queue = append(queue, scan)
-				handler.MQTT.Publish("eulabeia/scan/info", info.ScanInfo{
+				mqtt.Publish("eulabeia/scan/info", info.Status{
 					Identifier: messages.Identifier{
 						ID:      scan,
-						Message: messages.NewMessage("scan.info", "", ""),
+						Message: messages.NewMessage("scan.status", "", ""),
 					},
-					InfoType: "status",
-					Info:     "queued",
+					Status: "queued",
 				})
 
 			case scan := <-channels.stopChan: // stop scan
@@ -68,19 +70,18 @@ func schedule(channels schedulerChannels) {
 							continue
 						}
 					}
-					err := StopScan(scan)
+					err := StopScan(scan, sudo)
 					if err != nil {
 						log.Printf("%s: Scan cannot be stopped: %s.\n", scan, err)
 						continue
 					}
 				}
-				handler.MQTT.Publish("eulabeia/scan/info", info.ScanInfo{
+				mqtt.Publish("eulabeia/scan/info", info.Status{
 					Identifier: messages.Identifier{
 						ID:      scan,
-						Message: messages.NewMessage("scan.info", "", ""),
+						Message: messages.NewMessage("scan.status", "", ""),
 					},
-					InfoType: "status",
-					Info:     "stopped",
+					Status: "stopped",
 				})
 
 			case scan := <-channels.runChan: // scan runs
@@ -98,13 +99,12 @@ func schedule(channels schedulerChannels) {
 				} else {
 					ret = ver
 				}
-				handler.MQTT.Publish("eulabeia/scan/info", info.ScanInfo{
+				mqtt.Publish("eulabeia/scan/info", info.Version{
 					Identifier: messages.Identifier{
 						ID:      "",
-						Message: messages.NewMessage("scan.version", "", ""),
+						Message: messages.NewMessage("sensor.version", "", ""),
 					},
-					InfoType: "version",
-					Info:     ret,
+					Version: ret,
 				})
 
 			case <-channels.vtsChan:
@@ -114,11 +114,12 @@ func schedule(channels schedulerChannels) {
 			case <-vtsLoadedChan:
 				vtsLoading = false
 
-			// TODO: Clear all openvas Processes when terminating the sensor
+			// TODO: When terminating the sensor clear all openvas processes
 			// and interrupt all scans
 			// TODO: When connection to Director breaks stop all scans, clear
 			// all lists and try to register scheduler again
 
+			// Check each second if scans can be started
 			case <-time.After(time.Second):
 				continue
 			}
@@ -144,18 +145,17 @@ func schedule(channels schedulerChannels) {
 		}
 
 		// try to run scan process
-		err := StartScan(queue[0], NICENESS)
+		err := StartScan(queue[0], NICENESS, sudo)
 		if err != nil {
 			log.Printf("%s: Scan could not start: %s", queue[0], err)
 			continue
 		}
-		handler.MQTT.Publish("eulabeia/scan/info", info.ScanInfo{
+		mqtt.Publish("eulabeia/scan/info", info.Status{
 			Identifier: messages.Identifier{
 				ID:      queue[0],
-				Message: messages.NewMessage("scan.info", "", ""),
+				Message: messages.NewMessage("scan.status", "", ""),
 			},
-			InfoType: "status",
-			Info:     "init",
+			Status: "init",
 		})
 		init = append(init, queue[0])
 		queue = queue[1:]
@@ -166,12 +166,11 @@ func schedule(channels schedulerChannels) {
 // register loops until its ID is registrated
 func register(mqtt connection.PubSub, id string, regChan chan struct{}) {
 	for { // loop until sensor is registered
-		mqtt.Publish("eulabeia/sensor/cmd/director", cmds.Command{
+		mqtt.Publish("eulabeia/sensor/cmd/director", cmds.Register{
 			Identifier: messages.Identifier{
-				ID:      "myID", // TODO: replace "myID"
+				ID:      id,
 				Message: messages.NewMessage("sensor.register", "", ""),
 			},
-			Cmd: "register",
 		})
 		select {
 		case <-regChan:
@@ -197,34 +196,39 @@ func Start(mqtt connection.PubSub, id string) {
 	}
 	// Subscribe on Topic to get confirmation about registration
 	mqtt.Subscribe(map[string]connection.OnMessage{
-		fmt.Sprintf("eulabeia/sensor/info/%s", id): handler.RegisterHandler{
+		fmt.Sprintf("eulabeia/sensor/info/%s", id): handler.Registered{
 			RegChan: channels.regChan,
 		},
 	})
 	// Register Sensor
 	register(mqtt, id, channels.regChan)
 	// MQTT OnMessage Types
-	var cmdHandler = handler.CommandHandler{
+	var startStopHandler = handler.StartStop{
 		StartChan: channels.startChan,
 		StopChan:  channels.stopChan,
-		VerChan:   channels.verChan,
-		VtsChan:   channels.vtsChan,
 	}
 
-	var infoHandler = handler.InfoHandler{
+	var statusHandler = handler.Status{
 		RunChan: channels.runChan,
 		FinChan: channels.finChan,
 	}
 
+	var vtsHandler = handler.LoadVTs{
+		VtsChan: channels.vtsChan,
+	}
+
 	// MQTT Subscription Map
 	var subMap = map[string]connection.OnMessage{
-		fmt.Sprintf("eulabeia/scan/cmd/%s", id): cmdHandler,
-		"eulabeia/scan/info":                    infoHandler,
+		fmt.Sprintf("eulabeia/scan/cmd/%s", id): startStopHandler,
+		"eulabeia/scan/info":                    statusHandler,
+		"eulabeia/sensor/cmd":                   vtsHandler,
 	}
 
 	err := mqtt.Subscribe(subMap)
 	if err != nil {
 		log.Panicf("Sensor cannot subscribe to topics: %s", err)
 	}
-	go schedule(channels)
+
+	// TODO: Maybe without go routine. This will be the demon process.
+	go schedule(channels, mqtt)
 }

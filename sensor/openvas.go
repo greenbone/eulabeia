@@ -1,3 +1,4 @@
+// OpenVAS component of the sensor. This module is responsible fot everything regarding OpenVAS
 package sensor
 
 import (
@@ -13,12 +14,9 @@ import (
 var processes = make(map[string]*os.Process)
 var mutex = &sync.Mutex{}
 
-// TODO: Remove global
-var sudo bool
-
 // StartScan starts scan with given scan-ID and process priority (-20 - 19,
 // lower is more prioritized)
-func StartScan(scan string, niceness int) error {
+func StartScan(scan string, niceness int, sudo bool) error {
 	cmdString := make([]string, 0)
 
 	if niceness != 0 {
@@ -38,14 +36,14 @@ func StartScan(scan string, niceness int) error {
 
 	err := cmd.Start()
 	if err != nil {
-		return fmt.Errorf("Unable to start openvas process: %s", err)
+		return fmt.Errorf("unable to start openvas process: %s", err)
 	}
 	go waitForProcessToEnd(cmd.Process, scan)
 	return nil
 }
 
 // StopScan stops a scan with given scan-ID
-func StopScan(scan string) error {
+func StopScan(scan string, sudo bool) error {
 	err := removeProcess(scan)
 	if err != nil {
 		return err
@@ -165,9 +163,4 @@ func removeProcess(scan string) error {
 	}
 	delete(processes, scan)
 	return nil
-}
-
-func init() {
-	// Check for sudo rights
-	sudo = IsSudo()
 }

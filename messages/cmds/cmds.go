@@ -42,6 +42,12 @@ type Start struct {
 	messages.Identifier
 }
 
+// Stop indicates that something with the ID should be stopped
+type Stop struct {
+	eventType
+	messages.Identifier
+}
+
 // Modify indicates that a entity should be modified.
 //
 // The values to modify are within Values, they typically match the names of the aggregate
@@ -52,14 +58,14 @@ type Modify struct {
 	Values map[string]interface{} `json:"values"`
 }
 
-// Command is used by the director to run a command on a sensor. Possible
-// commands are:
-//  - start
-//  - stop
-//  - version
-//  - loadvts
-type Command struct {
+// Register indicates that something with the ID should be registered
+type Register struct {
 	eventType
 	messages.Identifier
-	Cmd string `json:"cmd"`
+}
+
+// LoadVTs signals that all sensors should update their VTs
+type LoadVTs struct {
+	eventType
+	messages.Message
 }
