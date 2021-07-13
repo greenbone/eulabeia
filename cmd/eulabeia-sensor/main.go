@@ -19,20 +19,20 @@ import (
 
 func main() {
 	topic := "greenbone.sensor"
-	confHandler := config.ConfigurationHandler{}
 	clientid := flag.String("clientid", "", "A clientid for the connection")
 	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
 	flag.Parse()
-	confHandler.Load(*configPath, "eulabeia")
-	confHandler.SetId("sensor")
-	server := confHandler.Configuration.Connection.Server
+	configuration := config.New(*configPath, "eulabeia")
+	configuration.Sensor.Id = uuid.NewString()
+	server := configuration.Connection.Server
+	sensor_id := configuration.Sensor.Id
 
 	log.Println("Starting sensor")
-	c, err := mqtt.New(server, *clientid+uuid.NewString(), "", "",
+	c, err := mqtt.New(server, *clientid+sensor_id, "", "",
 		&mqtt.LastWillMessage{
 			Topic: topic,
 			MSG: messages.Delete{
-				ID:      confHandler.Configuration.Sensor.Id,
+				ID:      sensor_id,
 				Message: messages.NewMessage("delete.sensor", "", ""),
 			}})
 	if err != nil {
@@ -44,7 +44,7 @@ func main() {
 	}
 	c.Publish(topic, messages.Modify{
 		Message: messages.NewMessage("modify.sensor", "", ""),
-		ID:      confHandler.Configuration.Sensor.Id,
+		ID:      sensor_id,
 		Values: map[string]interface{}{
 			"type": "undefined",
 		},

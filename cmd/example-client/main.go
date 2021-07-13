@@ -111,12 +111,12 @@ func (ogt OnGotTarget) On(messageType string, message []byte) (interface{}, erro
 }
 
 func main() {
-	confHandler := config.ConfigurationHandler{}
+	topic := "greenbone.sensor"
 	clientid := flag.String("clientid", "", "A clientid for the connection")
 	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
 	flag.Parse()
-	confHandler.Load(*configPath, "eulabeia")
-	server := confHandler.Configuration.Connection.Server
+	configuration := config.New(*configPath, "eulabeia")
+	server := configuration.Connection.Server
 
 	log.Println("Starting example client")
 	c, err := mqtt.New(server, *clientid+uuid.NewString(), "", "", nil)
