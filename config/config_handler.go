@@ -58,7 +58,8 @@ func Save(c *Configuration) {
 	}
 }
 
-// Returns a filled Configuration struct
+// Looks for the configuration file and
+// returns a filled Configuration struct
 func New(path string, module string) *Configuration {
 	c := Configuration{}
 	c.path = findConfigFile(path, module)
