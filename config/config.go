@@ -11,15 +11,16 @@ type Connection struct {
 }
 
 type ScannerPreferences struct {
-	ScanInfoStoreTime int64 // TODO
-	MaxScan           int64 // TODO
-	MaxQueuedScans    int64 // Maximum number of scans that can be queued
+	ScanInfoStoreTime int64  // TODO
+	MaxScan           int64  // TODO
+	MaxQueuedScans    int64  // Maximum number of scans that can be queued
+	Niceness          int64  // TODO
+	ScanMem           uint64 // TODO
 }
 
 type Preferences struct {
 	LogLevel string // Loglevel (Debug, Info ...)
 	LogFile  string // Path to logfile
-	Niceness int64  // TODO
 }
 
 type Sensor struct {

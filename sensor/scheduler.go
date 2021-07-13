@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/info"
@@ -14,13 +15,6 @@ import (
 	"github.com/greenbone/eulabeia/sensor/handler"
 
 	"github.com/greenbone/eulabeia/util"
-)
-
-// TODO: Replace Consts with Config File
-const (
-	MAX_SCANS       = 4
-	MEMORY_FOR_SCAN = 0
-	NICENESS        = 10
 )
 
 type schedulerChannels struct {
@@ -35,7 +29,7 @@ type schedulerChannels struct {
 }
 
 // Checks for new instructions for the sensor and starts queued scans.
-func schedule(channels schedulerChannels, mqtt connection.PubSub) {
+func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.ScannerPreferences) {
 	queue := make([]string, 0)
 	init := make([]string, 0)
 	running := make([]string, 0)
@@ -126,15 +120,15 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub) {
 		}
 
 		// Check for free scanner slot
-		if len(init)+len(running) == MAX_SCANS {
+		if len(init)+len(running) == int(conf.MaxScan) {
 			log.Printf("Unable to start a scan from queue, Max number of scans reached.\n")
 			continue
 		}
 
 		// get memory stats and check for memory
-		if MEMORY_FOR_SCAN > 0 {
+		if conf.ScanMem > 0 {
 			m, err := util.GetAvailableMemory()
-			memoryNeeded := m.Bytes + uint64(len(init))*MEMORY_FOR_SCAN
+			memoryNeeded := m.Bytes + uint64(len(init))*conf.ScanMem
 			if err != nil {
 				log.Panicf("Unable to get memory stats: %s\n", err)
 			}
@@ -145,7 +139,7 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub) {
 		}
 
 		// try to run scan process
-		err := StartScan(queue[0], NICENESS, sudo)
+		err := StartScan(queue[0], int(conf.Niceness), sudo)
 		if err != nil {
 			log.Printf("%s: Scan could not start: %s", queue[0], err)
 			continue
@@ -182,7 +176,7 @@ func register(mqtt connection.PubSub, id string, regChan chan struct{}) {
 }
 
 // Start MQTT Message handling
-func Start(mqtt connection.PubSub, id string) {
+func Start(mqtt connection.PubSub, id string, conf config.ScannerPreferences) {
 	// Setup Channels
 	channels := schedulerChannels{
 		startChan: make(chan string),
@@ -230,5 +224,5 @@ func Start(mqtt connection.PubSub, id string) {
 	}
 
 	// TODO: Maybe without go routine. This will be the demon process.
-	go schedule(channels, mqtt)
+	go schedule(channels, mqtt, conf)
 }
