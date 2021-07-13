@@ -123,6 +123,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	config.OverrideViaENV(configuration)
 	server := configuration.Connection.Server
 
 	log.Println("Starting example client")

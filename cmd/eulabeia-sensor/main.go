@@ -24,6 +24,7 @@ func main() {
 		panic(err)
 	}
 
+	config.OverrideViaENV(configuration)
 	server := configuration.Connection.Server
 	if configuration.Sensor.Id == "" {
 		sensor_id, err := os.Hostname()
