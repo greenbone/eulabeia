@@ -5,15 +5,15 @@ import (
 	"errors"
 	"flag"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
+	"github.com/greenbone/eulabeia/messages/info"
+	"github.com/greenbone/eulabeia/process"
 	"github.com/tidwall/gjson"
 )
 
@@ -37,22 +37,24 @@ func (e ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse, 
 
 type OnCreatedTarget struct {
 	publisher     connection.Publisher
-	modifyMSGChan chan messages.Modify
+	modifyMSGChan chan cmds.Modify
 }
 
-const topic = "greenbone.director"
+const topic = "eulabeia/+/#"
 
 func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, error) {
 	if messageType != "created.target" {
 		return nil, nil
 	}
-	var created messages.Created
+	var created info.Created
 	if err := json.Unmarshal(message, &created); err != nil {
 		return nil, err
 	}
-	modify := messages.Modify{
-		Message: messages.NewMessage("modify.target", "", created.GroupID),
-		ID:      created.ID,
+	modify := cmds.Modify{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("modify.target", "", created.GroupID),
+			ID:      created.ID,
+		},
 		Values: map[string]interface{}{
 			"hosts":   []string{"localhorst", "nebenan"},
 			"plugins": []string{"someoids"},
@@ -62,7 +64,7 @@ func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, 
 			},
 		},
 	}
-	if err := oct.publisher.Publish(topic, modify); err != nil {
+	if err := oct.publisher.Publish("eulabeia/target/cmd/director", modify); err != nil {
 		return nil, err
 	}
 	oct.modifyMSGChan <- modify
@@ -71,7 +73,7 @@ func (oct OnCreatedTarget) On(messageType string, message []byte) (interface{}, 
 
 type OnModifiedTarget struct {
 	publisher     connection.Publisher
-	modifyMSGChan chan messages.Modify
+	modifyMSGChan chan cmds.Modify
 }
 
 func (omt OnModifiedTarget) On(messageType string, message []byte) (interface{}, error) {
@@ -82,7 +84,7 @@ func (omt OnModifiedTarget) On(messageType string, message []byte) (interface{},
 	if !ok {
 		return nil, errors.New("closed modify channel")
 	}
-	var modified messages.Modified
+	var modified info.Modified
 	if err := json.Unmarshal(message, &modified); err != nil {
 		return nil, err
 	}
@@ -93,9 +95,12 @@ func (omt OnModifiedTarget) On(messageType string, message []byte) (interface{},
 		return nil, nil
 	}
 	log.Printf("target: %s modified", original.ID)
-	omt.publisher.Publish(topic, messages.Get{
-		Message: messages.NewMessage("get.target", "", ""),
-		ID:      original.ID,
+	omt.publisher.Publish("eulabeia/target/cmd/director", cmds.Get{
+		Identifier: messages.Identifier{
+
+			Message: messages.NewMessage("get.target", "", ""),
+			ID:      original.ID,
+		},
 	})
 	return nil, nil
 }
@@ -127,18 +132,18 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	err = c.Publish(topic, messages.Create{
+	err = c.Publish("eulabeia/target/cmd/director", cmds.Create{
 		Message: messages.Message{
-			MessageType: "create.target",
-			Created:     7774,
-			MessageID:   "1",
-			GroupID:     "12",
+			Type:      "create.target",
+			Created:   7774,
+			MessageID: "1",
+			GroupID:   "12",
 		},
 	})
 	if err != nil {
 		log.Panicf("Failed to publish: %s", err)
 	}
-	modifyChan := make(chan messages.Modify, 1)
+	modifyChan := make(chan cmds.Modify, 1)
 	defer close(modifyChan)
 	mh := ExampleHandler{
 		handler: []OnEvent{
@@ -154,21 +159,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	ic := make(chan os.Signal, 1)
-	defer close(ic)
-	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
-	<-ic
-	log.Println("signal received, exiting")
-	if c != nil {
-		err = c.Close()
-		if err != nil {
-			log.Fatalf("failed to send Disconnect: %s", err)
-		}
-	}
-	<-ic
-	log.Println("Received message, exiting")
-	err = c.Close()
-	if err != nil {
-		log.Panicf("Error while closing connection")
-	}
+	process.Block(c)
 }

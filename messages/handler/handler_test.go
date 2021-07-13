@@ -3,10 +3,13 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
+	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
 )
 
@@ -19,25 +22,27 @@ func (t exampleAggregate) ErrorOnKeyword(m messages.Message) error {
 	}
 	return nil
 }
-func (t exampleAggregate) FailureOnKeyword(m messages.Message) *messages.Failure {
+func (t exampleAggregate) FailureOnKeyword(m messages.Message) *info.Failure {
 	if strings.HasSuffix(m.MessageID, "failure") {
-		return &messages.Failure{Message: m, Error: "some failure"}
+		return &info.Failure{Message: messages.NewMessage("failure.target", m.MessageID, m.GroupID), Error: "some failure"}
 	}
 	return nil
 }
 
-func (t exampleAggregate) Create(c messages.Create) (*messages.Created, error) {
+func (t exampleAggregate) Create(c cmds.Create) (*info.Created, error) {
 
 	if err := t.ErrorOnKeyword(c.Message); err != nil {
 		return nil, err
 	}
-	return &messages.Created{
-		ID:      "fakeid",
-		Message: messages.NewMessage("created.target", c.MessageID, c.GroupID),
+	return &info.Created{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("created.target", c.MessageID, c.GroupID),
+			ID:      "fakeid",
+		},
 	}, nil
 }
 
-func (t exampleAggregate) Modify(m messages.Modify) (*messages.Modified, *messages.Failure, error) {
+func (t exampleAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, error) {
 	if err := t.ErrorOnKeyword(m.Message); err != nil {
 		return nil, nil, err
 	}
@@ -45,13 +50,15 @@ func (t exampleAggregate) Modify(m messages.Modify) (*messages.Modified, *messag
 		return nil, failure, nil
 	}
 
-	return &messages.Modified{
-		ID:      m.ID,
-		Message: messages.NewMessage("modified.target", m.MessageID, m.GroupID),
+	return &info.Modified{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("modified.target", m.MessageID, m.GroupID),
+			ID:      m.ID,
+		},
 	}, nil, nil
 
 }
-func (t exampleAggregate) Get(g messages.Get) (interface{}, *messages.Failure, error) {
+func (t exampleAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) {
 	if err := t.ErrorOnKeyword(g.Message); err != nil {
 		return nil, nil, err
 	}
@@ -63,7 +70,7 @@ func (t exampleAggregate) Get(g messages.Get) (interface{}, *messages.Failure, e
 		Message: g.Message,
 	}, nil, nil
 }
-func (t exampleAggregate) Delete(g messages.Delete) (*messages.Deleted, *messages.Failure, error) {
+func (t exampleAggregate) Delete(g cmds.Delete) (*info.Deleted, *info.Failure, error) {
 	if err := t.ErrorOnKeyword(g.Message); err != nil {
 		return nil, nil, err
 	}
@@ -71,8 +78,11 @@ func (t exampleAggregate) Delete(g messages.Delete) (*messages.Deleted, *message
 		return nil, failure, nil
 	}
 
-	return &messages.Deleted{
-		Message: g.Message,
+	return &info.Deleted{
+		Identifier: messages.Identifier{
+			Message: g.Message,
+			ID:      g.ID,
+		},
 	}, nil, nil
 }
 
@@ -80,29 +90,35 @@ func createMessage(mt string, tt string) messages.Message {
 	return messages.NewMessage(mt+".target", "1234"+tt, "")
 }
 
-func createEvent(mt string, tt string) interface{} {
+func createEvent(mt string, tt string) messages.Event {
 	switch mt {
 	case "create":
-		return &messages.Create{
+		return &cmds.Create{
 			Message: createMessage(mt, tt),
 		}
 	case "modify":
-		return &messages.Modify{
-			Message: createMessage(mt, tt),
-			ID:      "1234",
+		return &cmds.Modify{
+			Identifier: messages.Identifier{
+				Message: createMessage(mt, tt),
+				ID:      "1234",
+			},
 		}
 	case "get":
-		return &messages.Get{
-			Message: createMessage(mt, tt),
-			ID:      "1234",
+		return &cmds.Get{
+			Identifier: messages.Identifier{
+				Message: createMessage(mt, tt),
+				ID:      "1234",
+			},
 		}
 	case "delete":
-		return &messages.Delete{
-			Message: createMessage(mt, tt),
-			ID:      "1234",
+		return &cmds.Delete{
+			Identifier: messages.Identifier{
+				Message: createMessage(mt, tt),
+				ID:      "1234",
+			},
 		}
 	default:
-		return &messages.Failure{
+		return &info.Failure{
 			Message: createMessage("", "failure"),
 		}
 	}
@@ -128,13 +144,14 @@ func TestAggragteHandler(t *testing.T) {
 			if err != nil {
 				t.Errorf("[%s][%s] failed to create json", k, j)
 			}
+			fmt.Printf("[%s][%s] running\n", k, j)
 			h := New(FromAggregate("target", exampleAggregate{}))
 			r, err := h.On("", b)
 			switch j {
 			case SUCCESS:
 				switch k {
 				case "delete":
-					if _, ok := r.MSG.(*messages.Deleted); !ok {
+					if _, ok := r.MSG.(*info.Deleted); !ok {
 						t.Errorf("[%s][%s] expected models.GotTarget but got %T", k, j, r)
 					}
 				case "get":
@@ -142,19 +159,19 @@ func TestAggragteHandler(t *testing.T) {
 						t.Errorf("[%s][%s] expected models.GotTarget but got %T", k, j, r)
 					}
 				case "create":
-					if _, ok := r.MSG.(*messages.Created); !ok {
-						t.Errorf("[%s][%s] expected messages.Created but got %T", k, j, r)
+					if _, ok := r.MSG.(*info.Created); !ok {
+						t.Errorf("[%s][%s] expected info.Created but got %T", k, j, r)
 					}
 				case "modify":
-					if _, ok := r.MSG.(*messages.Modified); !ok {
-						t.Errorf("[%s][%s] expected messages.Modified but got %T", k, j, r)
+					if _, ok := r.MSG.(*info.Modified); !ok {
+						t.Errorf("[%s][%s] expected info.Modified but got %T", k, j, r)
 					}
 
 				}
 			case FAILURE:
 				if k != "create" {
-					if _, ok := r.MSG.(*messages.Failure); !ok {
-						t.Errorf("[%s][%s] expected messages.Failure but got %T", k, j, r)
+					if _, ok := r.MSG.(*info.Failure); !ok {
+						t.Errorf("[%s][%s] expected info.Failure but got %T", k, j, r)
 					}
 				}
 			case ERROR:

@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/handler"
+	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
 	mem "github.com/mackerelio/go-osstat/memory"
 )
@@ -14,7 +16,7 @@ type getMemory struct {
 	stats func() (*mem.Stats, error)
 }
 
-func (gm getMemory) Get(g messages.Get) (interface{}, *messages.Failure, error) {
+func (gm getMemory) Get(g cmds.Get) (messages.Event, *info.Failure, error) {
 	s, err := gm.stats()
 	if err != nil {
 		return nil, nil, err

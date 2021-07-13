@@ -1,6 +1,9 @@
 package models
 
-import "github.com/greenbone/eulabeia/messages"
+import (
+	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/info"
+)
 
 // Target contains all information needed to start a scan
 type Target struct {
@@ -18,5 +21,6 @@ type Target struct {
 // GotTarget is response for get.target
 type GotTarget struct {
 	messages.Message
+	info.EventType
 	Target
 }

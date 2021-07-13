@@ -2,11 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection"
@@ -15,6 +11,7 @@ import (
 	"github.com/greenbone/eulabeia/director/sensor"
 	"github.com/greenbone/eulabeia/director/target"
 	"github.com/greenbone/eulabeia/messages/handler"
+	"github.com/greenbone/eulabeia/process"
 	"github.com/greenbone/eulabeia/storage"
 )
 
@@ -36,23 +33,13 @@ func main() {
 	}
 	device := storage.File{Dir: "/tmp/"}
 	err = client.Subscribe(map[string]connection.OnMessage{
-		"greenbone.sensor": handler.New(sensor.New(device)),
-		"greenbone.director": handler.New(
-			target.New(device),
-			scan.New("greenbone.sensor", device)),
+		"eulabeia/sensor/cmd/director": handler.New(sensor.New(device)),
+		"eulabeia/target/cmd/director": handler.New(target.New(device)),
+		"eulabeia/scan/cmd/director":   handler.New(scan.New(device)),
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	ic := make(chan os.Signal, 1)
-	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
-	<-ic
-	fmt.Println("signal received, exiting")
-	if client != nil {
-		err = client.Close()
-		if err != nil {
-			log.Fatalf("failed to send Disconnect: %s", err)
-		}
-	}
+	process.Block(client)
 }

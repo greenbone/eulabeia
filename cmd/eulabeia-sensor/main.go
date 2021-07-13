@@ -2,22 +2,21 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/handler"
+	"github.com/greenbone/eulabeia/process"
 	"github.com/greenbone/eulabeia/sensor/memory"
 )
 
 func main() {
-	topic := "greenbone.sensor"
+	topic := "eulabeia/+/+/sensor"
 	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
 	flag.Parse()
 	configuration := config.New(*configPath, "eulabeia")
@@ -34,10 +33,12 @@ func main() {
 	log.Println("Starting sensor")
 	c, err := mqtt.New(server, configuration.Sensor.Id, "", "",
 		&mqtt.LastWillMessage{
-			Topic: topic,
-			MSG: messages.Delete{
-				ID:      configuration.Sensor.Id,
-				Message: messages.NewMessage("delete.sensor", "", ""),
+			Topic: "eulabeia/sensor/cmd/director",
+			MSG: cmds.Delete{
+				Identifier: messages.Identifier{
+					Message: messages.NewMessage("delete.sensor", "", ""),
+					ID:      configuration.Sensor.Id,
+				},
 			}})
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
@@ -46,9 +47,11 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	c.Publish(topic, messages.Modify{
-		Message: messages.NewMessage("modify.sensor", "", ""),
-		ID:      configuration.Sensor.Id,
+	c.Publish("eulabeia/sensor/cmd/director", cmds.Modify{
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage("modify.sensor", "", ""),
+			ID:      configuration.Sensor.Id,
+		},
 		Values: map[string]interface{}{
 			"type": "undefined",
 		},
@@ -59,14 +62,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	ic := make(chan os.Signal, 1)
-	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
-	<-ic
-	fmt.Println("signal received, exiting")
-	if c != nil {
-		err = c.Close()
-		if err != nil {
-			log.Fatalf("failed to send Disconnect: %s", err)
-		}
-	}
+	process.Block(c)
 }
