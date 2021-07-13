@@ -9,7 +9,9 @@ import (
 	"log"
 )
 
-func Block(c io.Closer) {
+// Block the caller until interrupted by e.g. SIGINT or SIGTERM
+// Iff the channel has been notified by such an interrupt, the socket/file c will be closed, to aviod any I/O failures.
+func BlockAndClose(c io.Closer) {
 	BlockUntil(func() {
 		log.Println("Exiting")
 		if c != nil {
