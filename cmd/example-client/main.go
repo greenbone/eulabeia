@@ -119,7 +119,11 @@ func main() {
 	clientid := flag.String("clientid", "", "A clientid for the connection")
 	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
 	flag.Parse()
-	configuration := config.New(*configPath, "eulabeia")
+	configuration, err := config.New(*configPath, "eulabeia")
+	if err != nil {
+		panic(err)
+	}
+	config.OverrideViaENV(configuration)
 	server := configuration.Connection.Server
 
 	log.Println("Starting example client")
