@@ -70,7 +70,7 @@ func TestSuccessResponse(t *testing.T) {
 					"alive":       true,
 					"parallel":    false,
 					"exclude":     []string{"host1"},
-					"credentials": map[string]string{"username": "nobody"},
+					"credentials": map[string]map[string]string{"ssh": {"username": "nobody"}},
 				},
 			},
 			Handler:         h,
