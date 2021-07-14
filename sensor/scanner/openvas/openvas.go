@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // OpenVAS component of the sensor. This module is responsible fot everything regarding OpenVAS
-package sensor
+package openvas
 
 import (
 	"errors"
@@ -39,15 +39,22 @@ func (exe StdCommander) Command(name string, arg ...string) *exec.Cmd {
 	return exec.Command(name, arg...)
 }
 
-// rocessList represents a list of processes. It is used to manage processes
+// ProcessList represents a list of processes. It is used to manage processes
 // within different go routines.
-type processList struct {
+type ProcessList struct {
 	procs map[string]*os.Process
 	mutex *sync.Mutex
 }
 
+func CreateEmptyProcessList() ProcessList {
+	return ProcessList{
+		procs: make(map[string]*os.Process),
+		mutex: &sync.Mutex{},
+	}
+}
+
 // addProcess adds a Process to the Process list
-func (pl processList) addProcess(scan string, p *os.Process) error {
+func (pl ProcessList) addProcess(scan string, p *os.Process) error {
 	pl.mutex.Lock()
 	defer pl.mutex.Unlock()
 	if _, ok := pl.procs[scan]; ok {
@@ -58,7 +65,7 @@ func (pl processList) addProcess(scan string, p *os.Process) error {
 }
 
 // removeProcess removes a Process from the Process list
-func (pl processList) removeProcess(scan string) error {
+func (pl ProcessList) removeProcess(scan string) error {
 	pl.mutex.Lock()
 	defer pl.mutex.Unlock()
 	if _, ok := pl.procs[scan]; !ok {
@@ -70,7 +77,7 @@ func (pl processList) removeProcess(scan string) error {
 
 // StartScan starts scan with given scan-ID and process priority (-20 to 19,
 // lower is more prioritized)
-func StartScan(scan string, niceness int, sudo bool, exe Commander, procList processList) error {
+func StartScan(scan string, niceness int, sudo bool, exe Commander, procList ProcessList) error {
 	cmdString := make([]string, 0)
 
 	cmdString = append(cmdString, "nice", "-n", fmt.Sprintf("%v", niceness))
@@ -96,7 +103,7 @@ func StartScan(scan string, niceness int, sudo bool, exe Commander, procList pro
 }
 
 // StopScan stops a scan with given scan-ID
-func StopScan(scan string, sudo bool, exe Commander, procList processList) error {
+func StopScan(scan string, sudo bool, exe Commander, procList ProcessList) error {
 	err := procList.removeProcess(scan)
 	if err != nil {
 		return err
@@ -124,7 +131,7 @@ func StopScan(scan string, sudo bool, exe Commander, procList processList) error
 }
 
 // ScanFinished must be called when a Openvas Process succesfully finished
-func ScanFinished(scan string, procList processList) error {
+func ScanFinished(scan string, procList ProcessList) error {
 	return procList.removeProcess(scan)
 }
 
@@ -170,7 +177,7 @@ func IsSudo(exe Commander) bool {
 
 // waitForProcessToEnd gets Called as go-routine after OpenVAS Scan Process was
 // started
-func waitForProcessToEnd(p *os.Process, scan string, procList processList) {
+func waitForProcessToEnd(p *os.Process, scan string, procList ProcessList) {
 	p.Wait()
 	err := procList.removeProcess(scan)
 	if err == nil {

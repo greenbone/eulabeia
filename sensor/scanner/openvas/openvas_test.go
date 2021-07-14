@@ -1,4 +1,4 @@
-package sensor
+package openvas
 
 import (
 	"fmt"
@@ -106,7 +106,7 @@ func TestCommandSettings(t *testing.T) {
 
 func TestStartStopScanSudo(t *testing.T) {
 	// Create Process List for test
-	var processes = processList{
+	var processes = ProcessList{
 		procs: make(map[string]*os.Process),
 		mutex: &sync.Mutex{},
 	}
@@ -140,7 +140,7 @@ func TestStartStopScanSudo(t *testing.T) {
 
 func TestNonSudoStopScanFail(t *testing.T) {
 	// Create Process List for test
-	var processes = processList{
+	var processes = ProcessList{
 		procs: make(map[string]*os.Process),
 		mutex: &sync.Mutex{},
 	}
@@ -159,7 +159,7 @@ func TestNonSudoStopScanFail(t *testing.T) {
 
 func TestScanFinishedSuccess(t *testing.T) {
 	// Create Process List for test
-	var processes = processList{
+	var processes = ProcessList{
 		procs: make(map[string]*os.Process),
 		mutex: &sync.Mutex{},
 	}
@@ -173,7 +173,7 @@ func TestScanFinishedSuccess(t *testing.T) {
 
 func TestScanFinishedFail(t *testing.T) {
 	// Create Process List for test
-	var processes = processList{
+	var processes = ProcessList{
 		procs: make(map[string]*os.Process),
 		mutex: &sync.Mutex{},
 	}
