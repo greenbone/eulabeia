@@ -73,7 +73,7 @@ func NewDelete(aggregate string, id string, destination string, groupID string) 
 
 // Start indicates that something with the ID should be started.
 //
-// As an example an event with the stype start.scan with the id 1 would start scan id 1
+// As an example an event with the type start.scan with the id 1 would start scan id 1
 type Start IDCMD
 
 // NewStart creates a new Start cmd
@@ -97,12 +97,12 @@ type Modify struct {
 }
 
 // NewModify creates a new Modify cmd
-func NewModify(aggregate string, id string, valus map[string]interface{}, destination string, groupID string) Modify {
+func NewModify(aggregate string, id string, values map[string]interface{}, destination string, groupID string) Modify {
 	return Modify{
 		Identifier: messages.Identifier{
 			ID:      id,
 			Message: messages.NewMessage(buildMessageType("modify", aggregate, destination), "", groupID),
 		},
-		Values: valus,
+		Values: values,
 	}
 }
