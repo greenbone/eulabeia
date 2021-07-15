@@ -69,9 +69,5 @@ func main() {
 	sens := sensor.NewScheduler(client, configuration.Sensor.Id, configuration.ScannerPreferences)
 	log.Printf("Starting Scheduler")
 	sens.Start()
-	process.Block(client)
-	log.Printf("Stopping Scheduler")
-	term := sens.Stop()
-	log.Printf("Wait for all OpenVAS processes to end.")
-	<-term
+	process.Block(client, sens)
 }

@@ -152,6 +152,7 @@ func (sensor Scheduler) schedule() {
 				vtsLoading = false
 
 			case <-sensor.termChan:
+				log.Print("Cleaning all OpenVAS Processes...\n")
 				// Stopping all init processes
 				for _, v := range init {
 					ovas.StopScan(v, sudo, openvas.StdCommander{})
@@ -230,9 +231,11 @@ func (sensor Scheduler) register() {
 	}
 }
 
-func (sensor Scheduler) Stop() chan struct{} {
+func (sensor Scheduler) Close() error {
+	log.Print("Stopping scheduler...\n")
 	sensor.termChan <- struct{}{}
-	return sensor.terminatedChan
+	<-sensor.terminatedChan
+	return nil
 }
 
 // Start initializes MQTT handling and starts the scheduler
