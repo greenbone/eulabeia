@@ -27,6 +27,7 @@ import (
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/process"
+	"github.com/greenbone/eulabeia/sensor"
 )
 
 func main() {
@@ -65,17 +66,10 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	client.Publish("eulabeia/sensor/cmd/director", cmds.Modify{
-		Identifier: messages.Identifier{
-			Message: messages.NewMessage("modify.sensor", "", ""),
-			ID:      configuration.Sensor.Id,
-		},
-		Values: map[string]interface{}{
-			"type": "undefined",
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
+	sens := sensor.NewScheduler(client, configuration.Sensor.Id, configuration.ScannerPreferences)
+	log.Printf("Starting Scheduler")
+	sens.Start()
 	process.Block(client)
+	term := sens.Stop()
+	<-term
 }

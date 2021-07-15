@@ -35,7 +35,7 @@ import (
 	"github.com/greenbone/eulabeia/util"
 )
 
-type Sensor struct {
+type Scheduler struct {
 	startChan      chan string   // Channel to insert scan into queue
 	stopChan       chan string   // Channel to delete scan from queue
 	runChan        chan string   // Channel to delete scan from init and insert it into running
@@ -63,7 +63,7 @@ func loadVTs(vtsLoadedChan chan struct{}, ovas *openvas.OpenVASScanner) {
 }
 
 // Checks for new instructions for the sensor and starts queued scans.
-func (sensor Sensor) schedule() {
+func (sensor Scheduler) schedule() {
 	queue := make([]string, 0)
 	init := make([]string, 0)
 	running := make([]string, 0)
@@ -209,7 +209,7 @@ func (sensor Sensor) schedule() {
 }
 
 // register loops until its ID is registrated
-func (sensor Sensor) register() {
+func (sensor Scheduler) register() {
 	for { // loop until sensor is registered
 		sensor.mqtt.Publish("eulabeia/sensor/cmd/director", cmds.Register{
 			Identifier: messages.Identifier{
@@ -226,13 +226,13 @@ func (sensor Sensor) register() {
 	}
 }
 
-func (sensor Sensor) Stop() chan struct{} {
+func (sensor Scheduler) Stop() chan struct{} {
 	sensor.termChan <- struct{}{}
 	return sensor.terminatedChan
 }
 
 // Start initializes MQTT handling and starts the scheduler
-func (sensor Sensor) Start() {
+func (sensor Scheduler) Start() {
 	// Subscribe on Topic to get confirmation about registration
 	sensor.mqtt.Subscribe(map[string]connection.OnMessage{
 		fmt.Sprintf("eulabeia/sensor/info/%s", sensor.id): handler.Registered{
@@ -271,8 +271,8 @@ func (sensor Sensor) Start() {
 	go sensor.schedule()
 }
 
-func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferences) *Sensor {
-	return &Sensor{
+func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferences) *Scheduler {
+	return &Scheduler{
 		startChan:      make(chan string),
 		stopChan:       make(chan string),
 		runChan:        make(chan string),
