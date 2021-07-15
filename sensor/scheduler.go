@@ -47,9 +47,9 @@ type schedulerChannels struct {
 }
 
 // loadVTs commands openvas to load VTs into redis
-func loadVTs(vtsLoadedChan chan struct{}) {
+func loadVTs(vtsLoadedChan chan struct{}, ovas *openvas.OpenVASScanner) {
 	log.Printf("Loading VTs into Redis DB...\n")
-	err := openvas.LoadVTsIntoRedis(openvas.StdCommander{})
+	err := ovas.LoadVTsIntoRedis()
 	if err != nil {
 		log.Panicf("Unable to load VTs into redis: %s", err)
 	}
@@ -61,12 +61,11 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 	queue := make([]string, 0)
 	init := make([]string, 0)
 	running := make([]string, 0)
-	sudo := openvas.IsSudo(openvas.StdCommander{})
-	var processes = openvas.CreateEmptyProcessList()
+	ovas := openvas.CreateNewOpenVASScanner(nil, openvas.IsSudo(nil))
 
 	var vtsLoadedChan = make(chan struct{})
 	vtsLoading := true
-	go loadVTs(vtsLoadedChan)
+	go loadVTs(vtsLoadedChan, ovas)
 
 	for { // Infinite scheduler Loop
 		for vtsLoading || len(queue) == 0 { // Check for new stuff in Channels
@@ -94,7 +93,7 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 						}
 					}
 					log.Printf("Stopping scan %s", scan)
-					err := openvas.StopScan(scan, sudo, openvas.StdCommander{}, processes)
+					err := ovas.StopScan(scan)
 					if err != nil {
 						log.Printf("%s: Scan cannot be stopped: %s.\n", scan, err)
 						continue
@@ -114,13 +113,13 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 
 			case scan := <-channels.finChan: // scan finished
 				util.RemoveListItem(running, scan)
-				err := openvas.ScanFinished(scan, processes)
+				err := ovas.ScanFinished(scan)
 				if err != nil {
 					log.Printf("Unable to end scan %s: %s", scan, err)
 				}
 
 			case <-channels.verChan:
-				ver, err := openvas.GetVersion(openvas.StdCommander{})
+				ver, err := ovas.GetVersion()
 				var ret string
 				if err != nil {
 					ret = fmt.Sprintf("%s", err)
@@ -136,7 +135,7 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 				})
 
 			case <-channels.vtsChan:
-				go loadVTs(vtsLoadedChan)
+				go loadVTs(vtsLoadedChan, ovas)
 				vtsLoading = true
 
 			case <-vtsLoadedChan:
@@ -173,7 +172,7 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 		}
 
 		// try to run scan process
-		err := openvas.StartScan(queue[0], int(conf.Niceness), sudo, openvas.StdCommander{}, processes)
+		err := ovas.StartScan(queue[0], int(conf.Niceness))
 		if err != nil {
 			log.Printf("%s: Scan could not start: %s", queue[0], err)
 			continue
