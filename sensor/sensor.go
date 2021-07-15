@@ -59,6 +59,7 @@ func loadVTs(vtsLoadedChan chan struct{}, ovas *openvas.OpenVASScanner) {
 	if err != nil {
 		log.Panicf("Unable to load VTs into redis: %s", err)
 	}
+	log.Printf("Loading VTs into Redis DB finished\n")
 	vtsLoadedChan <- struct{}{}
 }
 
@@ -212,10 +213,10 @@ func (sensor Scheduler) schedule() {
 // register loops until its ID is registrated
 func (sensor Scheduler) register() {
 	for { // loop until sensor is registered
-		sensor.mqtt.Publish("eulabeia/sensor/cmd/director", cmds.Register{
+		sensor.mqtt.Publish("eulabeia/sensor/cmd/director", cmds.Modify{
 			Identifier: messages.Identifier{
 				ID:      sensor.id,
-				Message: messages.NewMessage("sensor.register", "", ""),
+				Message: messages.NewMessage("modify.sensor", "", ""),
 			},
 		})
 		select {
@@ -236,8 +237,9 @@ func (sensor Scheduler) Stop() chan struct{} {
 func (sensor Scheduler) Start() {
 	// Subscribe on Topic to get confirmation about registration
 	sensor.mqtt.Subscribe(map[string]connection.OnMessage{
-		fmt.Sprintf("eulabeia/sensor/info/%s", sensor.id): handler.Registered{
+		"eulabeia/sensor/info": handler.Registered{
 			RegChan: sensor.regChan,
+			ID:      sensor.id,
 		},
 	})
 	// Register Sensor

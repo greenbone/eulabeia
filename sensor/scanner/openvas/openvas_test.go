@@ -39,7 +39,7 @@ type helperLongCommander struct {
 }
 
 func (exe helperLongCommander) Command(name string, arg ...string) *exec.Cmd {
-	cs := []string{"-test.run=TestCommandEndless", "--", name}
+	cs := []string{"-test.run=TestCommandLong", "--", name}
 	cs = append(cs, arg...)
 	cmd := exec.Command(os.Args[0], cs...)
 	cmd.Env = []string{"GO_TEST_PROCESS=1"}
@@ -48,13 +48,11 @@ func (exe helperLongCommander) Command(name string, arg ...string) *exec.Cmd {
 
 // TestCommandEndless is not a real test. It is only used as a helper process to
 // simulate long running programm such as a scan in openvas
-func TestCommandEndless(t *testing.T) {
+func TestCommandLong(t *testing.T) {
 	if os.Getenv("GO_TEST_PROCESS") != "1" {
 		return
 	}
-	for {
-		time.Sleep(time.Second)
-	}
+	time.Sleep(time.Second)
 }
 
 // helperFailCommander creates a Command to execute a programm with a exit code 1

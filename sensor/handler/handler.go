@@ -48,10 +48,18 @@ func (handler StartStop) On(topic string, message []byte) (*connection.SendRespo
 
 type Registered struct {
 	RegChan chan struct{}
+	ID      string
 }
 
 func (handler Registered) On(topic string, message []byte) (*connection.SendResponse, error) {
-	handler.RegChan <- struct{}{}
+	var msg info.Created
+	err := json.Unmarshal(message, &msg)
+	if err != nil {
+		return nil, err
+	}
+	if msg.ID == handler.ID {
+		handler.RegChan <- struct{}{}
+	}
 	return nil, nil
 }
 
