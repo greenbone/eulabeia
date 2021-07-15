@@ -127,15 +127,16 @@ func TestCommandSettings(t *testing.T) {
 // TestStartStopScanSudo tests the procedure of creating an openvas process and stopping it with sudo privileges
 func TestStartStopScanSudo(t *testing.T) {
 	// OpenVASScanner instance
-	ovas := CreateNewOpenVASScanner(helperLongCommander{}, IsSudo(helperShortCommander{}))
+	ovas := NewOpenVASScanner()
+	sudo := IsSudo(helperShortCommander{})
 
 	// Test for sudo rights
-	if !ovas.sudo {
-		t.Fatalf("Error: Sudo is %t, but should be %t", ovas.sudo, true)
+	if !sudo {
+		t.Fatalf("Error: Sudo is %t, but should be %t", sudo, true)
 	}
 
 	// Start scan
-	if err := ovas.StartScan("foo", 10); err != nil {
+	if err := ovas.StartScan("foo", 10, sudo, helperLongCommander{}); err != nil {
 		t.Fatalf("Error: Cannot run StartScan: %s", err)
 	}
 
@@ -145,7 +146,7 @@ func TestStartStopScanSudo(t *testing.T) {
 	}
 
 	// Stop Scan
-	if err := ovas.StopScan("foo"); err != nil {
+	if err := ovas.StopScan("foo", sudo, helperShortCommander{}); err != nil {
 		t.Fatalf("Error: Unable to stop process: %s", err)
 	}
 
@@ -158,15 +159,16 @@ func TestStartStopScanSudo(t *testing.T) {
 // TestNonSudoStopScanFail tests if it fails to stop a scan when there is no scan to stop
 func TestNonSudoStopScanFail(t *testing.T) {
 	// OpenVASScanner instance
-	ovas := CreateNewOpenVASScanner(helperShortCommander{}, IsSudo(helperFailCommander{}))
+	ovas := NewOpenVASScanner()
+	sudo := IsSudo(helperFailCommander{})
 
 	// Test if sudo is unavailable
-	if ovas.sudo {
-		t.Fatalf("Error: Sudo is %t, but should be %t", ovas.sudo, false)
+	if sudo {
+		t.Fatalf("Error: Sudo is %t, but should be %t", sudo, false)
 	}
 
 	// Stop Scan should fail because ther is no process
-	if err := ovas.StopScan("foo"); err == nil {
+	if err := ovas.StopScan("foo", sudo, helperShortCommander{}); err == nil {
 		t.Fatalf("Error: Should be unable to successfully stop scan")
 	}
 }
@@ -174,7 +176,7 @@ func TestNonSudoStopScanFail(t *testing.T) {
 // TestScanFinishedSuccess tests if it can mark a scan as finished
 func TestScanFinishedSuccess(t *testing.T) {
 	// OpenVASScanner instance
-	ovas := CreateNewOpenVASScanner(nil, false)
+	ovas := NewOpenVASScanner()
 
 	ovas.addProcess("foo", nil)
 
@@ -186,7 +188,7 @@ func TestScanFinishedSuccess(t *testing.T) {
 // TestScanFinishedFail tests if marking a scan as finished fails if there is no scan to finish
 func TestScanFinishedFail(t *testing.T) {
 	// OpenVASScanner instance
-	ovas := CreateNewOpenVASScanner(nil, false)
+	ovas := NewOpenVASScanner()
 
 	if err := ovas.ScanFinished("foo"); err == nil {
 		t.Fatalf("Error: ScanFinished should return an error")
@@ -196,9 +198,9 @@ func TestScanFinishedFail(t *testing.T) {
 // TestGetVersion tests if the information getting from the openvas version is extracted correctly
 func TestGetVersion(t *testing.T) {
 	// OpenVASScanner instance
-	ovas := CreateNewOpenVASScanner(helperVersionCommander{}, false)
+	ovas := NewOpenVASScanner()
 
-	ver, err := ovas.GetVersion()
+	ver, err := ovas.GetVersion(helperVersionCommander{})
 	if err != nil {
 		t.Fatalf("Error: Unable to get Version")
 	}
@@ -210,9 +212,9 @@ func TestGetVersion(t *testing.T) {
 // TestGetSettings tests if the information getting from the openvas settings is extracted correctly
 func TestGetSettings(t *testing.T) {
 	// OpenVASScanner instance
-	ovas := CreateNewOpenVASScanner(helperSettingsCommander{}, false)
+	ovas := NewOpenVASScanner()
 
-	set, err := ovas.GetSettings()
+	set, err := ovas.GetSettings(helperSettingsCommander{})
 	fmt.Printf("%v\n", set)
 
 	if err != nil {

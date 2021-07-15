@@ -55,7 +55,7 @@ type Scheduler struct {
 // loadVTs commands openvas to load VTs into redis
 func loadVTs(vtsLoadedChan chan struct{}, ovas *openvas.OpenVASScanner) {
 	log.Printf("Loading VTs into Redis DB...\n")
-	err := ovas.LoadVTsIntoRedis()
+	err := ovas.LoadVTsIntoRedis(openvas.StdCommander{})
 	if err != nil {
 		log.Panicf("Unable to load VTs into redis: %s", err)
 	}
@@ -67,7 +67,8 @@ func (sensor Scheduler) schedule() {
 	queue := make([]string, 0)
 	init := make([]string, 0)
 	running := make([]string, 0)
-	ovas := openvas.CreateNewOpenVASScanner(nil, openvas.IsSudo(nil))
+	ovas := openvas.NewOpenVASScanner()
+	sudo := openvas.IsSudo(openvas.StdCommander{})
 
 	var vtsLoadedChan = make(chan struct{})
 	vtsLoading := true
@@ -99,7 +100,7 @@ func (sensor Scheduler) schedule() {
 						}
 					}
 					log.Printf("Stopping scan %s", scan)
-					err := ovas.StopScan(scan)
+					err := ovas.StopScan(scan, sudo, openvas.StdCommander{})
 					if err != nil {
 						log.Printf("%s: Scan cannot be stopped: %s.\n", scan, err)
 						continue
@@ -125,7 +126,7 @@ func (sensor Scheduler) schedule() {
 				}
 
 			case <-sensor.verChan:
-				ver, err := ovas.GetVersion()
+				ver, err := ovas.GetVersion(openvas.StdCommander{})
 				var ret string
 				if err != nil {
 					ret = fmt.Sprintf("%s", err)
@@ -150,11 +151,11 @@ func (sensor Scheduler) schedule() {
 			case <-sensor.termChan:
 				// Stopping all init processes
 				for _, v := range init {
-					ovas.StopScan(v)
+					ovas.StopScan(v, sudo, openvas.StdCommander{})
 				}
 				// Stopping all running processes
 				for _, v := range running {
-					ovas.StopScan(v)
+					ovas.StopScan(v, sudo, openvas.StdCommander{})
 				}
 				sensor.terminatedChan <- struct{}{}
 				return
@@ -190,7 +191,7 @@ func (sensor Scheduler) schedule() {
 		}
 
 		// try to run scan process
-		err := ovas.StartScan(queue[0], int(sensor.conf.Niceness))
+		err := ovas.StartScan(queue[0], int(sensor.conf.Niceness), sudo, openvas.StdCommander{})
 		if err != nil {
 			log.Printf("%s: Scan could not start: %s", queue[0], err)
 			continue

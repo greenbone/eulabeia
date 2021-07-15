@@ -70,6 +70,8 @@ func main() {
 	log.Printf("Starting Scheduler")
 	sens.Start()
 	process.Block(client)
+	log.Printf("Stopping Scheduler")
 	term := sens.Stop()
+	log.Printf("Wait for all OpenVAS processes to end.")
 	<-term
 }

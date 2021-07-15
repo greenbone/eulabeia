@@ -34,8 +34,6 @@ import (
 type OpenVASScanner struct {
 	procs map[string]*os.Process // Process List for running scans
 	mutex *sync.Mutex            // For thread save management of processes
-	exe   Commander              // Commander to use to run commands
-	sudo  bool                   // Decides if scans should be run as sudo
 }
 
 // Commander is an inferace to manage different ways to handle calls to openvas.
@@ -54,13 +52,11 @@ func (exe StdCommander) Command(name string, arg ...string) *exec.Cmd {
 
 // CreateNewOpenVASScanner creates a new instance of an OpenVASScanner with the
 // specified settings.
-func CreateNewOpenVASScanner(cmd Commander, sudo bool) *OpenVASScanner {
+func NewOpenVASScanner() *OpenVASScanner {
 
 	return &OpenVASScanner{
 		procs: make(map[string]*os.Process),
 		mutex: &sync.Mutex{},
-		exe:   cmd,
-		sudo:  sudo,
 	}
 }
 
@@ -88,12 +84,12 @@ func (ovas OpenVASScanner) removeProcess(scan string) error {
 
 // StartScan starts scan with given scan-ID and process priority (-20 to 19,
 // lower is more prioritized)
-func (ovas OpenVASScanner) StartScan(scan string, niceness int) error {
+func (ovas OpenVASScanner) StartScan(scan string, niceness int, sudo bool, exe Commander) error {
 	cmdString := make([]string, 0)
 
 	cmdString = append(cmdString, "nice", "-n", fmt.Sprintf("%v", niceness))
 
-	if ovas.sudo {
+	if sudo {
 		cmdString = append(cmdString, "sudo", "-n")
 	}
 
@@ -102,7 +98,7 @@ func (ovas OpenVASScanner) StartScan(scan string, niceness int) error {
 	head := cmdString[0]
 	args := cmdString[1:]
 
-	cmd := ovas.exe.Command(head, args...)
+	cmd := exe.Command(head, args...)
 
 	err := cmd.Start()
 	if err != nil {
@@ -114,7 +110,7 @@ func (ovas OpenVASScanner) StartScan(scan string, niceness int) error {
 }
 
 // StopScan stops a scan with given scan-ID
-func (ovas OpenVASScanner) StopScan(scan string) error {
+func (ovas OpenVASScanner) StopScan(scan string, sudo bool, exe Commander) error {
 	err := ovas.removeProcess(scan)
 	if err != nil {
 		return err
@@ -122,7 +118,7 @@ func (ovas OpenVASScanner) StopScan(scan string) error {
 
 	cmdString := make([]string, 0)
 
-	if ovas.sudo {
+	if sudo {
 		cmdString = append(cmdString, "sudo", "-n")
 	}
 
@@ -131,7 +127,7 @@ func (ovas OpenVASScanner) StopScan(scan string) error {
 	head := cmdString[0]
 	args := cmdString[1:]
 
-	cmd := ovas.exe.Command(head, args...)
+	cmd := exe.Command(head, args...)
 
 	err = cmd.Run()
 	if err != nil {
@@ -147,8 +143,8 @@ func (ovas OpenVASScanner) ScanFinished(scan string) error {
 }
 
 // GetVersion returns the Version of OpenVAS
-func (ovas OpenVASScanner) GetVersion() (string, error) {
-	out, err := ovas.exe.Command("openvas", "-V").CombinedOutput()
+func (ovas OpenVASScanner) GetVersion(exe Commander) (string, error) {
+	out, err := exe.Command("openvas", "-V").CombinedOutput()
 	if err != nil {
 		return "", err
 	}
@@ -157,8 +153,8 @@ func (ovas OpenVASScanner) GetVersion() (string, error) {
 }
 
 // GetSettings returns the Settings of OpenVAS as a map
-func (ovas OpenVASScanner) GetSettings() (map[string]string, error) {
-	out, err := ovas.exe.Command("openvas", "-s").CombinedOutput()
+func (ovas OpenVASScanner) GetSettings(exe Commander) (map[string]string, error) {
+	out, err := exe.Command("openvas", "-s").CombinedOutput()
 	if err != nil {
 		return nil, err
 	}
@@ -175,8 +171,8 @@ func (ovas OpenVASScanner) GetSettings() (map[string]string, error) {
 }
 
 // LoadVTsIntoRedis starts openvas which then loads new VTs into Redis
-func (ovas OpenVASScanner) LoadVTsIntoRedis() error {
-	return ovas.exe.Command("openvas", "--update-vt-info").Run()
+func (ovas OpenVASScanner) LoadVTsIntoRedis(exe Commander) error {
+	return exe.Command("openvas", "--update-vt-info").Run()
 }
 
 // IsSudo checks for sudo permissions
