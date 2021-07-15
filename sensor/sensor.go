@@ -76,7 +76,9 @@ func (sensor Scheduler) schedule() {
 	go loadVTs(vtsLoadedChan, ovas)
 
 	for { // Infinite scheduler Loop
-		for vtsLoading || len(queue) == 0 { // Check for new stuff in Channels
+		first := true
+		for first || vtsLoading || len(queue) == 0 { // Check for new stuff in Channels
+			first = false
 			select {
 			case scan := <-sensor.startChan: // start scan
 				queue = append(queue, scan)
@@ -173,7 +175,7 @@ func (sensor Scheduler) schedule() {
 		}
 
 		// Check for free scanner slot
-		if len(init)+len(running) == int(sensor.conf.MaxScan) {
+		if sensor.conf.MaxScan > 0 && len(init)+len(running) == int(sensor.conf.MaxScan) {
 			log.Printf("Unable to start a scan from queue, Max number of scans reached.\n")
 			continue
 		}
