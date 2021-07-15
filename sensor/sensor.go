@@ -35,15 +35,21 @@ import (
 	"github.com/greenbone/eulabeia/util"
 )
 
-type schedulerChannels struct {
-	startChan chan string   // Channel to insert scan into queue
-	stopChan  chan string   // Channel to delete scan from queue
-	runChan   chan string   // Channel to delete scan from init and insert it into running
-	finChan   chan string   // Channel to delete scan from running
-	verChan   chan struct{} // Channel to get OpenVAS Version
-	vtsChan   chan struct{} // Channel to load VTs into Redis (via OpenVAS)
-	regChan   chan struct{} // Channel to mark Sensor as registered
-	discChan  chan struct{} // Channel to mark disconnected director
+type Sensor struct {
+	startChan      chan string   // Channel to insert scan into queue
+	stopChan       chan string   // Channel to delete scan from queue
+	runChan        chan string   // Channel to delete scan from init and insert it into running
+	finChan        chan string   // Channel to delete scan from running
+	verChan        chan struct{} // Channel to get OpenVAS Version
+	vtsChan        chan struct{} // Channel to load VTs into Redis (via OpenVAS)
+	regChan        chan struct{} // Channel to mark Sensor as registered
+	discChan       chan struct{} // Channel to mark disconnected director
+	termChan       chan struct{} // Channel to terminate the Scheduler
+	terminatedChan chan struct{} // Channel to mark scheduler as terminated
+
+	mqtt connection.PubSub
+	id   string
+	conf config.ScannerPreferences
 }
 
 // loadVTs commands openvas to load VTs into redis
@@ -57,7 +63,7 @@ func loadVTs(vtsLoadedChan chan struct{}, ovas *openvas.OpenVASScanner) {
 }
 
 // Checks for new instructions for the sensor and starts queued scans.
-func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.ScannerPreferences) {
+func (sensor Sensor) schedule() {
 	queue := make([]string, 0)
 	init := make([]string, 0)
 	running := make([]string, 0)
@@ -70,9 +76,9 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 	for { // Infinite scheduler Loop
 		for vtsLoading || len(queue) == 0 { // Check for new stuff in Channels
 			select {
-			case scan := <-channels.startChan: // start scan
+			case scan := <-sensor.startChan: // start scan
 				queue = append(queue, scan)
-				mqtt.Publish("eulabeia/scan/info", info.Status{
+				sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
 					Identifier: messages.Identifier{
 						ID:      scan,
 						Message: messages.NewMessage("scan.status", "", ""),
@@ -80,7 +86,7 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 					Status: "queued",
 				})
 
-			case scan := <-channels.stopChan: // stop scan
+			case scan := <-sensor.stopChan: // stop scan
 				var ok bool
 				queue, ok = util.RemoveListItem(queue, scan)
 				if !ok { // scan was not queued
@@ -99,7 +105,7 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 						continue
 					}
 				}
-				mqtt.Publish("eulabeia/scan/info", info.Status{
+				sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
 					Identifier: messages.Identifier{
 						ID:      scan,
 						Message: messages.NewMessage("scan.status", "", ""),
@@ -107,18 +113,18 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 					Status: "stopped",
 				})
 
-			case scan := <-channels.runChan: // scan runs
+			case scan := <-sensor.runChan: // scan runs
 				running = append(running, scan)
 				util.RemoveListItem(init, scan)
 
-			case scan := <-channels.finChan: // scan finished
+			case scan := <-sensor.finChan: // scan finished
 				util.RemoveListItem(running, scan)
 				err := ovas.ScanFinished(scan)
 				if err != nil {
 					log.Printf("Unable to end scan %s: %s", scan, err)
 				}
 
-			case <-channels.verChan:
+			case <-sensor.verChan:
 				ver, err := ovas.GetVersion()
 				var ret string
 				if err != nil {
@@ -126,7 +132,7 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 				} else {
 					ret = ver
 				}
-				mqtt.Publish("eulabeia/scan/info", info.Version{
+				sensor.mqtt.Publish("eulabeia/scan/info", info.Version{
 					Identifier: messages.Identifier{
 						ID:      "",
 						Message: messages.NewMessage("sensor.version", "", ""),
@@ -134,12 +140,24 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 					Version: ret,
 				})
 
-			case <-channels.vtsChan:
+			case <-sensor.vtsChan:
 				go loadVTs(vtsLoadedChan, ovas)
 				vtsLoading = true
 
 			case <-vtsLoadedChan:
 				vtsLoading = false
+
+			case <-sensor.termChan:
+				// Stopping all init processes
+				for _, v := range init {
+					ovas.StopScan(v)
+				}
+				// Stopping all running processes
+				for _, v := range running {
+					ovas.StopScan(v)
+				}
+				sensor.terminatedChan <- struct{}{}
+				return
 
 			// TODO: When terminating the sensor clear all openvas processes
 			// and interrupt all scans
@@ -153,15 +171,15 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 		}
 
 		// Check for free scanner slot
-		if len(init)+len(running) == int(conf.MaxScan) {
+		if len(init)+len(running) == int(sensor.conf.MaxScan) {
 			log.Printf("Unable to start a scan from queue, Max number of scans reached.\n")
 			continue
 		}
 
 		// get memory stats and check for memory
-		if conf.MinFreeMemScanQueue > 0 {
+		if sensor.conf.MinFreeMemScanQueue > 0 {
 			m, err := util.GetAvailableMemory(util.StdMemoryManager{})
-			memoryNeeded := m.Bytes + uint64(len(init))*conf.MinFreeMemScanQueue
+			memoryNeeded := m.Bytes + uint64(len(init))*sensor.conf.MinFreeMemScanQueue
 			if err != nil {
 				log.Panicf("Unable to get memory stats: %s\n", err)
 			}
@@ -172,12 +190,12 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 		}
 
 		// try to run scan process
-		err := ovas.StartScan(queue[0], int(conf.Niceness))
+		err := ovas.StartScan(queue[0], int(sensor.conf.Niceness))
 		if err != nil {
 			log.Printf("%s: Scan could not start: %s", queue[0], err)
 			continue
 		}
-		mqtt.Publish("eulabeia/scan/info", info.Status{
+		sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
 			Identifier: messages.Identifier{
 				ID:      queue[0],
 				Message: messages.NewMessage("scan.status", "", ""),
@@ -191,16 +209,16 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 }
 
 // register loops until its ID is registrated
-func register(mqtt connection.PubSub, id string, regChan chan struct{}) {
+func (sensor Sensor) register() {
 	for { // loop until sensor is registered
-		mqtt.Publish("eulabeia/sensor/cmd/director", cmds.Register{
+		sensor.mqtt.Publish("eulabeia/sensor/cmd/director", cmds.Register{
 			Identifier: messages.Identifier{
-				ID:      id,
+				ID:      sensor.id,
 				Message: messages.NewMessage("sensor.register", "", ""),
 			},
 		})
 		select {
-		case <-regChan:
+		case <-sensor.regChan:
 			return
 		// Send new registration mqtt message each second
 		case <-time.After(time.Second):
@@ -208,54 +226,66 @@ func register(mqtt connection.PubSub, id string, regChan chan struct{}) {
 	}
 }
 
-// Start MQTT Message handling
-func Start(mqtt connection.PubSub, id string, conf config.ScannerPreferences) {
-	// Setup Channels
-	channels := schedulerChannels{
-		startChan: make(chan string),
-		stopChan:  make(chan string),
-		runChan:   make(chan string),
-		finChan:   make(chan string),
-		verChan:   make(chan struct{}),
-		vtsChan:   make(chan struct{}),
-		regChan:   make(chan struct{}),
-		discChan:  make(chan struct{}),
-	}
+func (sensor Sensor) Stop() chan struct{} {
+	sensor.termChan <- struct{}{}
+	return sensor.terminatedChan
+}
+
+// Start initializes MQTT handling and starts the scheduler
+func (sensor Sensor) Start() {
 	// Subscribe on Topic to get confirmation about registration
-	mqtt.Subscribe(map[string]connection.OnMessage{
-		fmt.Sprintf("eulabeia/sensor/info/%s", id): handler.Registered{
-			RegChan: channels.regChan,
+	sensor.mqtt.Subscribe(map[string]connection.OnMessage{
+		fmt.Sprintf("eulabeia/sensor/info/%s", sensor.id): handler.Registered{
+			RegChan: sensor.regChan,
 		},
 	})
 	// Register Sensor
-	register(mqtt, id, channels.regChan)
+	sensor.register()
 	// MQTT OnMessage Types
 	var startStopHandler = handler.StartStop{
-		StartChan: channels.startChan,
-		StopChan:  channels.stopChan,
+		StartChan: sensor.startChan,
+		StopChan:  sensor.stopChan,
 	}
 
 	var statusHandler = handler.Status{
-		RunChan: channels.runChan,
-		FinChan: channels.finChan,
+		RunChan: sensor.runChan,
+		FinChan: sensor.finChan,
 	}
 
 	var vtsHandler = handler.LoadVTs{
-		VtsChan: channels.vtsChan,
+		VtsChan: sensor.vtsChan,
 	}
 
 	// MQTT Subscription Map
 	var subMap = map[string]connection.OnMessage{
-		fmt.Sprintf("eulabeia/scan/cmd/%s", id): startStopHandler,
-		"eulabeia/scan/info":                    statusHandler,
-		"eulabeia/sensor/cmd":                   vtsHandler,
+		fmt.Sprintf("eulabeia/scan/cmd/%s", sensor.id): startStopHandler,
+		"eulabeia/scan/info":                           statusHandler,
+		"eulabeia/sensor/cmd":                          vtsHandler,
 	}
 
-	err := mqtt.Subscribe(subMap)
+	err := sensor.mqtt.Subscribe(subMap)
 	if err != nil {
 		log.Panicf("Sensor cannot subscribe to topics: %s", err)
 	}
 
-	// TODO: Maybe without go routine. This will be the demon process.
-	go schedule(channels, mqtt, conf)
+	go sensor.schedule()
+}
+
+func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferences) *Sensor {
+	return &Sensor{
+		startChan:      make(chan string),
+		stopChan:       make(chan string),
+		runChan:        make(chan string),
+		finChan:        make(chan string),
+		verChan:        make(chan struct{}),
+		vtsChan:        make(chan struct{}),
+		regChan:        make(chan struct{}),
+		discChan:       make(chan struct{}),
+		termChan:       make(chan struct{}),
+		terminatedChan: make(chan struct{}),
+
+		mqtt: mqtt,
+		id:   id,
+		conf: conf,
+	}
 }
