@@ -55,7 +55,7 @@ func (t sensorAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, e
 	if err != nil {
 		return nil, nil, err
 	} else if sensor == nil {
-		log.Printf("Scan %s not found, creating a new one.\n", m.ID)
+		log.Printf("Sensor %s not found, creating a new one.\n", m.ID)
 		sensor = &models.Sensor{
 			ID: m.ID,
 		}
