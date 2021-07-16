@@ -20,6 +20,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
@@ -28,8 +29,8 @@ import (
 )
 
 type StartStop struct {
-	StartChan chan string
-	StopChan  chan string
+	StartFunc func(string) error
+	StopFunc  func(string) error
 }
 
 func (handler StartStop) On(topic string, message []byte) (*connection.SendResponse, error) {
@@ -45,9 +46,13 @@ func (handler StartStop) On(topic string, message []byte) (*connection.SendRespo
 	if mt.Aggregate == "scan" {
 		switch mt.Function {
 		case "start":
-			handler.StartChan <- msg.ID
+			if err := handler.StartFunc(msg.ID); err != nil {
+				log.Printf("Unable to start scan: %s", err)
+			}
 		case "stop":
-			handler.StopChan <- msg.ID
+			if err := handler.StartFunc(msg.ID); err != nil {
+				log.Printf("Unable to stop scan: %s", err)
+			}
 		}
 	}
 	return nil, nil
@@ -71,8 +76,8 @@ func (handler Registered) On(topic string, message []byte) (*connection.SendResp
 }
 
 type Status struct {
-	RunChan chan string
-	FinChan chan string
+	RunFunc func(string) error
+	FinFunc func(string) error
 }
 
 func (handler Status) On(topic string, message []byte) (*connection.SendResponse, error) {
@@ -83,18 +88,22 @@ func (handler Status) On(topic string, message []byte) (*connection.SendResponse
 	}
 	switch msg.Status {
 	case "running":
-		handler.RunChan <- msg.ID
+		if err := handler.RunFunc(msg.ID); err != nil {
+			log.Printf("Unable to set status to running: %s", err)
+		}
 	case "stopped", "finished", "interrupted":
-		handler.FinChan <- msg.ID
+		if err := handler.FinFunc(msg.ID); err != nil {
+			log.Printf("Unable to set status to running: %s", err)
+		}
 	}
 	return nil, nil
 }
 
 type LoadVTs struct {
-	VtsChan chan struct{}
+	VtsFunc func()
 }
 
 func (handler LoadVTs) On(topic string, message []byte) (*connection.SendResponse, error) {
-	handler.VtsChan <- struct{}{}
+	handler.VtsFunc()
 	return nil, nil
 }
