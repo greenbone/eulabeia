@@ -8,5 +8,6 @@ It is separated in
 
 The communication between client (e.g. gvmd) and director as well as director to sensor is done via mqtt.
 
-This project is in a very early state and is not ready for usage yet.
+![overview participants](docs/pictures/overview_participants.svg?raw=true)
 
+This project is in a very early state and is not ready for usage yet.
