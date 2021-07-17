@@ -77,11 +77,11 @@ func TestStartStop(t *testing.T) {
 	// Transforming Messages into Bytes slice
 	startMsgJson, err := json.Marshal(startMsg)
 	if err != nil {
-		t.Fatalf("Transform Start Msg into JSON failed")
+		t.Fatal("Transform Start Msg into JSON failed\n")
 	}
 	stopMsgJson, err := json.Marshal(stopMsg)
 	if err != nil {
-		t.Fatalf("Transform Stop Msg into JSON failed")
+		t.Fatal("Transform Stop Msg into JSON failed\n")
 	}
 
 	// Simulate an Event trigger
@@ -90,10 +90,10 @@ func TestStartStop(t *testing.T) {
 
 	// Check if fields are set
 	if !ms.scanStarted {
-		t.Fatalf("Scan should be started")
+		t.Fatal("Scan should be started\n")
 	}
 	if !ms.scanStopped {
-		t.Fatalf("Scan should be stopped")
+		t.Fatal("Scan should be stopped\n")
 	}
 }
 
@@ -116,7 +116,7 @@ func TestRegistered(t *testing.T) {
 	registeredMsgJSON, err := json.Marshal(registeredMsg)
 
 	if err != nil {
-		t.Fatalf("Transform registered Msg into JSON failed")
+		t.Fatal("Transform registered Msg into JSON failed")
 	}
 
 	registered.On("", registeredMsgJSON)
@@ -124,7 +124,7 @@ func TestRegistered(t *testing.T) {
 	select {
 	case <-regChan:
 	case <-time.After(time.Millisecond * 50):
-		t.Fatalf("Unable to register")
+		t.Fatal("Unable to register\n")
 	}
 }
 
@@ -154,11 +154,11 @@ func TestStatus(t *testing.T) {
 	// Transforming Messages into Bytes slice
 	runningMsgJson, err := json.Marshal(runningMsg)
 	if err != nil {
-		t.Fatalf("Transform Start Msg into JSON failed")
+		t.Fatal("Transform Start Msg into JSON failed\n")
 	}
 	finishMsgJson, err := json.Marshal(finishMsg)
 	if err != nil {
-		t.Fatalf("Transform Stop Msg into JSON failed")
+		t.Fatal("Transform Stop Msg into JSON failed\n")
 	}
 
 	// Simulate an Event trigger
@@ -167,10 +167,10 @@ func TestStatus(t *testing.T) {
 
 	// Check if fields are set
 	if !ms.scanRunning {
-		t.Fatalf("Scan should be started")
+		t.Fatal("Scan should be started\n")
 	}
 	if !ms.scanFinished {
-		t.Fatalf("Scan should be stopped")
+		t.Fatal("Scan should be stopped\n")
 	}
 }
 
@@ -188,7 +188,7 @@ func TestLoadVts(t *testing.T) {
 	// Transforming Messages into Bytes slice
 	vtsMsgJson, err := json.Marshal(vtsMsg)
 	if err != nil {
-		t.Fatalf("Transform Start Msg into JSON failed")
+		t.Fatal("Transform Start Msg into JSON failed\n")
 	}
 
 	// Simulate an Event trigger
@@ -196,6 +196,6 @@ func TestLoadVts(t *testing.T) {
 
 	// Check if fields are set
 	if !ms.vtsLoaded {
-		t.Fatalf("Scan should be started")
+		t.Fatal("Scan should be started\n")
 	}
 }
