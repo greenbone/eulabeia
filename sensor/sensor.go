@@ -75,7 +75,7 @@ func (sensor *Scheduler) QueueScan(scanID string) error {
 		return fmt.Errorf("there is already a running scan with the ID %s", scanID)
 	}
 	sensor.queue.Enqueue(scanID)
-	sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
+	sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 		Identifier: messages.Identifier{
 			ID:      scanID,
 			Message: messages.NewMessage("scan.status", "", ""),
@@ -97,7 +97,7 @@ func (sensor *Scheduler) StartScan(scanID string) error {
 	if err := sensor.ovas.StartScan(sensor.queue.Front(), int(sensor.conf.Niceness), sensor.sudo, sensor.commander); err != nil {
 		return err
 	}
-	sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
+	sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 		Identifier: messages.Identifier{
 			ID:      sensor.queue.Front(),
 			Message: messages.NewMessage("scan.status", "", ""),
@@ -140,7 +140,7 @@ func (sensor *Scheduler) StopScan(scanID string) error {
 	if sensor.init.RemoveListItem(scanID) || sensor.running.RemoveListItem(scanID) {
 		err := sensor.ovas.StopScan(scanID, sensor.sudo, sensor.commander)
 		if err == nil {
-			sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
+			sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 				Identifier: messages.Identifier{
 					ID:      scanID,
 					Message: messages.NewMessage("scan.status", "", ""),
@@ -160,7 +160,7 @@ func (sensor *Scheduler) GetVersion() error {
 	if err != nil {
 		return err
 	}
-	err = sensor.mqtt.Publish("eulabeia/scan/info", info.Version{
+	err = sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Version{
 		Identifier: messages.Identifier{
 			ID:      "",
 			Message: messages.NewMessage("sensor.version", "", ""),
@@ -212,7 +212,7 @@ func (sensor *Scheduler) schedule() {
 // register loops until its ID is registrated
 func (sensor *Scheduler) register() {
 	for { // loop until sensor is registered
-		sensor.mqtt.Publish("eulabeia/sensor/cmd/director", cmds.Modify{
+		sensor.mqtt.Publish(fmt.Sprintf("%s/sensor/cmd/director", sensor.context), cmds.Modify{
 			Identifier: messages.Identifier{
 				ID:      sensor.id,
 				Message: messages.NewMessage("modify.sensor", "", ""),
@@ -236,7 +236,7 @@ func (sensor *Scheduler) Close() error {
 	log.Print("Cleaning all OpenVAS Processes...\n")
 	// Remove all queued scans
 	for item, ok := sensor.queue.Dequeue(); ok; item, ok = sensor.queue.Dequeue() {
-		sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
+		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 			Identifier: messages.Identifier{
 				ID:      item,
 				Message: messages.NewMessage("scan.status", "", ""),
@@ -247,7 +247,7 @@ func (sensor *Scheduler) Close() error {
 	// Stopping all init processes
 	for item, ok := sensor.init.Dequeue(); ok; item, ok = sensor.init.Dequeue() {
 		log.Printf("Stopping %s\n", item)
-		sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
+		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 			Identifier: messages.Identifier{
 				ID:      item,
 				Message: messages.NewMessage("scan.status", "", ""),
@@ -259,7 +259,7 @@ func (sensor *Scheduler) Close() error {
 	// Stopping all running processes
 	for item, ok := sensor.running.Dequeue(); ok; item, ok = sensor.running.Dequeue() {
 		log.Printf("Stopping %s\n", item)
-		sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
+		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 			Identifier: messages.Identifier{
 				ID:      item,
 				Message: messages.NewMessage("scan.status", "", ""),
@@ -299,9 +299,9 @@ func (sensor *Scheduler) Start() {
 
 	// MQTT Subscription Map
 	var subMap = map[string]connection.OnMessage{
-		fmt.Sprintf("eulabeia/scan/cmd/%s", sensor.id): startStopHandler,
-		"eulabeia/scan/info":                           statusHandler,
-		"eulabeia/sensor/cmd":                          vtsHandler,
+		fmt.Sprintf("%s/scan/cmd/%s", sensor.context, sensor.id): startStopHandler,
+		fmt.Sprintf("%s/scan/info", sensor.context):              statusHandler,
+		fmt.Sprintf("%s/sensor/cmd", sensor.context):             vtsHandler,
 	}
 
 	err := sensor.mqtt.Subscribe(subMap)
