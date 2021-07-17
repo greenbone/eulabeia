@@ -48,6 +48,7 @@ type Scheduler struct {
 	stopped    bool
 	regChan    chan struct{}
 	commander  openvas.Commander
+	context    string
 
 	mqtt connection.PubSub
 	id   string
@@ -226,18 +227,46 @@ func (sensor *Scheduler) register() {
 	}
 }
 
-// Close cleans all OpenVAS processes and ends the scheduler
+// Close cleans all queues and OpenVAS processes, sets all scan stats to
+// interrupted and stops the scheduler
 func (sensor *Scheduler) Close() error {
+	sensor.mutex.Lock()
+	defer sensor.mutex.Unlock()
+	sensor.stopped = true
 	log.Print("Cleaning all OpenVAS Processes...\n")
+	// Remove all queued scans
+	for item, ok := sensor.queue.Dequeue(); ok; item, ok = sensor.queue.Dequeue() {
+		sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
+			Identifier: messages.Identifier{
+				ID:      item,
+				Message: messages.NewMessage("scan.status", "", ""),
+			},
+			Status: "interrupted",
+		})
+	}
 	// Stopping all init processes
 	for item, ok := sensor.init.Dequeue(); ok; item, ok = sensor.init.Dequeue() {
 		log.Printf("Stopping %s\n", item)
-		sensor.StopScan(item)
+		sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
+			Identifier: messages.Identifier{
+				ID:      item,
+				Message: messages.NewMessage("scan.status", "", ""),
+			},
+			Status: "interrupted",
+		})
+		sensor.ovas.StopScan(item, sensor.sudo, sensor.commander)
 	}
 	// Stopping all running processes
 	for item, ok := sensor.running.Dequeue(); ok; item, ok = sensor.running.Dequeue() {
 		log.Printf("Stopping %s\n", item)
-		sensor.StopScan(item)
+		sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
+			Identifier: messages.Identifier{
+				ID:      item,
+				Message: messages.NewMessage("scan.status", "", ""),
+			},
+			Status: "interrupted",
+		})
+		sensor.ovas.StopScan(item, sensor.sudo, sensor.commander)
 	}
 	return nil
 }
@@ -280,12 +309,12 @@ func (sensor *Scheduler) Start() {
 		log.Panicf("Sensor cannot subscribe to topics: %s", err)
 	}
 
-	go sensor.schedule()
 	sensor.stopped = false
+	go sensor.schedule()
 }
 
 // NewScheduler creates a new scheduler
-func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferences) *Scheduler {
+func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferences, context string) *Scheduler {
 	return &Scheduler{
 		queue:     util.NewQueueList(),
 		init:      util.NewQueueList(),
@@ -296,6 +325,7 @@ func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferen
 		stopped:   true,
 		regChan:   make(chan struct{}),
 		commander: openvas.StdCommander{},
+		context:   context,
 
 		mqtt: mqtt,
 		id:   id,

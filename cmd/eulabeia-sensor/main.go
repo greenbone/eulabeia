@@ -67,7 +67,7 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	sens := sensor.NewScheduler(client, configuration.Sensor.Id, configuration.ScannerPreferences)
+	sens := sensor.NewScheduler(client, configuration.Sensor.Id, configuration.ScannerPreferences, configuration.Context)
 	log.Printf("Starting Scheduler\n")
 	sens.Start()
 	process.Block(client, sens)

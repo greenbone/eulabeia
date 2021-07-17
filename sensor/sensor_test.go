@@ -65,7 +65,7 @@ func TestQueueInitRunFinishScan(t *testing.T) {
 		Niceness:            10,
 		MinFreeMemScanQueue: 0,
 	}
-	scheduler := NewScheduler(MockPubSub{}, "testID", conf)
+	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "")
 	scheduler.commander = MockCommander{}
 
 	scanID := "foo"
@@ -159,7 +159,7 @@ func TestStopScan(t *testing.T) {
 		Niceness:            10,
 		MinFreeMemScanQueue: 0,
 	}
-	scheduler := NewScheduler(MockPubSub{}, "testID", conf)
+	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "")
 	scheduler.commander = MockCommander{}
 
 	scanID := "foo"
@@ -196,4 +196,37 @@ func TestStopScan(t *testing.T) {
 		t.Fatalf("Running list should be empty but ist not\n")
 	}
 
+}
+
+func TestClose(t *testing.T) {
+	var conf = config.ScannerPreferences{
+		ScanInfoStoreTime:   0,
+		MaxScan:             0,
+		MaxQueuedScans:      0,
+		Niceness:            10,
+		MinFreeMemScanQueue: 0,
+	}
+	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "")
+	scheduler.commander = MockCommander{}
+
+	for i := 0; i < 30; i++ {
+		switch {
+		case i < 10:
+			scheduler.queue.Enqueue(fmt.Sprint(i))
+		case i < 20:
+			scheduler.init.Enqueue(fmt.Sprint(i))
+		default:
+			scheduler.running.Enqueue(fmt.Sprint(i))
+		}
+	}
+
+	if scheduler.queue.IsEmpty() || scheduler.init.IsEmpty() || scheduler.running.IsEmpty() {
+		t.Fatalf("None of the queueLists should be empty\n")
+	}
+
+	scheduler.Close()
+
+	if !scheduler.queue.IsEmpty() || !scheduler.init.IsEmpty() || !scheduler.running.IsEmpty() {
+		t.Fatalf("All of the queueLists should be empty\n")
+	}
 }
