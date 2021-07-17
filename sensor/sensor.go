@@ -38,22 +38,22 @@ import (
 
 // Scheduler is a struct containing functionality to control a sensor
 type Scheduler struct {
-	queue      *util.QueueList
-	init       *util.QueueList
-	running    *util.QueueList
-	loadingVTs bool
-	ovas       *openvas.OpenVASScanner
-	sudo       bool
-	sync.Mutex
-	stopped       bool
-	regChan       chan struct{}
-	commander     openvas.Commander
-	context       string
-	interruptChan chan string
+	queue         *util.QueueList         // queued scans
+	init          *util.QueueList         // scans that currently initializes
+	running       *util.QueueList         // scans that are currently running
+	loadingVTs    bool                    // marks that VTs are currently loading
+	ovas          *openvas.OpenVASScanner // openvas
+	sudo          bool                    // sudo rights
+	sync.Mutex                            // thread safe hadnling when moving scan IDs between lists
+	stopped       bool                    // marks that the sensor is stopped
+	regChan       chan struct{}           // channel for succesful registation
+	commander     openvas.Commander       // commander used for openvas
+	context       string                  // context used for mqtt
+	interruptChan chan string             // channel for signaling interrupted scans
 
-	mqtt connection.PubSub
-	id   string
-	conf config.ScannerPreferences
+	mqtt connection.PubSub         // mqtt connection
+	id   string                    // ID of the sensor
+	conf config.ScannerPreferences // config file
 }
 
 // loadVTs commands openvas to load VTs into redis
