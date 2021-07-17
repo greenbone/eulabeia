@@ -230,3 +230,34 @@ func TestClose(t *testing.T) {
 		t.Fatalf("All of the queueLists should be empty\n")
 	}
 }
+
+func TestInterruptedScan(t *testing.T) {
+	var conf = config.ScannerPreferences{
+		ScanInfoStoreTime:   0,
+		MaxScan:             0,
+		MaxQueuedScans:      0,
+		Niceness:            10,
+		MinFreeMemScanQueue: 0,
+	}
+	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "")
+
+	scan1 := "foo"
+	scan2 := "bar"
+
+	if err := scheduler.interruptScan(scan1); err == nil {
+		t.Fatalf("Should be unable to interrupt unknsown scan %s", scan1)
+	}
+	if err := scheduler.interruptScan(scan2); err == nil {
+		t.Fatalf("Should be unable to interrupt unknsown scan %s", scan2)
+	}
+
+	scheduler.init.Enqueue(scan1)
+	scheduler.running.Enqueue(scan2)
+
+	if err := scheduler.interruptScan(scan1); err != nil {
+		t.Fatalf("Should be able to interrupt unknsown scan %s", scan1)
+	}
+	if err := scheduler.interruptScan(scan2); err != nil {
+		t.Fatalf("Should be able to interrupt unknsown scan %s", scan2)
+	}
+}

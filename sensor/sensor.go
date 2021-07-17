@@ -38,17 +38,18 @@ import (
 
 // Scheduler is a struct containing functionality to control a sensor
 type Scheduler struct {
-	queue      *util.QueueList
-	init       *util.QueueList
-	running    *util.QueueList
-	loadingVTs bool
-	ovas       *openvas.OpenVASScanner
-	sudo       bool
-	mutex      *sync.Mutex
-	stopped    bool
-	regChan    chan struct{}
-	commander  openvas.Commander
-	context    string
+	queue         *util.QueueList
+	init          *util.QueueList
+	running       *util.QueueList
+	loadingVTs    bool
+	ovas          *openvas.OpenVASScanner
+	sudo          bool
+	mutex         *sync.Mutex
+	stopped       bool
+	regChan       chan struct{}
+	commander     openvas.Commander
+	context       string
+	interruptChan chan string
 
 	mqtt connection.PubSub
 	id   string
@@ -170,6 +171,24 @@ func (sensor *Scheduler) GetVersion() error {
 	return err
 }
 
+// interruptScan removes scan from list and publishes a status MSG
+func (sensor *Scheduler) interruptScan(scanID string) error {
+	sensor.mutex.Lock()
+	defer sensor.mutex.Unlock()
+
+	if sensor.init.RemoveListItem(scanID) || sensor.running.RemoveListItem(scanID) {
+		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
+			Identifier: messages.Identifier{
+				ID:      scanID,
+				Message: messages.NewMessage("scan.status", "", ""),
+			},
+			Status: "interrupted",
+		})
+		return nil
+	}
+	return fmt.Errorf("scan %s unknown", scanID)
+}
+
 // schedule is checking the queue and starts new scans
 func (sensor *Scheduler) schedule() {
 
@@ -177,6 +196,15 @@ func (sensor *Scheduler) schedule() {
 
 	for !sensor.stopped { // Infinite scheduler Loop
 		time.Sleep(time.Second)
+
+		// Handle interrupted scans
+		select {
+		case scanID := <-sensor.interruptChan:
+			if err := sensor.interruptScan(scanID); err != nil {
+				log.Printf("Unable to interrupt scan: %s", err)
+			}
+		default:
+		}
 
 		if sensor.queue.IsEmpty() {
 			continue
@@ -315,17 +343,19 @@ func (sensor *Scheduler) Start() {
 
 // NewScheduler creates a new scheduler
 func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferences, context string) *Scheduler {
+	interruptChan := make(chan string)
 	return &Scheduler{
-		queue:     util.NewQueueList(),
-		init:      util.NewQueueList(),
-		running:   util.NewQueueList(),
-		ovas:      openvas.NewOpenVASScanner(),
-		sudo:      openvas.IsSudo(openvas.StdCommander{}),
-		mutex:     &sync.Mutex{},
-		stopped:   true,
-		regChan:   make(chan struct{}),
-		commander: openvas.StdCommander{},
-		context:   context,
+		queue:         util.NewQueueList(),
+		init:          util.NewQueueList(),
+		running:       util.NewQueueList(),
+		ovas:          openvas.NewOpenVASScanner(interruptChan),
+		sudo:          openvas.IsSudo(openvas.StdCommander{}),
+		mutex:         &sync.Mutex{},
+		stopped:       true,
+		regChan:       make(chan struct{}),
+		commander:     openvas.StdCommander{},
+		context:       context,
+		interruptChan: interruptChan,
 
 		mqtt: mqtt,
 		id:   id,

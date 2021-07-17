@@ -32,8 +32,9 @@ import (
 // responsible for handling processes of openvas. It also is able to start and
 // stop scans via openvas.
 type OpenVASScanner struct {
-	procs map[string]*os.Process // Process List for running scans
-	mutex *sync.Mutex            // For thread save management of processes
+	procs         map[string]*os.Process // Process List for running scans
+	mutex         *sync.Mutex            // For thread save management of processes
+	interruptChan chan string            // Channel to signal interrupted scans
 }
 
 // Commander is an inferace to manage different ways to handle calls to openvas.
@@ -52,11 +53,12 @@ func (exe StdCommander) Command(name string, arg ...string) *exec.Cmd {
 
 // CreateNewOpenVASScanner creates a new instance of an OpenVASScanner with the
 // specified settings.
-func NewOpenVASScanner() *OpenVASScanner {
+func NewOpenVASScanner(interruptChan chan string) *OpenVASScanner {
 
 	return &OpenVASScanner{
-		procs: make(map[string]*os.Process),
-		mutex: &sync.Mutex{},
+		procs:         make(map[string]*os.Process),
+		mutex:         &sync.Mutex{},
+		interruptChan: interruptChan,
 	}
 }
 
@@ -189,7 +191,7 @@ func (ovas OpenVASScanner) waitForProcessToEnd(p *os.Process, scan string) {
 	err := ovas.removeProcess(scan)
 	if err == nil {
 		log.Printf("%s: Scan process with PID %d got unexpectedly stopped or killed.\n", scan, p.Pid)
-		// TODO: Interrupt scan
+		ovas.interruptChan <- scan
 		return
 	}
 	log.Printf("%s: Scan process with PID %d terminated correctly.\n", scan, p.Pid)
