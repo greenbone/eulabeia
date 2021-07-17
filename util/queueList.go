@@ -26,17 +26,12 @@ type QueueList struct {
 	mutex *sync.RWMutex
 }
 
-// New creates a new empty QueueList
-func (lq *QueueList) New() *QueueList {
-	lq.items = []string{}
-	lq.mutex = &sync.RWMutex{}
-	return lq
-}
-
 // NewQueueList returns a new empty QueueList
 func NewQueueList() *QueueList {
-	var ql *QueueList
-	return ql.New()
+	return &QueueList{
+		items: make([]string, 0),
+		mutex: &sync.RWMutex{},
+	}
 }
 
 // RemoveListItem removes an Item from a list without changing the order.
@@ -88,7 +83,7 @@ func (ql *QueueList) Front() string {
 	return ql.items[0]
 }
 
-// Dequeue removes and returns first List Item. Also returns false when list is
+// Dequeue removes and returns first List Item. Returns false when list is
 // empty
 func (ql *QueueList) Dequeue() (string, bool) {
 	ql.mutex.Lock()

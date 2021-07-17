@@ -36,6 +36,7 @@ import (
 	"github.com/greenbone/eulabeia/util"
 )
 
+// Scheduler is a struct containing functionality to control a sensor
 type Scheduler struct {
 	queue      *util.QueueList
 	init       *util.QueueList
@@ -46,6 +47,7 @@ type Scheduler struct {
 	mutex      *sync.Mutex
 	stopped    bool
 	regChan    chan struct{}
+	commander  openvas.Commander
 
 	mqtt connection.PubSub
 	id   string
@@ -57,7 +59,7 @@ func (sensor *Scheduler) loadVTs() {
 	sensor.loadingVTs = true
 	defer func() { sensor.loadingVTs = false }()
 	log.Printf("Loading VTs into Redis DB...\n")
-	err := sensor.ovas.LoadVTsIntoRedis(openvas.StdCommander{})
+	err := sensor.ovas.LoadVTsIntoRedis(sensor.commander)
 	if err != nil {
 		log.Panicf("Unable to load VTs into redis: %s", err)
 	}
@@ -82,6 +84,7 @@ func (sensor *Scheduler) QueueScan(scanID string) error {
 	return nil
 }
 
+// StartScan starts a scan process
 func (sensor *Scheduler) StartScan(scanID string) error {
 	sensor.mutex.Lock()
 	defer sensor.mutex.Unlock()
@@ -90,7 +93,7 @@ func (sensor *Scheduler) StartScan(scanID string) error {
 		return fmt.Errorf("scan ID %s unknown", scanID)
 	}
 
-	if err := sensor.ovas.StartScan(sensor.queue.Front(), int(sensor.conf.Niceness), sensor.sudo, openvas.StdCommander{}); err != nil {
+	if err := sensor.ovas.StartScan(sensor.queue.Front(), int(sensor.conf.Niceness), sensor.sudo, sensor.commander); err != nil {
 		return err
 	}
 	sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
@@ -134,7 +137,7 @@ func (sensor *Scheduler) StopScan(scanID string) error {
 		return nil
 	}
 	if sensor.init.RemoveListItem(scanID) || sensor.running.RemoveListItem(scanID) {
-		err := sensor.ovas.StopScan(scanID, sensor.sudo, openvas.StdCommander{})
+		err := sensor.ovas.StopScan(scanID, sensor.sudo, sensor.commander)
 		if err == nil {
 			sensor.mqtt.Publish("eulabeia/scan/info", info.Status{
 				Identifier: messages.Identifier{
@@ -143,13 +146,16 @@ func (sensor *Scheduler) StopScan(scanID string) error {
 				},
 				Status: "stopped",
 			})
+		} else {
+			return err
 		}
 	}
 	return fmt.Errorf("scan ID %s unknown", scanID)
 }
 
+// GetVersion publishes the Version of the scanner
 func (sensor *Scheduler) GetVersion() error {
-	ver, err := sensor.ovas.GetVersion(openvas.StdCommander{})
+	ver, err := sensor.ovas.GetVersion(sensor.commander)
 	if err != nil {
 		return err
 	}
@@ -168,7 +174,7 @@ func (sensor *Scheduler) schedule() {
 
 	sensor.loadVTs()
 
-	for { // Infinite scheduler Loop
+	for !sensor.stopped { // Infinite scheduler Loop
 		time.Sleep(time.Second)
 
 		if sensor.queue.IsEmpty() {
@@ -220,15 +226,17 @@ func (sensor *Scheduler) register() {
 	}
 }
 
-// Close cleans all OpenVAS processes
+// Close cleans all OpenVAS processes and ends the scheduler
 func (sensor *Scheduler) Close() error {
 	log.Print("Cleaning all OpenVAS Processes...\n")
 	// Stopping all init processes
-	for item, ok := sensor.init.Dequeue(); ok; {
+	for item, ok := sensor.init.Dequeue(); ok; item, ok = sensor.init.Dequeue() {
+		log.Printf("Stopping %s\n", item)
 		sensor.StopScan(item)
 	}
 	// Stopping all running processes
-	for item, ok := sensor.running.Dequeue(); ok; {
+	for item, ok := sensor.running.Dequeue(); ok; item, ok = sensor.running.Dequeue() {
+		log.Printf("Stopping %s\n", item)
 		sensor.StopScan(item)
 	}
 	return nil
@@ -276,16 +284,18 @@ func (sensor *Scheduler) Start() {
 	sensor.stopped = false
 }
 
+// NewScheduler creates a new scheduler
 func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferences) *Scheduler {
 	return &Scheduler{
-		queue:   util.NewQueueList(),
-		init:    util.NewQueueList(),
-		running: util.NewQueueList(),
-		ovas:    openvas.NewOpenVASScanner(),
-		sudo:    openvas.IsSudo(openvas.StdCommander{}),
-		mutex:   &sync.Mutex{},
-		stopped: true,
-		regChan: make(chan struct{}),
+		queue:     util.NewQueueList(),
+		init:      util.NewQueueList(),
+		running:   util.NewQueueList(),
+		ovas:      openvas.NewOpenVASScanner(),
+		sudo:      openvas.IsSudo(openvas.StdCommander{}),
+		mutex:     &sync.Mutex{},
+		stopped:   true,
+		regChan:   make(chan struct{}),
+		commander: openvas.StdCommander{},
 
 		mqtt: mqtt,
 		id:   id,

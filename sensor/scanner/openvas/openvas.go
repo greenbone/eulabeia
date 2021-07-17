@@ -76,7 +76,7 @@ func (ovas OpenVASScanner) removeProcess(scan string) error {
 	ovas.mutex.Lock()
 	defer ovas.mutex.Unlock()
 	if _, ok := ovas.procs[scan]; !ok {
-		return errors.New("process does not exist")
+		return fmt.Errorf("process for scan id %s does not exist", scan)
 	}
 	delete(ovas.procs, scan)
 	return nil

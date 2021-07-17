@@ -24,7 +24,7 @@ func (exe helperShortCommander) Command(name string, arg ...string) *exec.Cmd {
 }
 
 // TestCommandSuccess is not a real test. It is only used as a helper process to
-// simulate a succesfully terminating programm. E.g. IsSudo will return true
+// simulate a succesful terminating programm. E.g. IsSudo will return true
 func TestCommandSuccess(t *testing.T) {
 	if os.Getenv("GO_TEST_PROCESS") != "1" {
 		return
@@ -33,7 +33,7 @@ func TestCommandSuccess(t *testing.T) {
 	os.Exit(0)
 }
 
-// helperLongCommander creates a Command to execute a programm with a endless
+// helperLongCommander creates a Command to execute a programm with a long
 // runtime
 type helperLongCommander struct {
 }
@@ -68,7 +68,7 @@ func (exe helperFailCommander) Command(name string, arg ...string) *exec.Cmd {
 }
 
 // TestCommandSuccess is not a real test. It is only used as a helper process to
-// simulate a failing programm. E.g. IsSudo will return false
+// simulate a failing programm.
 func TestCommandFail(t *testing.T) {
 	if os.Getenv("GO_TEST_PROCESS") != "1" {
 		return
