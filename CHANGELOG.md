@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Possibility to send one start.scan event containing all the data [31](https://github.com/greenbone/eulabeia/pull/31)
 - Add result model [36](https://github.com/greenbone/eulabeia/pull/36)
 - Add model for vts [37](https://github.com/greenbone/eulabeia/pull/37)
+- Tests for sensor, QueueList and handler(sensor) [39](https://github.com/greenbone/eulabeia/pull/39)
 
 ### Changed
 - Split cmds and info messages into own module [8](https://github.com/greenbone/eulabeia/pull/8)
