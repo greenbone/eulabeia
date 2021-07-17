@@ -304,25 +304,25 @@ func (sensor *Scheduler) Start() {
 	// Subscribe on Topic to get confirmation about registration
 	sensor.mqtt.Subscribe(map[string]connection.OnMessage{
 		"eulabeia/sensor/info": handler.Registered{
-			RegChan: sensor.regChan,
-			ID:      sensor.id,
+			Register: sensor.regChan,
+			ID:       sensor.id,
 		},
 	})
 	// Register Sensor
 	sensor.register()
 	// MQTT OnMessage Types
 	var startStopHandler = handler.StartStop{
-		StartFunc: sensor.QueueScan,
-		StopFunc:  sensor.StopScan,
+		Start: sensor.QueueScan,
+		Stop:  sensor.StopScan,
 	}
 
 	var statusHandler = handler.Status{
-		RunFunc: sensor.ScanRunning,
-		FinFunc: sensor.ScanFinished,
+		Run: sensor.ScanRunning,
+		Fin: sensor.ScanFinished,
 	}
 
 	var vtsHandler = handler.LoadVTs{
-		VtsFunc: sensor.loadVTs,
+		VtsLoad: sensor.loadVTs,
 	}
 
 	// MQTT Subscription Map

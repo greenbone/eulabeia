@@ -29,8 +29,8 @@ import (
 )
 
 type StartStop struct {
-	StartFunc func(string) error
-	StopFunc  func(string) error
+	Start func(scanID string) error // Function to Start a scan
+	Stop  func(scanID string) error // Function to Stop a scan
 }
 
 func (handler StartStop) On(topic string, message []byte) (*connection.SendResponse, error) {
@@ -46,11 +46,11 @@ func (handler StartStop) On(topic string, message []byte) (*connection.SendRespo
 	if mt.Aggregate == "scan" {
 		switch mt.Function {
 		case "start":
-			if err := handler.StartFunc(msg.ID); err != nil {
+			if err := handler.Start(msg.ID); err != nil {
 				log.Printf("Unable to start scan: %s", err)
 			}
 		case "stop":
-			if err := handler.StopFunc(msg.ID); err != nil {
+			if err := handler.Stop(msg.ID); err != nil {
 				log.Printf("Unable to stop scan: %s", err)
 			}
 		}
@@ -59,8 +59,8 @@ func (handler StartStop) On(topic string, message []byte) (*connection.SendRespo
 }
 
 type Registered struct {
-	RegChan chan struct{}
-	ID      string
+	Register chan struct{} // Channel to signal succesful registration
+	ID       string        // SensorID to compare registered ID with own
 }
 
 func (handler Registered) On(topic string, message []byte) (*connection.SendResponse, error) {
@@ -70,14 +70,14 @@ func (handler Registered) On(topic string, message []byte) (*connection.SendResp
 		return nil, err
 	}
 	if msg.ID == handler.ID {
-		handler.RegChan <- struct{}{}
+		handler.Register <- struct{}{}
 	}
 	return nil, nil
 }
 
 type Status struct {
-	RunFunc func(string) error
-	FinFunc func(string) error
+	Run func(string) error // Function to mark a scan as running
+	Fin func(string) error // Function to mark a scan as finished
 }
 
 func (handler Status) On(topic string, message []byte) (*connection.SendResponse, error) {
@@ -88,11 +88,11 @@ func (handler Status) On(topic string, message []byte) (*connection.SendResponse
 	}
 	switch msg.Status {
 	case "running":
-		if err := handler.RunFunc(msg.ID); err != nil {
+		if err := handler.Run(msg.ID); err != nil {
 			log.Printf("Unable to set status to running: %s", err)
 		}
 	case "finished":
-		if err := handler.FinFunc(msg.ID); err != nil {
+		if err := handler.Fin(msg.ID); err != nil {
 			log.Printf("Unable to set status to finished: %s", err)
 		}
 	}
@@ -100,10 +100,10 @@ func (handler Status) On(topic string, message []byte) (*connection.SendResponse
 }
 
 type LoadVTs struct {
-	VtsFunc func()
+	VtsLoad func() // Function to start LoadingVTs (into redis by openvas)
 }
 
 func (handler LoadVTs) On(topic string, message []byte) (*connection.SendResponse, error) {
-	handler.VtsFunc()
+	handler.VtsLoad()
 	return nil, nil
 }

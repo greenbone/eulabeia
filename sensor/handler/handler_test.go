@@ -56,8 +56,8 @@ func (ms *MockSensor) LoadVts() {
 func TestStartStop(t *testing.T) {
 	ms := NewMockSensor()
 	startStopHandler := StartStop{
-		StartFunc: ms.StartScan,
-		StopFunc:  ms.StopScan,
+		Start: ms.StartScan,
+		Stop:  ms.StopScan,
 	}
 
 	// Creating Start and Stop Scan messages
@@ -102,8 +102,8 @@ func TestRegistered(t *testing.T) {
 	regChan := make(chan struct{}, 1)
 	sensorID := "foo"
 	registered := &Registered{
-		RegChan: regChan,
-		ID:      sensorID,
+		Register: regChan,
+		ID:       sensorID,
 	}
 
 	registeredMsg := info.Modified{
@@ -131,8 +131,8 @@ func TestRegistered(t *testing.T) {
 func TestStatus(t *testing.T) {
 	ms := NewMockSensor()
 	statusHandler := Status{
-		RunFunc: ms.ScanRunning,
-		FinFunc: ms.ScanFinished,
+		Run: ms.ScanRunning,
+		Fin: ms.ScanFinished,
 	}
 
 	// Creating running and finished messages
@@ -177,7 +177,7 @@ func TestStatus(t *testing.T) {
 func TestLoadVts(t *testing.T) {
 	ms := NewMockSensor()
 	vtsHandler := LoadVTs{
-		VtsFunc: ms.LoadVts,
+		VtsLoad: ms.LoadVts,
 	}
 
 	// Creating running and finished messages
