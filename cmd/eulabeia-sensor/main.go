@@ -49,7 +49,7 @@ func main() {
 		configuration.Sensor.Id = sensor_id
 	}
 
-	log.Printf("Starting sensor (%s)", configuration.Sensor.Id)
+	log.Printf("Starting sensor (%s)\n", configuration.Sensor.Id)
 	client, err := mqtt.New(server, configuration.Sensor.Id, "", "",
 		&mqtt.LastWillMessage{
 			Topic: "eulabeia/sensor/cmd/director",
@@ -68,7 +68,7 @@ func main() {
 		log.Panicf("Failed to connect: %s", err)
 	}
 	sens := sensor.NewScheduler(client, configuration.Sensor.Id, configuration.ScannerPreferences)
-	log.Printf("Starting Scheduler")
+	log.Printf("Starting Scheduler\n")
 	sens.Start()
 	process.Block(client, sens)
 }
