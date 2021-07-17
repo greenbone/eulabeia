@@ -50,7 +50,7 @@ func (handler StartStop) On(topic string, message []byte) (*connection.SendRespo
 				log.Printf("Unable to start scan: %s", err)
 			}
 		case "stop":
-			if err := handler.StartFunc(msg.ID); err != nil {
+			if err := handler.StopFunc(msg.ID); err != nil {
 				log.Printf("Unable to stop scan: %s", err)
 			}
 		}
@@ -91,9 +91,9 @@ func (handler Status) On(topic string, message []byte) (*connection.SendResponse
 		if err := handler.RunFunc(msg.ID); err != nil {
 			log.Printf("Unable to set status to running: %s", err)
 		}
-	case "stopped", "finished", "interrupted":
+	case "finished":
 		if err := handler.FinFunc(msg.ID); err != nil {
-			log.Printf("Unable to set status to running: %s", err)
+			log.Printf("Unable to set status to finished: %s", err)
 		}
 	}
 	return nil, nil
