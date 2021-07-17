@@ -38,13 +38,13 @@ import (
 
 // Scheduler is a struct containing functionality to control a sensor
 type Scheduler struct {
-	queue         *util.QueueList
-	init          *util.QueueList
-	running       *util.QueueList
-	loadingVTs    bool
-	ovas          *openvas.OpenVASScanner
-	sudo          bool
-	mutex         *sync.Mutex
+	queue      *util.QueueList
+	init       *util.QueueList
+	running    *util.QueueList
+	loadingVTs bool
+	ovas       *openvas.OpenVASScanner
+	sudo       bool
+	sync.Mutex
 	stopped       bool
 	regChan       chan struct{}
 	commander     openvas.Commander
@@ -70,8 +70,8 @@ func (sensor *Scheduler) loadVTs() {
 
 // QueueScan queues a scan
 func (sensor *Scheduler) QueueScan(scanID string) error {
-	sensor.mutex.Lock()
-	defer sensor.mutex.Unlock()
+	sensor.Lock()
+	defer sensor.Unlock()
 	if sensor.queue.Contains(scanID) || sensor.init.Contains(scanID) || sensor.running.Contains(scanID) {
 		return fmt.Errorf("there is already a running scan with the ID %s", scanID)
 	}
@@ -88,8 +88,8 @@ func (sensor *Scheduler) QueueScan(scanID string) error {
 
 // StartScan starts a scan process
 func (sensor *Scheduler) StartScan(scanID string) error {
-	sensor.mutex.Lock()
-	defer sensor.mutex.Unlock()
+	sensor.Lock()
+	defer sensor.Unlock()
 
 	if !sensor.queue.Contains(scanID) {
 		return fmt.Errorf("scan ID %s unknown", scanID)
@@ -113,8 +113,8 @@ func (sensor *Scheduler) StartScan(scanID string) error {
 
 // ScanRunning moves a scan from the init to the running state
 func (sensor *Scheduler) ScanRunning(scanID string) error {
-	sensor.mutex.Lock()
-	defer sensor.mutex.Unlock()
+	sensor.Lock()
+	defer sensor.Unlock()
 	if !sensor.init.RemoveListItem(scanID) {
 		return fmt.Errorf("scan ID %s unknown", scanID)
 	}
@@ -123,8 +123,8 @@ func (sensor *Scheduler) ScanRunning(scanID string) error {
 }
 
 func (sensor *Scheduler) ScanFinished(scanID string) error {
-	sensor.mutex.Lock()
-	defer sensor.mutex.Unlock()
+	sensor.Lock()
+	defer sensor.Unlock()
 	if !sensor.running.RemoveListItem(scanID) {
 		return fmt.Errorf("scan ID %s unknown", scanID)
 	}
@@ -133,8 +133,8 @@ func (sensor *Scheduler) ScanFinished(scanID string) error {
 
 // StopScan will remove the scan from the queue or invoke a stop scan command to scanner
 func (sensor *Scheduler) StopScan(scanID string) error {
-	sensor.mutex.Lock()
-	defer sensor.mutex.Unlock()
+	sensor.Lock()
+	defer sensor.Unlock()
 	if sensor.queue.RemoveListItem(scanID) {
 		return nil
 	}
@@ -173,8 +173,8 @@ func (sensor *Scheduler) GetVersion() error {
 
 // interruptScan removes scan from list and publishes a status MSG
 func (sensor *Scheduler) interruptScan(scanID string) error {
-	sensor.mutex.Lock()
-	defer sensor.mutex.Unlock()
+	sensor.Lock()
+	defer sensor.Unlock()
 
 	if sensor.init.RemoveListItem(scanID) || sensor.running.RemoveListItem(scanID) {
 		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
@@ -258,8 +258,8 @@ func (sensor *Scheduler) register() {
 // Close cleans all queues and OpenVAS processes, sets all scan stats to
 // interrupted and stops the scheduler
 func (sensor *Scheduler) Close() error {
-	sensor.mutex.Lock()
-	defer sensor.mutex.Unlock()
+	sensor.Lock()
+	defer sensor.Unlock()
 	sensor.stopped = true
 	log.Print("Cleaning all OpenVAS Processes...\n")
 	// Remove all queued scans
@@ -350,7 +350,6 @@ func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferen
 		running:       util.NewQueueList(),
 		ovas:          openvas.NewOpenVASScanner(interruptChan),
 		sudo:          openvas.IsSudo(openvas.StdCommander{}),
-		mutex:         &sync.Mutex{},
 		stopped:       true,
 		regChan:       make(chan struct{}),
 		commander:     openvas.StdCommander{},

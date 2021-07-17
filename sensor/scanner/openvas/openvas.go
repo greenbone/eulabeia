@@ -33,7 +33,7 @@ import (
 // stop scans via openvas.
 type OpenVASScanner struct {
 	procs         map[string]*os.Process // Process List for running scans
-	mutex         *sync.Mutex            // For thread save management of processes
+	sync.Mutex                           // For thread save management of processes
 	interruptChan chan string            // Channel to signal interrupted scans
 }
 
@@ -57,15 +57,14 @@ func NewOpenVASScanner(interruptChan chan string) *OpenVASScanner {
 
 	return &OpenVASScanner{
 		procs:         make(map[string]*os.Process),
-		mutex:         &sync.Mutex{},
 		interruptChan: interruptChan,
 	}
 }
 
 // addProcess adds a Process to the Process list
-func (ovas OpenVASScanner) addProcess(scan string, p *os.Process) error {
-	ovas.mutex.Lock()
-	defer ovas.mutex.Unlock()
+func (ovas *OpenVASScanner) addProcess(scan string, p *os.Process) error {
+	ovas.Lock()
+	defer ovas.Unlock()
 	if _, ok := ovas.procs[scan]; ok {
 		return errors.New("process already exist")
 	}
@@ -74,9 +73,9 @@ func (ovas OpenVASScanner) addProcess(scan string, p *os.Process) error {
 }
 
 // removeProcess removes a Process from the Process list
-func (ovas OpenVASScanner) removeProcess(scan string) error {
-	ovas.mutex.Lock()
-	defer ovas.mutex.Unlock()
+func (ovas *OpenVASScanner) removeProcess(scan string) error {
+	ovas.Lock()
+	defer ovas.Unlock()
 	if _, ok := ovas.procs[scan]; !ok {
 		return fmt.Errorf("process for scan id %s does not exist", scan)
 	}
@@ -86,7 +85,7 @@ func (ovas OpenVASScanner) removeProcess(scan string) error {
 
 // StartScan starts scan with given scan-ID and process priority (-20 to 19,
 // lower is more prioritized)
-func (ovas OpenVASScanner) StartScan(scan string, niceness int, sudo bool, exe Commander) error {
+func (ovas *OpenVASScanner) StartScan(scan string, niceness int, sudo bool, exe Commander) error {
 	cmdString := make([]string, 0)
 
 	cmdString = append(cmdString, "nice", "-n", fmt.Sprintf("%v", niceness))
@@ -112,7 +111,7 @@ func (ovas OpenVASScanner) StartScan(scan string, niceness int, sudo bool, exe C
 }
 
 // StopScan stops a scan with given scan-ID
-func (ovas OpenVASScanner) StopScan(scan string, sudo bool, exe Commander) error {
+func (ovas *OpenVASScanner) StopScan(scan string, sudo bool, exe Commander) error {
 	err := ovas.removeProcess(scan)
 	if err != nil {
 		return err
@@ -140,12 +139,12 @@ func (ovas OpenVASScanner) StopScan(scan string, sudo bool, exe Commander) error
 }
 
 // ScanFinished must be called when a Openvas Process succesfully finished
-func (ovas OpenVASScanner) ScanFinished(scan string) error {
+func (ovas *OpenVASScanner) ScanFinished(scan string) error {
 	return ovas.removeProcess(scan)
 }
 
 // GetVersion returns the Version of OpenVAS
-func (ovas OpenVASScanner) GetVersion(exe Commander) (string, error) {
+func (ovas *OpenVASScanner) GetVersion(exe Commander) (string, error) {
 	out, err := exe.Command("openvas", "-V").CombinedOutput()
 	if err != nil {
 		return "", err
@@ -155,7 +154,7 @@ func (ovas OpenVASScanner) GetVersion(exe Commander) (string, error) {
 }
 
 // GetSettings returns the Settings of OpenVAS as a map
-func (ovas OpenVASScanner) GetSettings(exe Commander) (map[string]string, error) {
+func (ovas *OpenVASScanner) GetSettings(exe Commander) (map[string]string, error) {
 	out, err := exe.Command("openvas", "-s").CombinedOutput()
 	if err != nil {
 		return nil, err
@@ -173,7 +172,7 @@ func (ovas OpenVASScanner) GetSettings(exe Commander) (map[string]string, error)
 }
 
 // LoadVTsIntoRedis starts openvas which then loads new VTs into Redis
-func (ovas OpenVASScanner) LoadVTsIntoRedis(exe Commander) error {
+func (ovas *OpenVASScanner) LoadVTsIntoRedis(exe Commander) error {
 	return exe.Command("openvas", "--update-vt-info").Run()
 }
 
@@ -186,7 +185,7 @@ func IsSudo(exe Commander) bool {
 
 // waitForProcessToEnd gets Called as go-routine after OpenVAS Scan Process was
 // started
-func (ovas OpenVASScanner) waitForProcessToEnd(p *os.Process, scan string) {
+func (ovas *OpenVASScanner) waitForProcessToEnd(p *os.Process, scan string) {
 	p.Wait()
 	err := ovas.removeProcess(scan)
 	if err == nil {

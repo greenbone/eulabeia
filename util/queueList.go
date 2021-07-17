@@ -25,22 +25,21 @@ import (
 // within the Queue without changing the order. It is also thread safe.
 type QueueList struct {
 	items []string
-	mutex *sync.RWMutex
+	sync.RWMutex
 }
 
 // NewQueueList returns a new empty QueueList
 func NewQueueList() *QueueList {
 	return &QueueList{
 		items: make([]string, 0),
-		mutex: &sync.RWMutex{},
 	}
 }
 
 // RemoveListItem removes an Item from a list without changing the order.
 // Returns true if the item was in the list and false when not.
 func (ql *QueueList) RemoveListItem(item string) bool {
-	ql.mutex.Lock()
-	defer ql.mutex.Unlock()
+	ql.Lock()
+	defer ql.Unlock()
 	i := 0
 	for ; i < len(ql.items); i++ {
 		if ql.items[i] == item {
@@ -53,15 +52,15 @@ func (ql *QueueList) RemoveListItem(item string) bool {
 
 // Append adds a item to the and of a Queue
 func (ql *QueueList) Enqueue(item string) {
-	ql.mutex.Lock()
-	defer ql.mutex.Unlock()
+	ql.Lock()
+	defer ql.Unlock()
 	ql.items = append(ql.items, item)
 }
 
 // Contains checks if an Item is already contained in a QueuList
 func (ql *QueueList) Contains(item string) bool {
-	ql.mutex.RLock()
-	defer ql.mutex.RUnlock()
+	ql.RLock()
+	defer ql.RUnlock()
 	i := 0
 	for ; i < len(ql.items); i++ {
 		if ql.items[i] == item {
@@ -80,16 +79,16 @@ func (ql *QueueList) Size() int {
 }
 
 func (ql *QueueList) Front() string {
-	ql.mutex.RLock()
-	defer ql.mutex.RUnlock()
+	ql.RLock()
+	defer ql.RUnlock()
 	return ql.items[0]
 }
 
 // Dequeue removes and returns first List Item. Returns false when list is
 // empty
 func (ql *QueueList) Dequeue() (string, bool) {
-	ql.mutex.Lock()
-	defer ql.mutex.Unlock()
+	ql.Lock()
+	defer ql.Unlock()
 	if ql.IsEmpty() {
 		return "", false
 	}
