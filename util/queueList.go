@@ -17,7 +17,9 @@
 
 package util
 
-import "sync"
+import (
+	"sync"
+)
 
 // QueueList is a mixture of a List and a Queue. It is able to remove Items
 // within the Queue without changing the order. It is also thread safe.
