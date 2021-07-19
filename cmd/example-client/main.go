@@ -134,10 +134,6 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	err = c.Publish("eulabeia/target/cmd/director", cmds.NewCreate("target", "director", ""))
-	if err != nil {
-		log.Panicf("Failed to publish: %s", err)
-	}
 	ic := make(chan os.Signal, 1)
 	defer close(ic)
 	mh := ExampleHandler{
@@ -160,6 +156,10 @@ func main() {
 		ic <- syscall.SIGABRT
 	}()
 	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
+	err = c.Publish("eulabeia/target/cmd/director", cmds.NewCreate("target", "director", ""))
+	if err != nil {
+		log.Panicf("Failed to publish: %s", err)
+	}
 	<-ic
 	log.Printf("After handling %s it is time to say good bye", mh.handled)
 }
