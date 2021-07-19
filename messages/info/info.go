@@ -2,6 +2,7 @@ package info
 
 import (
 	"fmt"
+
 	"github.com/greenbone/eulabeia/messages"
 )
 
@@ -34,6 +35,26 @@ type Failure struct {
 	EventType
 	messages.Message
 	Error string `json:"error"`
+}
+
+// Contains the status of a scan
+type Status struct {
+	EventType
+	messages.Identifier
+	Status string `json:"status"`
+}
+
+type Response struct {
+	EventType
+	messages.Message
+	Status string `json:"status"`
+	Msg    string `json:"msg"`
+}
+
+type Version struct {
+	EventType
+	messages.Identifier
+	Version string `json:"version"`
 }
 
 // DeleteFailureResponse is a conenvience method to return a Failure as Unable to delete

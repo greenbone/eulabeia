@@ -86,6 +86,12 @@ func NewStart(aggregate string, id string, destination string, groupID string) S
 	}
 }
 
+// Stop indicates that something with the ID should be stopped
+type Stop struct {
+	eventType
+	messages.Identifier
+}
+
 // Modify indicates that a entity should be modified.
 //
 // The values to modify are within Values, they typically match the names of the aggregate
@@ -94,6 +100,18 @@ type Modify struct {
 	eventType
 	messages.Identifier
 	Values map[string]interface{} `json:"values"`
+}
+
+// Register indicates that something with the ID should be registered
+type Register struct {
+	eventType
+	messages.Identifier
+}
+
+// LoadVTs signals that all sensors should update their VTs
+type LoadVTs struct {
+	eventType
+	messages.Message
 }
 
 // NewModify creates a new Modify cmd
