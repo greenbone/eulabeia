@@ -51,7 +51,7 @@ run-example-client:
 start-smoke-test: start-container run-example-client
 
 start-container: start-broker start-director start-sensor
-stop-container: stop-broker stop-director stop-sensor
+stop-container: stop-director stop-sensor stop-broker
 
 smoke-test: build-container start-smoke-test stop-container
 
