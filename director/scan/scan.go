@@ -65,7 +65,7 @@ func (t scanAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, err
 	}
 	applyTargetID := func(k string, v interface{}) error {
 		switch k {
-		case "target_id":
+		case "target_id", "target":
 			if str, ok := v.(string); ok {
 				target, err := t.target.Get(str)
 				if err != nil {
