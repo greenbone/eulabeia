@@ -1,0 +1,19 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -202,7 +202,7 @@ configure_file (src/openvas_log_conf.cma
+ 
+ ## Testing
+ 
+-enable_testing ()
++#enable_testing ()
+ 
+ add_custom_target (tests
+                    DEPENDS attack-test pcap-test)
+@@ -235,6 +235,6 @@ add_subdirectory (doc)
+ 
+ ## Tests
+ 
+-enable_testing ()
++#enable_testing ()
+ 
+ ## End

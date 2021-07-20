@@ -1,0 +1,47 @@
+Source: openvas-scanner
+Section: net
+Priority: optional
+Maintainer: Greenbone Networks GmbH <info@greenbone.net>
+Build-Depends:
+  debhelper (>= 12),
+  cmake,
+  libglib2.0-dev (>= 2.16),
+  libgcrypt20-dev,
+  libgvm-dev (>= {{major_version}}.0),
+  bison,
+  pkg-config,
+  cppcheck,
+  libcgreen1-dev,
+  libradcli-dev (>= 1.2.6),
+  libjson-glib-dev,
+  libpaho-mqtt-dev,
+Standards-Version: 4.4.1
+
+Package: openvas
+Architecture: any
+Depends: ${shlibs:Depends},
+ ${misc:Depends},
+ libjson-glib-1.0-0,
+# redis-server (>= 3:3.2.6),
+ nmap,
+Description: This is the Open Vulnerability Assessment Scanner (OpenVAS) of the Greenbone Vulnerability Management (GVM) Solution. 
+
+Package: libopenvas-misc{{major_version}}
+Section: libs
+Architecture: any
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, libradcli-dev (>= 1.2.6),
+Replaces: libopenvas-misc20
+Conflicts: libopenvas-misc20
+Description: OpenVAS - shared libraries misc
+
+Package: libopenvas-nasl{{major_version}}
+Section: libs
+Architecture: any
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, python3-impacket
+Replaces: libopenvas-nasl20
+Conflicts: libopenvas-nasl20
+Description: OpenVAS - shared libraries nasl
