@@ -125,7 +125,7 @@ func (t scanAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) {
 }
 
 // New returns the type of aggregate as string and Aggregate
-func New(storage storage.Json) handler.Holder {
+func New(storage storage.Json) handler.Container {
 	s := scanAggregate{
 		storage: NewStorage(storage),
 		target:  target.NewStorage(storage)}

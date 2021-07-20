@@ -88,7 +88,7 @@ func (t targetAggregate) Delete(d cmds.Delete) (*info.Deleted, *info.Failure, er
 	}, nil, nil
 }
 
-// New creates a target aggregate as a handler.Holder
-func New(storage storage.Json) handler.Holder {
+// New creates a target aggregate as a handler.Container
+func New(storage storage.Json) handler.Container {
 	return handler.FromAggregate("target", targetAggregate{storage: NewStorage(storage)})
 }
