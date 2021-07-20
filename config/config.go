@@ -28,7 +28,8 @@ type Sensor struct {
 }
 
 type Director struct {
-	Id string // The Id (a uuid) of this director
+	Id          string // The Id (a uuid) of this director
+	StoragePath string // The path to store the json into
 }
 
 type Configuration struct {
