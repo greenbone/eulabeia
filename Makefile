@@ -21,19 +21,19 @@ MQTT_CONTAINER = docker run -e "MQTT_SERVER=$(call BROKER_IP):9138" --rm
 
 
 start-broker:
-	docker run --rm -d --name eulabeia_broker eulabeia/broker:latest
+	docker run --rm -d --name eulabeia_broker greenbone/eulabeia-broker:latest
 
 stop-broker:
 	docker kill eulabeia_broker
 
 start-director:
-	$(MQTT_CONTAINER) -d --name eulabeia_director eulabeia/director
+	$(MQTT_CONTAINER) -d --name eulabeia_director greenbone/eulabeia-director
 
 stop-director:
 	docker stop eulabeia_director
 
 start-sensor:
-	$(MQTT_CONTAINER) -d --name eulabeia_sensor eulabeia/sensor
+	$(MQTT_CONTAINER) -d --name eulabeia_sensor greenbone/eulabeia-sensor
 
 stop-sensor:
 	docker stop eulabeia_sensor
@@ -42,7 +42,7 @@ run-example-client:
 	until test `docker inspect eulabeia_sensor --format='{{.State.Running}}'` = "true"; do echo "waiting for sensor"; sleep 1; done
 	until test `docker inspect eulabeia_director --format='{{.State.Running}}'` = "true"; do echo "waiting for director"; sleep 1; done
 	docker ps
-	$(MQTT_CONTAINER) --name eulabeia_example --rm eulabeia/example-client || ( docker logs eulabeia_director && docker logs eulabeia_sensor && exit 1) 
+	$(MQTT_CONTAINER) --name eulabeia_example --rm greenbone/eulabeia-example-client || ( docker logs eulabeia_director && docker logs eulabeia_sensor && exit 1) 
 
 start-smoke-test: start-container run-example-client
 
@@ -64,16 +64,16 @@ build-example:
 build: build-director build-sensor build-example
 
 build-container-broker:
-	docker build -t eulabeia/broker -f broker.Dockerfile .
+	docker build -t greenbone/eulabeia-broker -f broker.Dockerfile .
 
 build-container-director: build-director
-	docker build -t eulabeia/director -f director.Dockerfile .
+	docker build -t greenbone/eulabeia-director -f director.Dockerfile .
 
 build-container-sensor: build-sensor
-	docker build -t eulabeia/sensor -f sensor.Dockerfile .
+	docker build -t greenbone/eulabeia-sensor -f sensor.Dockerfile .
 
 build-container-example: build-example
-	docker build -t eulabeia/example-client -f example-client.Dockerfile .
+	docker build -t greenbone/eulabeia-example-client -f example-client.Dockerfile .
 
 build-container: build-container-broker build-container-director build-container-sensor build-container-example
 
