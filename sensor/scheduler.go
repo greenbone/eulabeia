@@ -30,6 +30,7 @@ import (
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/sensor/handler"
+	"github.com/greenbone/eulabeia/sensor/scanner/openvas"
 
 	"github.com/greenbone/eulabeia/util"
 )
@@ -48,7 +49,7 @@ type schedulerChannels struct {
 // loadVTs commands openvas to load VTs into redis
 func loadVTs(vtsLoadedChan chan struct{}) {
 	log.Printf("Loading VTs into Redis DB...\n")
-	err := LoadVTsIntoRedis()
+	err := openvas.LoadVTsIntoRedis(openvas.StdCommander{})
 	if err != nil {
 		log.Panicf("Unable to load VTs into redis: %s", err)
 	}
@@ -60,7 +61,8 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 	queue := make([]string, 0)
 	init := make([]string, 0)
 	running := make([]string, 0)
-	sudo := IsSudo()
+	sudo := openvas.IsSudo(openvas.StdCommander{})
+	var processes = openvas.CreateEmptyProcessList()
 
 	var vtsLoadedChan = make(chan struct{})
 	vtsLoading := true
@@ -91,7 +93,8 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 							continue
 						}
 					}
-					err := StopScan(scan, sudo)
+					log.Printf("Stopping scan %s", scan)
+					err := openvas.StopScan(scan, sudo, openvas.StdCommander{}, processes)
 					if err != nil {
 						log.Printf("%s: Scan cannot be stopped: %s.\n", scan, err)
 						continue
@@ -111,9 +114,13 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 
 			case scan := <-channels.finChan: // scan finished
 				util.RemoveListItem(running, scan)
+				err := openvas.ScanFinished(scan, processes)
+				if err != nil {
+					log.Printf("Unable to end scan %s: %s", scan, err)
+				}
 
 			case <-channels.verChan:
-				ver, err := GetVersion()
+				ver, err := openvas.GetVersion(openvas.StdCommander{})
 				var ret string
 				if err != nil {
 					ret = fmt.Sprintf("%s", err)
@@ -154,7 +161,7 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 
 		// get memory stats and check for memory
 		if conf.MinFreeMemScanQueue > 0 {
-			m, err := util.GetAvailableMemory()
+			m, err := util.GetAvailableMemory(util.StdMemoryManager{})
 			memoryNeeded := m.Bytes + uint64(len(init))*conf.MinFreeMemScanQueue
 			if err != nil {
 				log.Panicf("Unable to get memory stats: %s\n", err)
@@ -166,7 +173,7 @@ func schedule(channels schedulerChannels, mqtt connection.PubSub, conf config.Sc
 		}
 
 		// try to run scan process
-		err := StartScan(queue[0], int(conf.Niceness), sudo)
+		err := openvas.StartScan(queue[0], int(conf.Niceness), sudo, openvas.StdCommander{}, processes)
 		if err != nil {
 			log.Printf("%s: Scan could not start: %s", queue[0], err)
 			continue

@@ -16,7 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // OpenVAS component of the sensor. This module is responsible fot everything regarding OpenVAS
-package sensor
+package openvas
 
 import (
 	"errors"
@@ -28,15 +28,33 @@ import (
 	"sync"
 )
 
-// rocessList represents a list of processes. It is used to manage processes
+type Commander interface {
+	Command(name string, arg ...string) *exec.Cmd
+}
+
+type StdCommander struct {
+}
+
+func (exe StdCommander) Command(name string, arg ...string) *exec.Cmd {
+	return exec.Command(name, arg...)
+}
+
+// ProcessList represents a list of processes. It is used to manage processes
 // within different go routines.
-type processList struct {
+type ProcessList struct {
 	procs map[string]*os.Process
 	mutex *sync.Mutex
 }
 
+func CreateEmptyProcessList() ProcessList {
+	return ProcessList{
+		procs: make(map[string]*os.Process),
+		mutex: &sync.Mutex{},
+	}
+}
+
 // addProcess adds a Process to the Process list
-func (pl processList) addProcess(scan string, p *os.Process) error {
+func (pl ProcessList) addProcess(scan string, p *os.Process) error {
 	pl.mutex.Lock()
 	defer pl.mutex.Unlock()
 	if _, ok := pl.procs[scan]; ok {
@@ -47,7 +65,7 @@ func (pl processList) addProcess(scan string, p *os.Process) error {
 }
 
 // removeProcess removes a Process from the Process list
-func (pl processList) removeProcess(scan string) error {
+func (pl ProcessList) removeProcess(scan string) error {
 	pl.mutex.Lock()
 	defer pl.mutex.Unlock()
 	if _, ok := pl.procs[scan]; !ok {
@@ -57,16 +75,12 @@ func (pl processList) removeProcess(scan string) error {
 	return nil
 }
 
-var processes processList
-
 // StartScan starts scan with given scan-ID and process priority (-20 to 19,
 // lower is more prioritized)
-func StartScan(scan string, niceness int, sudo bool) error {
+func StartScan(scan string, niceness int, sudo bool, exe Commander, procList ProcessList) error {
 	cmdString := make([]string, 0)
 
-	if niceness != 0 {
-		cmdString = append(cmdString, "nice", "-n", fmt.Sprintf("%v", niceness))
-	}
+	cmdString = append(cmdString, "nice", "-n", fmt.Sprintf("%v", niceness))
 
 	if sudo {
 		cmdString = append(cmdString, "sudo", "-n")
@@ -77,23 +91,23 @@ func StartScan(scan string, niceness int, sudo bool) error {
 	head := cmdString[0]
 	args := cmdString[1:]
 
-	cmd := exec.Command(head, args...)
+	cmd := exe.Command(head, args...)
 
 	err := cmd.Start()
 	if err != nil {
 		return fmt.Errorf("unable to start openvas process: %s", err)
 	}
-	go waitForProcessToEnd(cmd.Process, scan)
+	procList.addProcess(scan, cmd.Process)
+	go waitForProcessToEnd(cmd.Process, scan, procList)
 	return nil
 }
 
 // StopScan stops a scan with given scan-ID
-func StopScan(scan string, sudo bool) error {
-	err := processes.removeProcess(scan)
+func StopScan(scan string, sudo bool, exe Commander, procList ProcessList) error {
+	err := procList.removeProcess(scan)
 	if err != nil {
 		return err
 	}
-	log.Printf("%s: Stopping scan.\n", scan)
 
 	cmdString := make([]string, 0)
 
@@ -106,7 +120,7 @@ func StopScan(scan string, sudo bool) error {
 	head := cmdString[0]
 	args := cmdString[1:]
 
-	cmd := exec.Command(head, args...)
+	cmd := exe.Command(head, args...)
 
 	err = cmd.Run()
 	if err != nil {
@@ -116,14 +130,14 @@ func StopScan(scan string, sudo bool) error {
 	return nil
 }
 
-// EndScan must be called when a Openvas Process succesfully finished
-func EndScan(scan string) error {
-	return processes.removeProcess(scan)
+// ScanFinished must be called when a Openvas Process succesfully finished
+func ScanFinished(scan string, procList ProcessList) error {
+	return procList.removeProcess(scan)
 }
 
 // GetVersion returns the Version of OpenVAS
-func GetVersion() (string, error) {
-	out, err := exec.Command("openvas", "-V").CombinedOutput()
+func GetVersion(exe Commander) (string, error) {
+	out, err := exe.Command("openvas", "-V").CombinedOutput()
 	if err != nil {
 		return "", err
 	}
@@ -132,8 +146,8 @@ func GetVersion() (string, error) {
 }
 
 // GetSettings returns the Settings of OpenVAS as a map
-func GetSettings() (map[string]string, error) {
-	out, err := exec.Command("openvas", "-s").CombinedOutput()
+func GetSettings(exe Commander) (map[string]string, error) {
+	out, err := exe.Command("openvas", "-s").CombinedOutput()
 	if err != nil {
 		return nil, err
 	}
@@ -144,44 +158,32 @@ func GetSettings() (map[string]string, error) {
 		if len(settingSplit) != 2 {
 			continue
 		}
-		settingsMap[settingSplit[0]] = settingSplit[1]
+		settingsMap[strings.TrimSpace(settingSplit[0])] = strings.TrimSpace(settingSplit[1])
 	}
 	return settingsMap, nil
 }
 
 // LoadVTsIntoRedis starts openvas which then loads new VTs into Redis
-func LoadVTsIntoRedis() error {
-	return exec.Command("openvas", "--update-vt-info").Run()
+func LoadVTsIntoRedis(exe Commander) error {
+	return exe.Command("openvas", "--update-vt-info").Run()
 }
 
 // IsSudo checks for sudo permissions
-func IsSudo() bool {
-	cmd := exec.Command("sudo", []string{"-n", "openvas", "-s"}...)
+func IsSudo(exe Commander) bool {
+	cmd := exe.Command("sudo", []string{"-n", "openvas", "-s"}...)
 	err := cmd.Run()
-	if err != nil {
-		log.Printf("Cannot start openvas as sudo: %s", err)
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // waitForProcessToEnd gets Called as go-routine after OpenVAS Scan Process was
 // started
-func waitForProcessToEnd(p *os.Process, scan string) {
-	processes.addProcess(scan, p)
+func waitForProcessToEnd(p *os.Process, scan string, procList ProcessList) {
 	p.Wait()
-	err := processes.removeProcess(scan)
+	err := procList.removeProcess(scan)
 	if err == nil {
 		log.Printf("%s: Scan process got unexpectedly stopped or killed.\n", scan)
 		// TODO: Interrupt scan
 		return
 	}
 	log.Printf("%s: Scan process with PID %v terminated correctly.\n", scan, p.Pid)
-}
-
-func init() {
-	processes = processList{
-		procs: make(map[string]*os.Process),
-		mutex: &sync.Mutex{},
-	}
 }

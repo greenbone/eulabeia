@@ -27,6 +27,17 @@ type Memory struct {
 	Bytes uint64
 }
 
+type MemoryManager interface {
+	Get() (*mem.Stats, error)
+}
+
+type StdMemoryManager struct {
+}
+
+func (mm StdMemoryManager) Get() (*mem.Stats, error) {
+	return mem.Get()
+}
+
 func (m Memory) String() string {
 	calc := float64(m.Bytes)
 	i := 0
@@ -52,8 +63,8 @@ func (m Memory) String() string {
 	return fmt.Sprintf("%.1f %s", calc, size)
 }
 
-func GetAvailableMemory() (Memory, error) {
-	s, err := mem.Get()
+func GetAvailableMemory(mm MemoryManager) (Memory, error) {
+	s, err := mm.Get()
 	if err != nil {
 		return Memory{0}, err
 	}
