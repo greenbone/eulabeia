@@ -6,7 +6,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eclipse/paho.golang v0.9.1-0.20210702114459-a215349036a5
 	github.com/google/go-cmp v0.5.6 // indirect
-	github.com/google/uuid v1.2.0
+	github.com/google/uuid v1.3.0
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mackerelio/go-osstat v0.2.0
 	github.com/pelletier/go-toml v1.9.3

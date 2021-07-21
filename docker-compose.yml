@@ -2,36 +2,21 @@ version: '3'
 
 services:
   broker:
-    build:
-      context: .
-      dockerfile: broker.Dockerfile
+    image: greenbone/eulabeia-broker:latest
     networks:
       default:
         aliases:
           - broker
     restart: on-failure
-  build-cmds:
-    build:
-      context: .
-      dockerfile: compile.Dockerfile
   director:
-    image: eulabeia_build-cmds:latest
-    command: eulabeia-director --clientid director
+    image: greenbone/eulabeia-director:latest
     depends_on:
-      - build-cmds
+      - broker
   sensor:
-    image: eulabeia_build-cmds:latest
-    command: eulabeia-sensor
+    image: greenbone/eulabeia-sensor:latest
     depends_on:
-      - build-cmds
-    depends_on:
-      - build-cmds
       - director
   example:
-    image: eulabeia_build-cmds:latest
-    command: example-client --clientid client1
+    image: greenbone/eulabeia-example-client:latest
     depends_on:
-      - build-cmds
       - sensor
-volumes:
-  binaries: {}

@@ -33,7 +33,7 @@ import (
 )
 
 func main() {
-	clientid := flag.String("clientid", "", "A clientid for the connection")
+	clientid := flag.String("clientid", "eulabeia-director", "A clientid for the connection")
 	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
 	flag.Parse()
 	configuration, err := config.New(*configPath, "eulabeia")
@@ -52,7 +52,7 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	device := storage.File{Dir: "/tmp/"}
+	device := storage.File{Dir: configuration.Director.StoragePath}
 	context := configuration.Context
 	err = client.Subscribe(map[string]connection.OnMessage{
 		"eulabeia/sensor/cmd/director": handler.New(context, sensor.New(device)),
