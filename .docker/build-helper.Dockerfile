@@ -1,3 +1,5 @@
+# we use debian:testing due to paho otherwise we would need to install
+# manually
 FROM debian:testing-slim as core 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
