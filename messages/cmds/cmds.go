@@ -104,10 +104,7 @@ func NewStart(aggregate string, id string, destination string, groupID string) S
 }
 
 // Stop indicates that something with the ID should be stopped
-type Stop struct {
-	eventType
-	messages.Identifier
-}
+type Stop IDCMD
 
 // Modify indicates that a entity should be modified.
 //
@@ -120,10 +117,7 @@ type Modify struct {
 }
 
 // Register indicates that something with the ID should be registered
-type Register struct {
-	eventType
-	messages.Identifier
-}
+type Register IDCMD
 
 // LoadVTs signals that all sensors should update their VTs
 type LoadVTs struct {

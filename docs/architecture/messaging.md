@@ -71,8 +71,10 @@ The create cmd will create a new entity and the id of that entity will be return
   "id": "f704d1e0-768d-4a86-ab6a-dd28e3f45776",
   "values": {
     "credentials": {
-      "password": "admin",
-      "username": "admin"
+        "ssh": {
+          "password": "admin",
+          "username": "admin"
+        }
     },
     "hosts": [
       "localhorst"
