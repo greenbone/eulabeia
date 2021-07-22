@@ -16,6 +16,7 @@ test:
 	go test ./...
 
 GO_BUILD = CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+DOCKER_BUILD = docker build --force-rm=true --compress=true
 BROKER_IP = $(or $(shell docker container inspect -f '{{ .NetworkSettings.IPAddress }}' eulabeia_broker), $(echo ""))
 MQTT_CONTAINER = docker run -e "MQTT_SERVER=$(call BROKER_IP):9138" --rm
 
@@ -33,16 +34,19 @@ stop-director:
 	docker stop eulabeia_director
 
 start-sensor:
-	$(MQTT_CONTAINER) -d --name eulabeia_sensor greenbone/eulabeia-sensor
+	docker volume create eulabeia_feed
+	docker pull greenbone/community-feed-vts:latest
+	docker run -d --rm -v eulabeia_feed:/opt/greenbone/feed/plugins greenbone/community-feed-vts:latest echo ""
+	$(MQTT_CONTAINER) -d -v eulabeia_feed:/var/lib/openvas/feed/plugins --name eulabeia_sensor greenbone/eulabeia-sensor
 
 stop-sensor:
 	docker stop eulabeia_sensor
+	docker volume rm eulabeia_feed
 
 run-example-client:
 	until test `docker inspect eulabeia_sensor --format='{{.State.Running}}'` = "true"; do echo "waiting for sensor"; sleep 1; done
 	until test `docker inspect eulabeia_director --format='{{.State.Running}}'` = "true"; do echo "waiting for director"; sleep 1; done
-	docker ps
-	$(MQTT_CONTAINER) --name eulabeia_example --rm greenbone/eulabeia-example-client || ( docker logs eulabeia_director && docker logs eulabeia_sensor && exit 1) 
+	$(MQTT_CONTAINER) --name eulabeia_example greenbone/eulabeia-example-client
 
 start-smoke-test: start-container run-example-client
 
@@ -64,18 +68,21 @@ build-example:
 build: build-director build-sensor build-example
 
 build-container-broker:
-	docker build -t greenbone/eulabeia-broker -f broker.Dockerfile .
+	$(DOCKER_BUILD) -t greenbone/eulabeia-broker -f broker.Dockerfile .
 
 build-container-director: build-director
-	docker build -t greenbone/eulabeia-director -f director.Dockerfile .
+	$(DOCKER_BUILD) -t greenbone/eulabeia-director -f director.Dockerfile .
 
 build-container-sensor: build-sensor
-	docker build -t greenbone/eulabeia-sensor -f sensor.Dockerfile .
+	$(DOCKER_BUILD) -t greenbone/eulabeia-sensor -f sensor.Dockerfile .
 
 build-container-example: build-example
-	docker build -t greenbone/eulabeia-example-client -f example-client.Dockerfile .
+	$(DOCKER_BUILD) -t greenbone/eulabeia-example-client -f example-client.Dockerfile .
 
-build-container: build-container-broker build-container-director build-container-sensor build-container-example
+build-container-build-helper:
+	$(DOCKER_BUILD) -t greenbone/eulabeia-build-helper -f .docker/build-helper.Dockerfile .docker/
+
+build-container: build-container-build-helper build-container-broker build-container-director build-container-sensor build-container-example
 
 update:
 	go get -u all

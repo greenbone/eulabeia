@@ -1,0 +1,3 @@
+Test-command: /sbin/ldconfig -p | grep libgvm_base
+
+Test-command: /sbin/ldconfig -p | grep libgvm_osp
