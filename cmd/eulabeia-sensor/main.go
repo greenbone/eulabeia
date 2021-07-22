@@ -58,7 +58,8 @@ func main() {
 					Message: messages.NewMessage("delete.sensor", "", ""),
 					ID:      configuration.Sensor.Id,
 				},
-			}})
+			}},
+		nil)
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}

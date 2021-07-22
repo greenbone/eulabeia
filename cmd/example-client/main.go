@@ -142,7 +142,7 @@ func main() {
 	server := configuration.Connection.Server
 
 	log.Println("Starting example client")
-	c, err := mqtt.New(server, *clientid+uuid.NewString(), "", "", nil)
+	c, err := mqtt.New(server, *clientid+uuid.NewString(), "", "", nil, nil)
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}

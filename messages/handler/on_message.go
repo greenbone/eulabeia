@@ -40,6 +40,7 @@ import (
 // If it fails to apply the given value directly it calls the given function
 // apply to try it via own handling mechanismn. If apply is nil or apply fails as well
 // an info.Failure is returned.
+// Deprecated this functionality will be removed.
 func ModifySetValueOf(target interface{},
 	m cmds.Modify,
 	apply func(string, interface{}) error) *info.Failure {

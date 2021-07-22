@@ -48,6 +48,26 @@ type Publisher interface {
 	Publish(topic string, message interface{}) error
 }
 
+// TopicData is a tuple for Topic and Message.
+type TopicData struct {
+	Topic string
+	Message []byte
+}
+
+// Preprocessor is the interface the wrapt the basic Preprocess method.
+//
+// Preprocess is called to allow client specific complex events to be split up
+// in mutiple smaller events. This allows essentially shortcuts like creating
+// a huge start.scan event containing all the target data directly instead of
+// follwing the actual design pattern.
+// It will be called before the subscriber handling there it needs to follow
+// the basic string, []byte principle instead of complex structs.
+// Returns a list of []TopicData and true when it was handled.
+// Returns nil or an empty list and false when it was not handled.
+type Preprocessor interface {
+	Preprocess(topic string, message interface{}) ([]TopicData, bool)
+}
+
 // Subscriber the interface that wraps the basic Subscribe method.
 //
 // Subscribe iterates through each handler and registers each OnMessage to a
@@ -74,5 +94,6 @@ type PubSub interface {
 	io.Closer
 	Connecter
 	Publisher
+	Preprocessor
 	Subscriber
 }
