@@ -24,7 +24,7 @@ jobs:
       - name: ${{ github.repository }}-build-helper:${{ env.VERSION }}
         uses: docker/build-push-action@v2.5.0
         with:
-          context: .
+          context: .docker/
           push: true
           tags: ${{ github.repository }}-build-helper:${{ env.VERSION }}
           file: .docker/build-helper.Dockerfile
