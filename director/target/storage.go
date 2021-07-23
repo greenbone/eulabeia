@@ -20,6 +20,7 @@ package target
 import (
 	"github.com/greenbone/eulabeia/models"
 	"github.com/greenbone/eulabeia/storage"
+	"os"
 )
 
 // Storage is for poutting and getting a models.Target
@@ -45,6 +46,9 @@ func (ts depositary) Delete(id string) error {
 func (ts depositary) Get(id string) (*models.Target, error) {
 	var target models.Target
 	err := ts.device.Get(id, &target)
+	if _, ok := err.(*os.PathError); ok {
+		return nil, nil
+	}
 	return &target, err
 }
 

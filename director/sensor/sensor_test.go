@@ -28,7 +28,7 @@ import (
 )
 
 func TestSensor(t *testing.T) {
-	h := handler.New("eulabeia", New(storage.Noop{}))
+	h := handler.New("eulabeia", New(&storage.InMemory{Pretend: true}))
 	tests := []test.HandleTests{
 		{
 			Input: cmds.Create{

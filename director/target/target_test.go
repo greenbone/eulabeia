@@ -28,7 +28,7 @@ import (
 )
 
 func TestSuccessResponse(t *testing.T) {
-	h := handler.New("", New(storage.Noop{}))
+	h := handler.New("", New(&storage.InMemory{Pretend: true}))
 	tests := []test.HandleTests{
 		{
 			Input: cmds.Create{

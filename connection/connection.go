@@ -50,7 +50,7 @@ type Publisher interface {
 
 // TopicData is a tuple for Topic and Message.
 type TopicData struct {
-	Topic string
+	Topic   string
 	Message []byte
 }
 
@@ -65,7 +65,7 @@ type TopicData struct {
 // Returns a list of []TopicData and true when it was handled.
 // Returns nil or an empty list and false when it was not handled.
 type Preprocessor interface {
-	Preprocess(topic string, message interface{}) ([]TopicData, bool)
+	Preprocess(topic string, message []byte) ([]TopicData, bool)
 }
 
 // Subscriber the interface that wraps the basic Subscribe method.

@@ -41,7 +41,7 @@ func (m MQTT) Close() error {
 	return m.client.Disconnect(&paho.Disconnect{ReasonCode: 0})
 }
 
-func (m MQTT) Preprocess(topic string, message interface{}) ([]connection.TopicData, bool) {
+func (m MQTT) Preprocess(topic string, message []byte) ([]connection.TopicData, bool) {
 	var td []connection.TopicData
 	handled := false
 	for _, p := range m.preprocessor {

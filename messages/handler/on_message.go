@@ -33,6 +33,22 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// InterfaceArrayToStringArray is a conenvience function to transform []interface{} to []string
+//
+// It is usually used on modify due to the map[string]interface{} within a modify message
+func InterfaceArrayToStringArray(v interface{}) []string {
+	if cv, ok := v.([]interface{}); ok {
+		strings := make([]string, len(cv), cap(cv))
+		for i, j := range cv {
+			if s, ok := j.(string); ok {
+				strings[i] = s
+			}
+		}
+		return strings
+	}
+	return nil
+}
+
 // ModifySetValueOf is a conenvience function to set values of Modify to target
 //
 // Modifies a given target by trying to normalize the key of Values within Modify to
@@ -68,12 +84,7 @@ func ModifySetValueOf(target interface{},
 			}
 			failure = models.SetValueOf(target, nk, stringMap)
 		case []interface{}:
-			strings := make([]string, len(cv), cap(cv))
-			for i, j := range cv {
-				if s, ok := j.(string); ok {
-					strings[i] = s
-				}
-			}
+			strings := InterfaceArrayToStringArray(cv)
 			failure = models.SetValueOf(target, nk, strings)
 		default:
 			failure = models.SetValueOf(target, nk, cv)
