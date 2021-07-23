@@ -60,8 +60,13 @@ func (t sensorAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, e
 			ID: m.ID,
 		}
 	}
-	if f := handler.ModifySetValueOf(sensor, m, nil); f != nil {
-		return nil, f, nil
+	for k, v := range m.Values {
+		switch k {
+		case "type":
+			if str, ok := v.(string); ok {
+				sensor.Type = str
+			}
+		}
 	}
 	if err := t.storage.Put(*sensor); err != nil {
 		return nil, nil, err
