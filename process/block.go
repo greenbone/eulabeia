@@ -26,15 +26,18 @@ import (
 	"log"
 )
 
-func Block(c io.Closer) {
+func Block(c ...io.Closer) {
 	BlockUntil(func() {
 		log.Println("Exiting")
-		if c != nil {
-			err := c.Close()
-			if err != nil {
-				log.Fatalf("failed to send Disconnect: %s", err)
+		for _, cl := range c {
+			if cl != nil {
+				err := cl.Close()
+				if err != nil {
+					log.Fatalf("failed to send Disconnect: %s", err)
+				}
 			}
 		}
+
 	}, os.Interrupt, syscall.SIGTERM)
 }
 

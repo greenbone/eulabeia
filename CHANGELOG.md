@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Smoke Tests, tests to verify if the happy path is functioning [14](https://github.com/greenbone/eulabeia/pull/14)
 - Unittests for openvas module [24](https://github.com/greenbone/eulabeia/pull/24)
 - Adapt target credentials to allow different types [27](https://github.com/greenbone/eulabeia/pull/27)
+- Adapt sensor so it is able to start a scan now [30](https://github.com/greenbone/eulabeia/pull/30)
 ### Changed
 - Split cmds and info messages into own module [8](https://github.com/greenbone/eulabeia/pull/8)
 - Normalized topic structure to `group/aggregate/event/destination`; setting topic based on return message rather than configuration [8](https://github.com/greenbone/eulabeia/pull/8)

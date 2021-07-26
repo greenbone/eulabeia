@@ -28,10 +28,21 @@ import (
 	"sync"
 )
 
+// OpenVASScanner is the eulabeia scanner implementation of openvas. It is
+// responsible for handling processes of openvas. It also is able to start and
+// stop scans via openvas.
+type OpenVASScanner struct {
+	procs map[string]*os.Process // Process List for running scans
+	mutex *sync.Mutex            // For thread save management of processes
+}
+
+// Commander is an inferace to manage different ways to handle calls to openvas.
+// It is mostly used for testing purposes.
 type Commander interface {
 	Command(name string, arg ...string) *exec.Cmd
 }
 
+// stdCommander is the standard commander.
 type StdCommander struct {
 }
 
@@ -39,45 +50,41 @@ func (exe StdCommander) Command(name string, arg ...string) *exec.Cmd {
 	return exec.Command(name, arg...)
 }
 
-// ProcessList represents a list of processes. It is used to manage processes
-// within different go routines.
-type ProcessList struct {
-	procs map[string]*os.Process
-	mutex *sync.Mutex
-}
+// CreateNewOpenVASScanner creates a new instance of an OpenVASScanner with the
+// specified settings.
+func NewOpenVASScanner() *OpenVASScanner {
 
-func CreateEmptyProcessList() ProcessList {
-	return ProcessList{
+	return &OpenVASScanner{
 		procs: make(map[string]*os.Process),
 		mutex: &sync.Mutex{},
 	}
 }
 
 // addProcess adds a Process to the Process list
-func (pl ProcessList) addProcess(scan string, p *os.Process) error {
-	pl.mutex.Lock()
-	defer pl.mutex.Unlock()
-	if _, ok := pl.procs[scan]; ok {
+func (ovas OpenVASScanner) addProcess(scan string, p *os.Process) error {
+	ovas.mutex.Lock()
+	defer ovas.mutex.Unlock()
+	if _, ok := ovas.procs[scan]; ok {
 		return errors.New("process already exist")
 	}
-	pl.procs[scan] = p
+	ovas.procs[scan] = p
 	return nil
 }
 
 // removeProcess removes a Process from the Process list
-func (pl ProcessList) removeProcess(scan string) error {
-	pl.mutex.Lock()
-	defer pl.mutex.Unlock()
-	if _, ok := pl.procs[scan]; !ok {
+func (ovas OpenVASScanner) removeProcess(scan string) error {
+	ovas.mutex.Lock()
+	defer ovas.mutex.Unlock()
+	if _, ok := ovas.procs[scan]; !ok {
 		return errors.New("process does not exist")
 	}
-	delete(pl.procs, scan)
+	delete(ovas.procs, scan)
 	return nil
 }
 
 // StartScan starts scan with given scan-ID and process priority (-20 to 19,
 // lower is more prioritized)
-func StartScan(scan string, niceness int, sudo bool, exe Commander, procList ProcessList) error {
+func (ovas OpenVASScanner) StartScan(scan string, niceness int, sudo bool, exe Commander) error {
 	cmdString := make([]string, 0)
 
 	cmdString = append(cmdString, "nice", "-n", fmt.Sprintf("%v", niceness))
@@ -97,14 +104,14 @@ func StartScan(scan string, niceness int, sudo bool, exe Commander, procList Pro
 	if err != nil {
 		return fmt.Errorf("unable to start openvas process: %s", err)
 	}
-	procList.addProcess(scan, cmd.Process)
-	go waitForProcessToEnd(cmd.Process, scan, procList)
+	ovas.addProcess(scan, cmd.Process)
+	go ovas.waitForProcessToEnd(cmd.Process, scan)
 	return nil
 }
 
 // StopScan stops a scan with given scan-ID
-func StopScan(scan string, sudo bool, exe Commander, procList ProcessList) error {
-	err := procList.removeProcess(scan)
+func (ovas OpenVASScanner) StopScan(scan string, sudo bool, exe Commander) error {
+	err := ovas.removeProcess(scan)
 	if err != nil {
 		return err
 	}
@@ -131,12 +138,12 @@ func StopScan(scan string, sudo bool, exe Commander, procList ProcessList) error
 }
 
 // ScanFinished must be called when a Openvas Process succesfully finished
-func ScanFinished(scan string, procList ProcessList) error {
-	return procList.removeProcess(scan)
+func (ovas OpenVASScanner) ScanFinished(scan string) error {
+	return ovas.removeProcess(scan)
 }
 
 // GetVersion returns the Version of OpenVAS
-func GetVersion(exe Commander) (string, error) {
+func (ovas OpenVASScanner) GetVersion(exe Commander) (string, error) {
 	out, err := exe.Command("openvas", "-V").CombinedOutput()
 	if err != nil {
 		return "", err
@@ -146,7 +153,7 @@ func GetVersion(exe Commander) (string, error) {
 }
 
 // GetSettings returns the Settings of OpenVAS as a map
-func GetSettings(exe Commander) (map[string]string, error) {
+func (ovas OpenVASScanner) GetSettings(exe Commander) (map[string]string, error) {
 	out, err := exe.Command("openvas", "-s").CombinedOutput()
 	if err != nil {
 		return nil, err
@@ -164,7 +171,7 @@ func GetSettings(exe Commander) (map[string]string, error) {
 }
 
 // LoadVTsIntoRedis starts openvas which then loads new VTs into Redis
-func LoadVTsIntoRedis(exe Commander) error {
+func (ovas OpenVASScanner) LoadVTsIntoRedis(exe Commander) error {
 	return exe.Command("openvas", "--update-vt-info").Run()
 }
 
@@ -177,13 +184,13 @@ func IsSudo(exe Commander) bool {
 
 // waitForProcessToEnd gets Called as go-routine after OpenVAS Scan Process was
 // started
-func waitForProcessToEnd(p *os.Process, scan string, procList ProcessList) {
+func (ovas OpenVASScanner) waitForProcessToEnd(p *os.Process, scan string) {
 	p.Wait()
-	err := procList.removeProcess(scan)
+	err := ovas.removeProcess(scan)
 	if err == nil {
-		log.Printf("%s: Scan process got unexpectedly stopped or killed.\n", scan)
+		log.Printf("%s: Scan process with PID %d got unexpectedly stopped or killed.\n", scan, p.Pid)
 		// TODO: Interrupt scan
 		return
 	}
-	log.Printf("%s: Scan process with PID %v terminated correctly.\n", scan, p.Pid)
+	log.Printf("%s: Scan process with PID %d terminated correctly.\n", scan, p.Pid)
 }
