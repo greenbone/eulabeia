@@ -1,3 +1,12 @@
+GO_BUILD = CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+DOCKER_BUILD = docker build --force-rm=true --compress=true
+BROKER_IP = $(or $(shell docker container inspect -f '{{ .NetworkSettings.IPAddress }}' eulabeia_broker), $(echo ""))
+MQTT_CONTAINER = docker run -e "MQTT_SERVER=$(call BROKER_IP):9138" --rm
+
+ifndef REPOSITORY
+	REPOSITORY := "greenbone"
+endif
+
 .PHONY: sensor director format check test build update
 all: format check test build
 
@@ -15,38 +24,36 @@ check:
 test:
 	go test ./...
 
-GO_BUILD = CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
-DOCKER_BUILD = docker build --force-rm=true --compress=true
-BROKER_IP = $(or $(shell docker container inspect -f '{{ .NetworkSettings.IPAddress }}' eulabeia_broker), $(echo ""))
-MQTT_CONTAINER = docker run -e "MQTT_SERVER=$(call BROKER_IP):9138" --rm
-
-
 start-broker:
-	docker run --rm -d --name eulabeia_broker greenbone/eulabeia-broker:latest
+	docker run --rm -d --name eulabeia_broker $(REPOSITORY)/eulabeia-broker:latest
 
 stop-broker:
 	docker kill eulabeia_broker
 
 start-director:
-	$(MQTT_CONTAINER) -d --name eulabeia_director greenbone/eulabeia-director
+	$(MQTT_CONTAINER) -d --name eulabeia_director $(REPOSITORY)/eulabeia-director
 
 stop-director:
 	docker stop eulabeia_director
 
 start-sensor:
+	docker volume create eulabeia_redis_socket
 	docker volume create eulabeia_feed
 	docker pull greenbone/community-feed-vts:latest
-	docker run -d --rm -v eulabeia_feed:/opt/greenbone/feed/plugins greenbone/community-feed-vts:latest echo ""
-	$(MQTT_CONTAINER) -d -v eulabeia_feed:/var/lib/openvas/feed/plugins --name eulabeia_sensor greenbone/eulabeia-sensor
+	docker run -d --rm -v eulabeia_redis_socket:/run/redis --name eulabeia_redis $(REPOSITORY)/eulabeia-redis
+	docker run -d --rm -v eulabeia_feed:/opt/$(REPOSITORY)/feed/plugins greenbone/community-feed-vts:latest echo ""
+	$(MQTT_CONTAINER) -d -v eulabeia_feed:/var/lib/openvas/feed/plugins -v eulabeia_redis_socket:/run/redis --name eulabeia_sensor $(REPOSITORY)/eulabeia-sensor
 
 stop-sensor:
 	docker stop eulabeia_sensor
 	docker volume rm eulabeia_feed
+	docker kill eulabeia_redis
+	docker volume rm eulabeia_redis_socket
 
 run-example-client:
 	until test `docker inspect eulabeia_sensor --format='{{.State.Running}}'` = "true"; do echo "waiting for sensor"; sleep 1; done
 	until test `docker inspect eulabeia_director --format='{{.State.Running}}'` = "true"; do echo "waiting for director"; sleep 1; done
-	$(MQTT_CONTAINER) --name eulabeia_example greenbone/eulabeia-example-client
+	$(MQTT_CONTAINER) --name eulabeia_example $(REPOSITORY)/eulabeia-example-client
 
 start-smoke-test: start-container run-example-client
 
@@ -68,21 +75,24 @@ build-example:
 build: build-director build-sensor build-example
 
 build-container-broker:
-	$(DOCKER_BUILD) -t greenbone/eulabeia-broker -f broker.Dockerfile .
+	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-broker -f broker.Dockerfile .
+
+build-container-redis:
+	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-redis -f redis.Dockerfile .
 
 build-container-director: build-director
-	$(DOCKER_BUILD) -t greenbone/eulabeia-director -f director.Dockerfile .
+	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-director -f director.Dockerfile .
 
 build-container-sensor: build-sensor
-	$(DOCKER_BUILD) -t greenbone/eulabeia-sensor -f sensor.Dockerfile .
+	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-sensor -f sensor.Dockerfile .
 
 build-container-example: build-example
-	$(DOCKER_BUILD) -t greenbone/eulabeia-example-client -f example-client.Dockerfile .
+	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-example-client -f example-client.Dockerfile .
 
 build-container-build-helper:
-	$(DOCKER_BUILD) -t greenbone/eulabeia-build-helper -f .docker/build-helper.Dockerfile .docker/
+	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-build-helper -f .docker/build-helper.Dockerfile .docker/
 
-build-container: build-container-build-helper build-container-broker build-container-director build-container-sensor build-container-example
+build-container: build-container-build-helper build-container-redis build-container-broker build-container-director build-container-sensor build-container-example
 
 update:
 	go get -u all

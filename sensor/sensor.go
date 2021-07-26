@@ -72,9 +72,8 @@ func (sensor Scheduler) schedule() {
 	sudo := openvas.IsSudo(openvas.StdCommander{})
 
 	var vtsLoadedChan = make(chan struct{})
-	// TODO: Adjust loading VTs as soon as they are available
-	vtsLoading := false
-	// go loadVTs(vtsLoadedChan, ovas)
+	vtsLoading := true
+	go loadVTs(vtsLoadedChan, ovas)
 
 	for { // Infinite scheduler Loop
 		first := true
