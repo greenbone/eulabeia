@@ -21,72 +21,27 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 
 	"encoding/json"
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
-	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/info"
-	"github.com/greenbone/eulabeia/models"
 	"github.com/tidwall/gjson"
 )
 
-// ModifySetValueOf is a conenvience function to set values of Modify to target
+// InterfaceArrayToStringArray is a conenvience function to transform []interface{} to []string
 //
-// Modifies a given target by trying to normalize the key of Values within Modify to
-// match the naming scheme within models and then apply the given value to that.
-// If it fails to apply the given value directly it calls the given function
-// apply to try it via own handling mechanismn. If apply is nil or apply fails as well
-// an info.Failure is returned.
-func ModifySetValueOf(target interface{},
-	m cmds.Modify,
-	apply func(string, interface{}) error) *info.Failure {
-	for k, v := range m.Values {
-		// normalize field name
-		nk := strings.Title(k)
-		var failure error
-		// due to map[string]interface{} []string can be detected as []interface{} instead
-		switch cv := v.(type) {
-		case map[string]interface{}:
-			// currently we just support map[string]map[string]string
-			stringMap := make(map[string]map[string]string, len(cv))
-			for k, v := range cv {
-				if vs, ok := v.(map[string]interface{}); ok {
-					buf := make(map[string]string)
-					for k2, v2 := range vs {
-						if vs2, ok2 := v2.(string); ok2 {
-							buf[k2] = vs2
-						}
-					}
-					stringMap[k] = buf
-				} else {
-					fmt.Printf("Unable to assing value!")
-				}
-			}
-			failure = models.SetValueOf(target, nk, stringMap)
-		case []interface{}:
-			strings := make([]string, len(cv), cap(cv))
-			for i, j := range cv {
-				if s, ok := j.(string); ok {
-					strings[i] = s
-				}
-			}
-			failure = models.SetValueOf(target, nk, strings)
-		default:
-			failure = models.SetValueOf(target, nk, cv)
-		}
-		if failure != nil && apply != nil {
-			failure = apply(k, v)
-		}
-		if failure != nil {
-			log.Printf("Failure while processing field %v: %v", nk, failure)
-			return &info.Failure{
-				Error:   fmt.Sprintf("Unable to set %s on target to %s: %v", nk, v, failure),
-				Message: messages.NewMessage("failure."+m.Type, m.MessageID, m.GroupID),
+// It is usually used on modify due to the map[string]interface{} within a modify message
+func InterfaceArrayToStringArray(v interface{}) []string {
+	if cv, ok := v.([]interface{}); ok {
+		strings := make([]string, len(cv), cap(cv))
+		for i, j := range cv {
+			if s, ok := j.(string); ok {
+				strings[i] = s
 			}
 		}
+		return strings
 	}
 	return nil
 }

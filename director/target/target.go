@@ -21,6 +21,7 @@ package target
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/messages"
@@ -61,8 +62,49 @@ func (t targetAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, e
 			ID: m.ID,
 		}
 	}
-	if f := handler.ModifySetValueOf(target, m, nil); f != nil {
-		return nil, f, nil
+
+	for k, v := range m.Values {
+
+		// normalize field name
+		nk := strings.Title(k)
+		switch nk {
+		case "Hosts":
+			target.Hosts = handler.InterfaceArrayToStringArray(v)
+		case "Ports":
+			target.Ports = handler.InterfaceArrayToStringArray(v)
+		case "Plugins":
+			target.Plugins = handler.InterfaceArrayToStringArray(v)
+		case "Sensor":
+			if cv, ok := v.(string); ok {
+				target.Sensor = cv
+			}
+		case "Alive":
+			if cv, ok := v.(bool); ok {
+				target.Alive = cv
+			}
+		case "Parallel":
+			if cv, ok := v.(bool); ok {
+				target.Parallel = cv
+			}
+		case "Exclude":
+			target.Exclude = handler.InterfaceArrayToStringArray(v)
+		case "Credentials":
+			if cv, ok := v.(map[string]interface{}); ok {
+				c := make(map[string]map[string]string)
+				for k, v := range cv {
+					if vs, ok := v.(map[string]interface{}); ok {
+						buf := make(map[string]string)
+						for k2, v2 := range vs {
+							if vs2, ok := v2.(string); ok {
+								buf[k2] = vs2
+							}
+						}
+						c[k] = buf
+					}
+				}
+				target.Credentials = c
+			}
+		}
 	}
 
 	if err := t.storage.Put(*target); err != nil {

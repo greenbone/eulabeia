@@ -34,12 +34,15 @@ import (
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
+	"github.com/greenbone/eulabeia/director/scan"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/messages/info"
+	"github.com/greenbone/eulabeia/models"
 )
 
+const MEGA_ID = "mega_scan_123"
 const context = "eulabeia"
 const topic = context + "/+/info"
 
@@ -70,12 +73,16 @@ func (e *ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse,
 	if err := json.Unmarshal(msg, &infoMSG); err != nil {
 		log.Panicf("Unable to parse %s to info.IDInfo (%s)", msg, err)
 	}
-	f, ok := e.do[mt.String()]
+	f, ok := e.do[infoMSG.ID]
 	if !ok {
-		log.Panicf("No handler for %s found", mt)
+		f, ok = e.do[mt.String()]
+		if !ok {
+			log.Panicf("No handler for %s found", mt)
+		}
 	}
 	response := f(infoMSG)
 	e.handled = append(e.handled, mt.String())
+	e.handled = append(e.handled, infoMSG.ID)
 	// We assume that if there is no response message that the test scenario is finished
 	if response == nil {
 		e.exit <- syscall.SIGCONT
@@ -103,6 +110,32 @@ func CreateScan(msg info.IDInfo) *connection.SendResponse {
 		"director",
 		msg.GroupID)
 	return messages.EventToResponse(context, modify)
+}
+
+func MegaScan(msg info.IDInfo) *connection.SendResponse {
+	mega := scan.StartMegaScan{
+		Message: messages.NewMessage("start.scan.director", "", ""),
+		Scan: models.Scan{
+			ID: MEGA_ID,
+			Target: models.Target{
+				ID:       MEGA_ID,
+				Hosts:    []string{"hosts1"},
+				Ports:    []string{"ports1"},
+				Plugins:  []string{"plugins1"},
+				Exclude:  []string{"exclude1"},
+				Sensor:   "sensor",
+				Alive:    true,
+				Parallel: true,
+				Credentials: map[string]map[string]string{
+					"ssh": {
+						"private_key": "denkste",
+					},
+				},
+			},
+			Finished: []string{"hosts2"},
+		},
+	}
+	return messages.EventToResponse(context, mega)
 }
 
 func Done(_ info.IDInfo) *connection.SendResponse {
@@ -142,7 +175,7 @@ func main() {
 	server := configuration.Connection.Server
 
 	log.Println("Starting example client")
-	c, err := mqtt.New(server, *clientid+uuid.NewString(), "", "", nil)
+	c, err := mqtt.New(server, *clientid+uuid.NewString(), "", "", nil, nil)
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
@@ -157,7 +190,8 @@ func main() {
 		do: map[string]func(info.IDInfo) *connection.SendResponse{
 			CREATED_TARGET:  ModifyTarget,
 			MODIFIED_TARGET: CreateScan,
-			MODIFIED_SCAN:   Done,
+			MODIFIED_SCAN:   MegaScan,
+			MEGA_ID:         Done,
 		},
 		exit: ic,
 	}

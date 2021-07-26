@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Adapt target credentials to allow different types [27](https://github.com/greenbone/eulabeia/pull/27)
 - Adapt sensor so it is able to start a scan now [30](https://github.com/greenbone/eulabeia/pull/30)
 - Add redis and vt loading [32](https://github.com/greenbone/eulabeia/pull/32)
+- Possibility to preprocess messages [31](https://github.com/greenbone/eulabeia/pull/31)
+- Possibility to send one start.scan event containing all the data [31](https://github.com/greenbone/eulabeia/pull/31)
 ### Changed
 - Split cmds and info messages into own module [8](https://github.com/greenbone/eulabeia/pull/8)
 - Normalized topic structure to `group/aggregate/event/destination`; setting topic based on return message rather than configuration [8](https://github.com/greenbone/eulabeia/pull/8)

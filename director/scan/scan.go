@@ -80,28 +80,26 @@ func (t scanAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, err
 			ID: m.ID,
 		}
 	}
-	applyTargetID := func(k string, v interface{}) error {
+	for k, v := range m.Values {
 		switch k {
 		case "target_id", "target":
 			if str, ok := v.(string); ok {
 				target, err := t.target.Get(str)
 				if err != nil {
-					return err
-				}
-				if target == nil {
-					return fmt.Errorf("target %s not found", str)
+					return nil, info.GetFailureResponse(m.Message, "target", str), nil
 				}
 				scan.Target = *target
-				return nil
 			} else {
-				return fmt.Errorf("[%T] %v is not a target ID", v, v)
+				return nil, info.GetFailureResponse(m.Message, "target", "invalid"), nil
 			}
-		default:
-			return fmt.Errorf("%s is unknown", k)
+		case "temporary":
+			if b, ok := v.(bool); ok {
+				scan.Temporary = b
+			}
+		case "finished":
+			scan.Finished = handler.InterfaceArrayToStringArray(v)
+
 		}
-	}
-	if f := handler.ModifySetValueOf(scan, m, applyTargetID); f != nil {
-		return nil, f, nil
 	}
 	if err := t.storage.Put(*scan); err != nil {
 		return nil, nil, err

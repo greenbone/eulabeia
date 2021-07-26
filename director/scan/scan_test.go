@@ -28,7 +28,7 @@ import (
 )
 
 func TestCreateScan(t *testing.T) {
-	h := handler.New("eulabeia", New(storage.Noop{}))
+	h := handler.New("eulabeia", New(&storage.InMemory{Pretend: true}))
 	tests := []test.HandleTests{
 		{
 			Input: cmds.Create{
@@ -45,7 +45,7 @@ func TestCreateScan(t *testing.T) {
 				},
 			},
 			Handler: h,
-			// although NoopStorage for target doesn't have sensor it should just
+			// although InMemoryStorage for target doesn't have sensor it should just
 			// empty string and extend it that way
 			ExpectedMessage: messages.NewMessage("start.scan.", "1", "1"),
 		},
@@ -57,6 +57,7 @@ func TestCreateScan(t *testing.T) {
 				},
 				Values: map[string]interface{}{
 					"finished":  []string{"1", "2"},
+					"temporary": true,
 					"target_id": "1",
 				},
 			},

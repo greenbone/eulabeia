@@ -23,15 +23,15 @@ import (
 	"github.com/greenbone/eulabeia/messages"
 )
 
-type eventType struct{}
+type EventType struct{}
 
-func (eventType) Event() messages.EventType {
+func (EventType) Event() messages.EventType {
 	return messages.CMD
 }
 
 // IDCMD is a command with just an ID to identify a specific entity
 type IDCMD struct {
-	eventType
+	EventType
 	messages.Identifier
 }
 
@@ -39,7 +39,7 @@ type IDCMD struct {
 // The type of of entity is indicated by `message_type`
 // e.g. "message_type": "create.target" creates a target.
 type Create struct {
-	eventType
+	EventType
 	messages.Message
 }
 
@@ -111,7 +111,7 @@ type Stop IDCMD
 // The values to modify are within Values, they typically match the names of the aggregate
 // but with lower case starting.
 type Modify struct {
-	eventType
+	EventType
 	messages.Identifier
 	Values map[string]interface{} `json:"values"`
 }
@@ -121,7 +121,7 @@ type Register IDCMD
 
 // LoadVTs signals that all sensors should update their VTs
 type LoadVTs struct {
-	eventType
+	EventType
 	messages.Message
 }
 

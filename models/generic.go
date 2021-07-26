@@ -53,29 +53,3 @@ type InvalidValueError struct {
 func (e *InvalidValueError) Error() string {
 	return "field type (" + e.FieldType.String() + ") does not match value type (" + e.ValueType.String() + ")"
 }
-
-// SetValueOf set a field of a pointer to a struct to given value
-//
-// If t is nil or not a pointer, SetValueOf returns an InvalidTargetError.
-// If field of t is unknown or cannot be set SetValueOf returns an InvalidFieldError
-// If value is not matching the type of the field of t SetValueOf returns an InvalidValueError
-func SetValueOf(t interface{}, field string, value interface{}) error {
-	tv := reflect.ValueOf(t)
-	if tv.Kind() != reflect.Ptr || tv.IsNil() {
-		return &InvalidTargetError{Type: reflect.TypeOf(t)}
-	}
-	tve := tv.Elem()
-	if tve.Kind() != reflect.Struct {
-		return &InvalidTargetError{Type: tve.Type()}
-	}
-	f := tve.FieldByName(field)
-	if !f.IsValid() || !f.CanSet() {
-		return &InvalidFieldError{Type: tve.Type(), Field: field}
-	}
-	vv := reflect.ValueOf(value)
-	if vv.Kind() != f.Kind() {
-		return &InvalidValueError{FieldType: f.Type(), ValueType: vv.Type()}
-	}
-	f.Set(vv)
-	return nil
-}

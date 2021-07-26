@@ -22,36 +22,66 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/eclipse/paho.golang/paho"
-	"github.com/greenbone/eulabeia/connection"
 	"log"
 	"net"
+
+	"github.com/eclipse/paho.golang/packets"
+	"github.com/eclipse/paho.golang/paho"
+	"github.com/greenbone/eulabeia/connection"
 )
 
 type MQTT struct {
 	client            *paho.Client
 	connectProperties *paho.Connect
 	qos               byte
+	preprocessor      []connection.Preprocessor
 }
 
 func (m MQTT) Close() error {
 	return m.client.Disconnect(&paho.Disconnect{ReasonCode: 0})
 }
 
+func (m MQTT) Preprocess(topic string, message []byte) ([]connection.TopicData, bool) {
+	var td []connection.TopicData
+	handled := false
+	for _, p := range m.preprocessor {
+		if r, ok := p.Preprocess(topic, message); ok {
+			handled = true
+			td = append(td, r...)
+		}
+	}
+	return td, handled
+}
+
 func (m MQTT) register(topic string, handler connection.OnMessage) error {
 
 	m.client.Router.RegisterHandler(topic, func(p *paho.Publish) {
 		log.Printf("[%s] retrieved message: %s", topic, string(p.Payload))
-		message, err := handler.On(topic, p.Payload)
-		if err != nil {
-			panic(err)
-		}
-		if message != nil {
-			err = m.Publish(message.Topic, message.MSG)
+		if msgs, ok := m.Preprocess(topic, p.Payload); ok {
+			for _, t := range msgs {
+				m.client.Router.Route(&packets.Publish{
+					Payload:    t.Message,
+					Topic:      t.Topic,
+					Properties: p.Packet().Properties,
+					PacketID:   p.PacketID,
+					QoS:        p.QoS,
+					Duplicate:  p.Packet().Duplicate,
+					Retain:     p.Retain,
+				})
+			}
+		} else {
+			message, err := handler.On(topic, p.Payload)
 			if err != nil {
 				panic(err)
 			}
+			if message != nil {
+				err = m.Publish(message.Topic, message.MSG)
+				if err != nil {
+					panic(err)
+				}
+			}
 		}
+
 	})
 
 	_, err := m.client.Subscribe(context.Background(), &paho.Subscribe{
@@ -115,7 +145,8 @@ func New(server string,
 	clientid string,
 	username string,
 	password string,
-	lwm *LastWillMessage) (connection.PubSub, error) {
+	lwm *LastWillMessage,
+	preprocessor []connection.Preprocessor) (connection.PubSub, error) {
 
 	conn, err := net.Dial("tcp", server)
 	if err != nil {
@@ -154,5 +185,6 @@ func New(server string,
 		client:            c,
 		connectProperties: cp,
 		qos:               1,
+		preprocessor:      preprocessor,
 	}, nil
 }

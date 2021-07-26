@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sync"
 )
 
 // Json is the base wrapper for json based storage devices
@@ -33,24 +34,48 @@ type Json interface {
 	Delete(string) error
 }
 
-// Noop No operation is a Json implementations without changing an device
-type Noop struct {
+// InMemory is a Json implementation to hold structs in memory
+type InMemory struct {
+	Pretend bool // Set Pretend to true to simulate a found even when it's not previously stored
+	sync.RWMutex
+	lookup map[string][]byte
 }
 
-func (n Noop) Put(id string, data interface{}) error {
-	_, err := json.Marshal(data)
+func (n *InMemory) Put(id string, data interface{}) error {
+	n.Lock()
+	defer n.Unlock()
+	if n.lookup == nil {
+		n.lookup = make(map[string][]byte)
+	}
+	j, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
+	n.lookup[id] = j
 	return nil
 }
 
-func (n Noop) Delete(id string) error {
+func (n *InMemory) Delete(id string) error {
+	n.Lock()
+	defer n.Unlock()
+	if n.lookup == nil {
+		n.lookup = make(map[string][]byte)
+	}
+	delete(n.lookup, id)
 	return nil
 }
 
-func (n Noop) Get(id string, target interface{}) error {
-	return nil
+func (n *InMemory) Get(id string, v interface{}) error {
+	n.RLock()
+	defer n.RUnlock()
+	if n.Pretend {
+		return nil
+	}
+	if j, ok := n.lookup[id]; ok {
+		return json.Unmarshal(j, v)
+	}
+	return &os.PathError{}
+
 }
 
 // File is a file system based Json implementation
@@ -85,13 +110,13 @@ func (fs File) Delete(id string) error {
 	}
 }
 
-func (fs File) Get(id string, target interface{}) error {
+func (fs File) Get(id string, v interface{}) error {
 	if p, err := fs.path(id); err == nil {
 		b, err := ioutil.ReadFile(p)
 		if err != nil {
 			return err
 		}
-		return json.Unmarshal(b, target)
+		return json.Unmarshal(b, v)
 	} else {
 		return err
 	}

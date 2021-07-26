@@ -25,8 +25,9 @@ import (
 // Scan contains Target as well as volatile information for a specific scan
 type Scan struct {
 	Target
-	ID       string   `json:"id"`      // ID of a Scan
-	Finished []string `json:"exclude"` // Finished hosts from previous scan progress
+	ID        string   `json:"id"`        // ID of a Scan
+	Finished  []string `json:"exclude"`   // Finished hosts from previous scan progress
+	Temporary bool     `json:"temporary"` // Temporary defines if the Target as well as the Scan should be deleted when a scan finished
 }
 
 // Sensor contains registered sensors

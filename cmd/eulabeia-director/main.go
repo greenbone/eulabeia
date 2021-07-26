@@ -44,7 +44,7 @@ func main() {
 	server := configuration.Connection.Server
 
 	log.Println("Starting director")
-	client, err := mqtt.New(server, *clientid, "", "", nil)
+	client, err := mqtt.New(server, *clientid, "", "", nil, []connection.Preprocessor{scan.StartMegaScan{}})
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
