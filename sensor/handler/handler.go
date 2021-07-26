@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/greenbone/eulabeia/connection"
+	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/info"
 )
@@ -37,11 +38,17 @@ func (handler StartStop) On(topic string, message []byte) (*connection.SendRespo
 	if err != nil {
 		return nil, err
 	}
-	switch msg.Type {
-	case "scan.start":
-		handler.StartChan <- msg.ID
-	case "scan.stop":
-		handler.StopChan <- msg.ID
+	mt, err := messages.ParseMessageType(msg.Type)
+	if err != nil {
+		return nil, err
+	}
+	if mt.Aggregate == "scan" {
+		switch mt.Function {
+		case "start":
+			handler.StartChan <- msg.ID
+		case "stop":
+			handler.StopChan <- msg.ID
+		}
 	}
 	return nil, nil
 }

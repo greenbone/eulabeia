@@ -86,6 +86,9 @@ func (e *ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse,
 	// We assume that if there is no response message that the test scenario is finished
 	if response == nil {
 		e.exit <- syscall.SIGCONT
+		// on response.Topic ignore SendResponse
+	} else if response.Topic == "" {
+		return nil, nil
 	}
 	return response, nil
 }
@@ -119,11 +122,11 @@ func MegaScan(msg info.IDInfo) *connection.SendResponse {
 			ID: MEGA_ID,
 			Target: models.Target{
 				ID:       MEGA_ID,
-				Hosts:    []string{"hosts1"},
-				Ports:    []string{"ports1"},
-				Plugins:  []string{"plugins1"},
+				Hosts:    []string{"localhost"},
+				Ports:    []string{"80"},
+				Plugins:  []string{"1.3.6.1.4.1.25623.1.0.90022"},
 				Exclude:  []string{"exclude1"},
-				Sensor:   "sensor",
+				Sensor:   "localhorst",
 				Alive:    true,
 				Parallel: true,
 				Credentials: map[string]map[string]string{
@@ -136,6 +139,14 @@ func MegaScan(msg info.IDInfo) *connection.SendResponse {
 		},
 	}
 	return messages.EventToResponse(context, mega)
+}
+
+func VerifyForScanStatus(i info.IDInfo) *connection.SendResponse {
+	if i.Type == "scan.status" {
+		return nil
+	} else {
+		return &connection.SendResponse{}
+	}
 }
 
 func Done(_ info.IDInfo) *connection.SendResponse {
@@ -191,7 +202,7 @@ func main() {
 			CREATED_TARGET:  ModifyTarget,
 			MODIFIED_TARGET: CreateScan,
 			MODIFIED_SCAN:   MegaScan,
-			MEGA_ID:         Done,
+			MEGA_ID:         VerifyForScanStatus,
 		},
 		exit: ic,
 	}

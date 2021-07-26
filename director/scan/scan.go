@@ -46,6 +46,7 @@ func (t scanAggregate) Start(s cmds.Start) (messages.Event, *info.Failure, error
 		return nil, info.GetFailureResponse(s.Message, "scan", s.ID), nil
 	}
 
+	log.Printf("Starting scan (%s) on sensor (%s)", s.ID, scan.Sensor)
 	return &cmds.Start{
 		Identifier: messages.Identifier{
 			Message: messages.NewMessage(fmt.Sprintf("start.scan.%s", scan.Sensor), s.MessageID, s.GroupID),

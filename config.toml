@@ -18,6 +18,9 @@ minFreeMemScanQueue = 0  # 0 = disabled
 maxQueuedScans = 0  # 0 = disabled
 niceness = 10
 
+[Sensor]
+Id = "localhorst"
+
 [Director]
 StoragePath = "/var/lib/eulabeia/director/storage"
 
