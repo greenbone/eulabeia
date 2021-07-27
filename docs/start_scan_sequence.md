@@ -23,8 +23,9 @@ Based on the target information `director` is choosing the `sensor` on `start_sc
 
 ## Create Scan
 
-![description to create a target via mqtt events](./create_target_sequence.svg)
+![description to create a target via mqtt events](./pictures/create_target_sequence.svg)
 
 ## Execute Scan
 
-![description to start a scan via mqtt events](./start_scan_sequence.svg)
+![description to start a scan via mqtt events](./pictures/start_scan_sequence.svg)
+
