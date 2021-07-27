@@ -49,7 +49,7 @@ func main() {
 		configuration.Sensor.Id = sensor_id
 	}
 
-	log.Println("Starting sensor")
+	log.Printf("Starting sensor (%s)", configuration.Sensor.Id)
 	client, err := mqtt.New(server, configuration.Sensor.Id, "", "",
 		&mqtt.LastWillMessage{
 			Topic: "eulabeia/sensor/cmd/director",
