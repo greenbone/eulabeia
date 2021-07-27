@@ -41,7 +41,7 @@ func (t exampleAggregate) ErrorOnKeyword(m messages.Message) error {
 }
 func (t exampleAggregate) FailureOnKeyword(m messages.Message) *info.Failure {
 	if strings.HasSuffix(m.MessageID, "failure") {
-		return &info.Failure{Message: messages.NewMessage("failure.target", m.MessageID, m.GroupID), Error: "some failure"}
+		return &info.Failure{Identifier: messages.Identifier{Message: messages.NewMessage("failure.target", m.MessageID, m.GroupID)}, Error: "some failure"}
 	}
 	return nil
 }
@@ -136,7 +136,9 @@ func createEvent(mt string, tt string) messages.Event {
 		}
 	default:
 		return &info.Failure{
-			Message: createMessage("", "failure"),
+			Identifier: messages.Identifier{
+				Message: createMessage("", "failure"),
+			},
 		}
 	}
 }

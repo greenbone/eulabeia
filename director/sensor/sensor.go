@@ -85,8 +85,10 @@ func (t sensorAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) 
 		return nil, nil, err
 	} else if sensor == nil {
 		return nil, &info.Failure{
-			Message: messages.NewMessage("failure.get.sensor", g.MessageID, g.GroupID),
-			Error:   fmt.Sprintf("%s not found.", g.ID),
+			Identifier: messages.Identifier{
+				Message: messages.NewMessage("failure.get.sensor", g.MessageID, g.GroupID),
+			},
+			Error: fmt.Sprintf("%s not found.", g.ID),
 		}, nil
 	} else {
 		return &models.GotSensor{

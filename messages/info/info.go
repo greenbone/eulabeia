@@ -50,13 +50,12 @@ type Deleted IDInfo
 // Failure is returned when an error occured while processing a message
 type Failure struct {
 	EventType
-	messages.Message
+	messages.Identifier
 	Error string `json:"error"`
 }
 
 // Contains the status of a scan
 type Status struct {
-	EventType
 	messages.Identifier
 	Status string `json:"status"`
 }
@@ -77,15 +76,22 @@ type Version struct {
 // DeleteFailureResponse is a conenvience method to return a Failure as Unable to delete
 func DeleteFailureResponse(msg messages.Message, prefix string, id string) *Failure {
 	return &Failure{
-		Message: messages.NewMessage(fmt.Sprintf("failure.%s", msg.Type), msg.MessageID, msg.GroupID),
-		Error:   fmt.Sprintf("Unable to delete %s %s.", prefix, id),
+		Error: fmt.Sprintf("Unable to delete %s %s.", prefix, id),
+		Identifier: messages.Identifier{
+			Message: messages.NewMessage(fmt.Sprintf("failure.%s", msg.Type), msg.MessageID, msg.GroupID),
+			ID:      id,
+		},
 	}
 }
 
 // GetFailureResponse is a conenvience method to return a Failure as NotFound
 func GetFailureResponse(msg messages.Message, prefix string, id string) *Failure {
 	return &Failure{
-		Message: messages.NewMessage(fmt.Sprintf("failure.%s", msg.Type), msg.MessageID, msg.GroupID),
-		Error:   fmt.Sprintf("%s %s not found.", prefix, id),
+		Error: fmt.Sprintf("%s %s not found.", prefix, id),
+		Identifier: messages.Identifier{
+
+			Message: messages.NewMessage(fmt.Sprintf("failure.%s", msg.Type), msg.MessageID, msg.GroupID),
+			ID:      id,
+		},
 	}
 }

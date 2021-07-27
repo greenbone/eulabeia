@@ -124,8 +124,11 @@ func (t targetAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) 
 		return nil, nil, err
 	} else if target == nil {
 		return nil, &info.Failure{
-			Message: messages.NewMessage("failure.get.target", g.MessageID, g.GroupID),
-			Error:   fmt.Sprintf("%s not found.", g.ID),
+			Identifier: messages.Identifier{
+				Message: messages.NewMessage("failure.get.target", g.MessageID, g.GroupID),
+				ID:      g.ID,
+			},
+			Error: fmt.Sprintf("%s not found.", g.ID),
 		}, nil
 	} else {
 		return &models.GotTarget{
