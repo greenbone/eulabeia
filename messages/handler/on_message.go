@@ -74,16 +74,16 @@ func (om onMessage) On(topic string, message []byte) (*connection.SendResponse, 
 	mt, err := ParseMessageType(message)
 	if err != nil {
 		return messages.EventToResponse(om.context, info.Failure{
-			Message: messages.NewMessage("failure", "", ""),
-			Error:   fmt.Sprintf("%s", err),
+			Identifier: messages.Identifier{Message: messages.NewMessage("failure", "", "")},
+			Error:      fmt.Sprintf("%s", err),
 		}), nil
 	}
 	if h, ok := om.lookup[mt.Aggregate]; ok {
 		use, fuse := containerClosure(h, mt.Function)
 		if e := json.Unmarshal(message, use); e != nil {
 			return messages.EventToResponse(om.context, info.Failure{
-				Message: messages.NewMessage("failure", "", ""),
-				Error:   fmt.Sprintf("unable to parse %s: %s", mt, e),
+				Identifier: messages.Identifier{Message: messages.NewMessage("failure", "", "")},
+				Error:      fmt.Sprintf("unable to parse %s: %s", mt, e),
 			}), nil
 		}
 		r, f, e := fuse()

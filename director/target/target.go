@@ -19,7 +19,6 @@
 package target
 
 import (
-	"fmt"
 	"log"
 	"strings"
 
@@ -123,10 +122,7 @@ func (t targetAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) 
 	if target, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if target == nil {
-		return nil, &info.Failure{
-			Message: messages.NewMessage("failure.get.target", g.MessageID, g.GroupID),
-			Error:   fmt.Sprintf("%s not found.", g.ID),
-		}, nil
+		return nil, info.GetFailureResponse(g.Message, "target", g.ID), nil
 	} else {
 		return &models.GotTarget{
 			Message: messages.NewMessage("got.target", g.MessageID, g.GroupID),

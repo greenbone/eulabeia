@@ -19,7 +19,6 @@
 package sensor
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/google/uuid"
@@ -84,10 +83,7 @@ func (t sensorAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) 
 	if sensor, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if sensor == nil {
-		return nil, &info.Failure{
-			Message: messages.NewMessage("failure.get.sensor", g.MessageID, g.GroupID),
-			Error:   fmt.Sprintf("%s not found.", g.ID),
-		}, nil
+		return nil, info.GetFailureResponse(g.Message, "sensor", g.ID), nil
 	} else {
 		return &models.GotSensor{
 			Message: messages.NewMessage("got.sensor", g.MessageID, g.GroupID),
