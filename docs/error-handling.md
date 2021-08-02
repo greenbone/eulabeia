@@ -39,7 +39,7 @@ This error occurs when a cmd event is containing either:
 
 in this case `eulabeia` will not return an error to the module user but rather
 
-1.	send a [info.Failure](/messages/info/info.go) response to that the client can resend a coorect cmd
+1.	send a [info.Failure](/messages/info/info.go) response to that the client can resend a correct cmd
 
 `eulabeia` does not handle unknown messages as error but is returning a [info.Failure](/messages/info/info.go) when the topic is correct and the message contains the eulabeia meta-data; otherwise this message will be ignored.
 
