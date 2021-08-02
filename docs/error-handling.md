@@ -1,7 +1,7 @@
 Error Handling
 ==============
 
-In general `eulabeia` sends a [info.Failure](/messages/info/info.go):
+In general `eulabeia` sends an [info.Failure](/messages/info/info.go):
 
 ```
 {
@@ -16,31 +16,31 @@ In general `eulabeia` sends a [info.Failure](/messages/info/info.go):
 
 when an error occured while retrieving / already executing a cmd.
 
-error happening without wrongful usage
+Error happening without wrongful usage
 --------------------------------------
 
 This error occurs even when the usage is correct.
 
-For this case most of the modules are written to return the error so that the cmd can handle the case explicitely.
+For this case most of the modules return the error, so that the cmd can handle the case explicitly.
 
-For an instance if a director cannot store a target because there is insufficient space on the device it should:
+E.g.: If a director cannot store a target, because there is insufficient space on the device it should:
 
-1.	send a [info.Failure](/messages/info/info.go) response so that the client knows that storing failed
+1.	send an [info.Failure](/messages/info/info.go) response so that the client knows that storing failed
 2.	log the error message
 3.	exit director with an error code so that it is escalated to the infrastructure (e.g. restart systemd, container)
 
-response on wrongful usage
+Response on wrongful usage
 --------------------------
 
 This error occurs when a cmd event is containing either:
 
--	wrong values on cmd.Modify
--	wrong ID on cmd.Start, cmd.Get, cmd.stop, ...
+-	wrong values on `cmd.Modify`
+-	wrong ID on `cmd.Start`, `cmd.Get`, `cmd.Stop`, ...
 
-in this case `eulabeia` will not return an error to the module user but rather
+In this case `eulabeia` will not return an error to the module user but rather
 
-1.	send a [info.Failure](/messages/info/info.go) response to that the client can resend a correct cmd
+1.	send an [info.Failure](/messages/info/info.go) response to that the client can resend a correct cmd
 
-`eulabeia` does not handle unknown messages as error but is returning a [info.Failure](/messages/info/info.go) when the topic is correct and the message contains the eulabeia meta-data; otherwise this message will be ignored.
+`eulabeia` does not handle unknown messages as errors, but is returning a [info.Failure](/messages/info/info.go) when the topic is correct and the message contains correct eulabeia meta-data. Otherwise a unknown message will be ignored.
 
-This allows to run different version of `eulabeia` in parallel without having to concern about new cmds and it allows deployment methods like blue/green on a wide arrange sensors wihtout having to deal with restart spam but still having the chance to monitor weird behaviour when e.g. a sensor wasn't updated but should be.
+This allows to run different version of `eulabeia` in parallel without having to concern about new cmds and it allows deployment methods like blue/green on a large network of sensors, without having to deal with restart spam but still having the chance to monitor weird behaviour, e.g. when a sensor wasn't updated but should be.
