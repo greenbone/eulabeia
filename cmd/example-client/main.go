@@ -27,6 +27,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -54,12 +55,15 @@ const (
 
 // ExampleHandler parses the message and calls corresponding function of MessageType within do map.
 type ExampleHandler struct {
-	do      map[string]func(info.IDInfo) *connection.SendResponse
+	sync.RWMutex
+	do      map[string]func(info.IDInfo, []byte) *connection.SendResponse
 	handled []string
 	exit    chan os.Signal
 }
 
 func (e *ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse, error) {
+	e.Lock()
+	defer e.Unlock()
 	mt, err := handler.ParseMessageType(msg)
 	if err != nil {
 		// In this example we end the program on a unexpected message so that we can
@@ -80,20 +84,22 @@ func (e *ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse,
 			log.Panicf("No handler for %s found", mt)
 		}
 	}
-	response := f(infoMSG)
+	response := f(infoMSG, msg)
+	// On a response without a topic we assume ignored
+	if response != nil && response.Topic == "" {
+		return nil, nil
+	}
 	e.handled = append(e.handled, mt.String())
 	e.handled = append(e.handled, infoMSG.ID)
 	// We assume that if there is no response message that the test scenario is finished
 	if response == nil {
 		e.exit <- syscall.SIGCONT
 		// on response.Topic ignore SendResponse
-	} else if response.Topic == "" {
-		return nil, nil
 	}
 	return response, nil
 }
 
-func ModifyTarget(msg info.IDInfo) *connection.SendResponse {
+func ModifyTarget(msg info.IDInfo, _ []byte) *connection.SendResponse {
 	modify := cmds.NewModify(
 		"target",
 		msg.ID,
@@ -103,7 +109,7 @@ func ModifyTarget(msg info.IDInfo) *connection.SendResponse {
 	return messages.EventToResponse(context, modify)
 }
 
-func CreateScan(msg info.IDInfo) *connection.SendResponse {
+func CreateScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
 	// We use the principle modify over create to directly create a scan with a target ID.
 	// Otherwise we need to store the target ID and reuse it on created.scan.
 	modify := cmds.NewModify(
@@ -115,7 +121,7 @@ func CreateScan(msg info.IDInfo) *connection.SendResponse {
 	return messages.EventToResponse(context, modify)
 }
 
-func MegaScan(msg info.IDInfo) *connection.SendResponse {
+func MegaScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
 	mega := scan.StartMegaScan{
 		Message: messages.NewMessage("start.scan.director", "", ""),
 		Scan: models.Scan{
@@ -141,15 +147,20 @@ func MegaScan(msg info.IDInfo) *connection.SendResponse {
 	return messages.EventToResponse(context, mega)
 }
 
-func VerifyForScanStatus(i info.IDInfo) *connection.SendResponse {
+func VerifyForScanStatus(i info.IDInfo, b []byte) *connection.SendResponse {
 	if i.Type == "scan.status" {
-		return nil
-	} else {
-		return &connection.SendResponse{}
+		var status info.Status
+		if json.Unmarshal(b, &status) != nil {
+			log.Panicf("Unable to parse: %s", string(b))
+		}
+		if status.Status == "init" {
+			return nil
+		}
 	}
+	return &connection.SendResponse{}
 }
 
-func Done(_ info.IDInfo) *connection.SendResponse {
+func Done(_ info.IDInfo, _ []byte) *connection.SendResponse {
 	return nil
 }
 
@@ -198,7 +209,7 @@ func main() {
 	ic := make(chan os.Signal, 1)
 	defer close(ic)
 	mh := ExampleHandler{
-		do: map[string]func(info.IDInfo) *connection.SendResponse{
+		do: map[string]func(info.IDInfo, []byte) *connection.SendResponse{
 			CREATED_TARGET:  ModifyTarget,
 			MODIFIED_TARGET: CreateScan,
 			MODIFIED_SCAN:   MegaScan,
