@@ -19,6 +19,7 @@
 package target
 
 import (
+	"encoding/json"
 	"log"
 	"strings"
 
@@ -63,7 +64,6 @@ func (t targetAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, e
 	}
 
 	for k, v := range m.Values {
-
 		// normalize field name
 		nk := strings.Title(k)
 		switch nk {
@@ -72,7 +72,17 @@ func (t targetAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, e
 		case "Ports":
 			target.Ports = handler.InterfaceArrayToStringArray(v)
 		case "Plugins":
-			target.Plugins = handler.InterfaceArrayToStringArray(v)
+			jsonbody, err := json.Marshal(v)
+			if err != nil {
+				log.Printf("%s: Given Plugins for target not valid\n", m.ID)
+				continue
+			}
+			plugins := models.VTsList{}
+			if err := json.Unmarshal(jsonbody, &plugins); err != nil {
+				log.Printf("%s: Given Plugins for target not valid\n", m.ID)
+				continue
+			}
+			target.Plugins = plugins
 		case "Sensor":
 			if cv, ok := v.(string); ok {
 				target.Sensor = cv

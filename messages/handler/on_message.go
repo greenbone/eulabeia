@@ -27,6 +27,7 @@ import (
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/info"
+	"github.com/greenbone/eulabeia/models"
 	"github.com/tidwall/gjson"
 )
 
@@ -44,6 +45,10 @@ func InterfaceArrayToStringArray(v interface{}) []string {
 		return strings
 	}
 	return nil
+}
+
+func InterfaceToPlugins(v interface{}) models.VTsList {
+	return models.VTsList{}
 }
 
 // ParseMessageType tries to parse the messages.MessageType based on a []byte message

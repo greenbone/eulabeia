@@ -27,7 +27,7 @@ type Target struct {
 	ID          string                       `json:"id"`            // ID of a Target
 	Hosts       []string                     `json:"hosts"`         // Hosts to scan
 	Ports       []string                     `json:"ports"`         // Ports to scan
-	Plugins     []string                     `json:"plugins"`       // OID of plugins
+	Plugins     VTsList                      `json:"plugins"`       // OID of plugins
 	Sensor      string                       `json:"sensor"`        // Sensor to use
 	Alive       bool                         `json:"alive"`         // Alive when true only alive hosts get scanned
 	Parallel    bool                         `json:"parallel"`      // Parallel when true mulitple scans run in parallel
