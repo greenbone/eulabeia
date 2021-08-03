@@ -73,10 +73,10 @@ const (
 type GotHostProgress struct {
 	messages.Message
 	info.EventType
-	ScanId string         `json:"scan_id"`      // Scan id
-	Type   HostInfoType   `json:"message_type"` // HostProgress message type
-	Host   string         `json:"host"`         // Host's IP the progress belongs to
-	Count  string         `json:"current"`      // Current amount of plugins that have been launched against the host
-	Max    string         `json:"max"`          // Total plugins to be launched against the host
-	Status HostStatusType `json:"status"`       // Host status. E.g. dead, finished.
+	ScanId string         `json:"scan_id"`            // Scan id
+	Type   HostInfoType   `json:"host_progress_type"` // HostProgress message type
+	Host   string         `json:"host"`               // Host's IP the progress belongs to
+	Count  string         `json:"current"`            // Current amount of plugins that have been launched against the host
+	Max    string         `json:"max"`                // Total plugins to be launched against the host
+	Status HostStatusType `json:"status"`             // Host status. E.g. dead, finished.
 }
