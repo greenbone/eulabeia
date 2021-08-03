@@ -134,7 +134,18 @@ func MegaScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
 					Single: []models.SingleVT{
 						{
 							OID: "1.3.6.1.4.1.25623.1.0.90022",
+							PrefsByID: map[int]interface{}{
+								0: "test1",
+								1: 2,
+							},
+							PrefsByName: map[string]interface{}{
+								"pref1": "test2",
+								"pref2": true,
+							},
 						},
+					},
+					Group: map[string]string{
+						"family": "foobar",
 					},
 				},
 				Exclude:  []string{"exclude1"},

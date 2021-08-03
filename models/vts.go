@@ -74,33 +74,15 @@ type VT struct {
 	Severity           SeverityType  // Script severity. See SeverityType.
 }
 
-// VTPreference sets a single Preference for a VT by ID
-type VTPreferenceID struct {
-	ID    int         `json:"id"`
-	Value interface{} `json:"value"`
-}
-
-// VTPreferenceName sets a single Preference for a VT by Name
-type VTPreferenceName struct {
-	Name  string      `json:"name"`
-	Value interface{} `json:"value"`
-}
-
 // SingleVT contains a single VT and its preferences
 type SingleVT struct {
-	OID         string             `json:"oid"`
-	PrefsByID   []VTPreferenceID   `json:"pref_by_id"`
-	PrefsByName []VTPreferenceName `json:"pref_by_name"`
-}
-
-// VTGroup is a Filter by which multiple VTs are selected
-type VTGroup struct {
-	Type   string `json:"type"`
-	Filter string `json:"filter"`
+	OID         string                 `json:"oid"`
+	PrefsByID   map[int]interface{}    `json:"prefs_by_id"`
+	PrefsByName map[string]interface{} `json:"prefs_by_name"`
 }
 
 // VTsList list to support multiple VTs with own preferences
 type VTsList struct {
-	Single []SingleVT `json:"single_vts"`
-	Group  []VTGroup  `json:"vt_groups"`
+	Single []SingleVT        `json:"single_vts"`
+	Group  map[string]string `json:"vt_groups"`
 }
