@@ -2,9 +2,9 @@
 
 In Eulabeia we follow the topic structure:
 
-`<group>/<aggregate>/<event>/<destination>`
+`<context>/<aggregate>/<event>/<destination>`
 
-- group is the actual project (`eulabeia`)
+- context is the context where the message is exchanged (e.g. `scanner`)
 - aggregate is the aggregate this message belongs to (e.g. `scan`)
 - event indicats if the message is an info or a cmd (either `cmd` or `info`)
 - destination if the message is for a specific `sensor` it contains the id of that (e.d. `openvas_sensor1`)
