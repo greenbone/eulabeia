@@ -128,6 +128,7 @@ func (sensor *Scheduler) ScanFinished(scanID string) error {
 	if !sensor.running.RemoveListItem(scanID) {
 		return fmt.Errorf("scan ID %s unknown", scanID)
 	}
+	sensor.ovas.ScanFinished(scanID)
 	return nil
 }
 
