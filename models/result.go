@@ -42,13 +42,10 @@ const (
 type Result struct {
 	ScanId   string     `json:"scan_id"`     // Scan id
 	Type     ResultType `json:"result_type"` // Result type
-	Host     string     `json:"host"`        // Host's IP the result belongs to
-	Hostname string     `json:"hostname"`    // Hostname
-	Port     string     `json:"ports"`       // Port scanned
-	OID      string     `json:"oid"`         // VT's OID
-	Name     string     `json:"name"`        // VT's name
-	QOD      string     `json:"qod"`         // Quality of detection
-	Score    string     `json:"score"`       // Severity score
+	Host     string     `json:"host_ip"`     // Host's IP the result belongs to
+	Hostname string     `json:"host_name"`   // DNS name of the host
+	Port     string     `json:"port"`        // Port/Location where the vulnerability has been found
+	OID      string     `json:"oid"`         // OID referencing VT meta data
 	Value    string     `json:"value"`       // The result value
 	URI      string     `json:"uri"`         // Location of the vulnerability. Commonly a path to a installed package
 }
