@@ -16,6 +16,11 @@ prepare:
 format:
 	go mod tidy
 	go fmt ./...
+	clang-format -i --style=file ./c/libeulabeia/src/*.c
+	clang-format -i --style=file ./c/libeulabeia/test/src/*.c
+	clang-format -i --style=file ./c/libeulabeia/include/eulabeia/*.h
+	clang-format -i --style=file ./c/example/*.c
+
 
 check:
 	go vet ./...
@@ -25,7 +30,7 @@ test:
 	go test ./...
 
 start-broker:
-	docker run --rm -d --name eulabeia_broker $(REPOSITORY)/eulabeia-broker:latest
+	docker run --rm -d -p 9138:9138 --name eulabeia_broker $(REPOSITORY)/eulabeia-broker:latest
 
 stop-broker:
 	docker kill eulabeia_broker

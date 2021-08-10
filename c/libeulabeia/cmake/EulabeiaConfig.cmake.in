@@ -1,0 +1,17 @@
+get_filename_component(EULABEIACLIENT_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(CMakeFindDependencyMacro)
+
+#list(APPEND CMAKE_MODULE_PATH ${EULABEIACLIENT_CMAKE_DIR})
+# NOTE: to find FindRapidJSON.cmake
+#find_dependency(RapidJSON @MIN_RapidJSON_VERSION@)
+#list(REMOVE_AT CMAKE_MODULE_PATH -1)
+
+find_dependency(cgreen 1.1.0)
+# glib is using autotools and I envy them
+find_dependency(PkgConfig)
+
+if(NOT TARGET Eulabeia::Eulabeia)
+    include("${EULABEIACLIENT_CMAKE_DIR}/EulabeiaTargets.cmake")
+endif()
+
+set(EULABEIACLIENT_LIBRARIES Eulabeia::Eulabeia)
