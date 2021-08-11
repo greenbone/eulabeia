@@ -49,10 +49,16 @@ func TestStartScanPreprocessor(t *testing.T) {
 		Scan: models.Scan{
 			ID: "f123",
 			Target: models.Target{
-				ID:       "f123",
-				Hosts:    []string{"hosts1"},
-				Ports:    []string{"ports1"},
-				Plugins:  []string{"plugins1"},
+				ID:    "f123",
+				Hosts: []string{"hosts1"},
+				Ports: []string{"ports1"},
+				Plugins: models.VTsList{
+					Single: []models.SingleVT{
+						{
+							OID: "plugins1",
+						},
+					},
+				},
 				Exclude:  []string{"exclude1"},
 				Sensor:   "sensor",
 				Alive:    true,
@@ -116,7 +122,8 @@ func TestStartScanPreprocessor(t *testing.T) {
 					if actual.ID == mega.Scan.Target.ID &&
 						len(actual.Ports) == len(mega.Scan.Target.Ports) &&
 						len(actual.Hosts) == len(mega.Scan.Target.Hosts) &&
-						len(actual.Plugins) == len(mega.Scan.Target.Plugins) &&
+						len(actual.Plugins.Single) == len(mega.Plugins.Single) &&
+						len(actual.Plugins.Group) == len(mega.Plugins.Group) &&
 						actual.Sensor == mega.Scan.Target.Sensor &&
 						actual.Alive == mega.Scan.Target.Alive &&
 						actual.Parallel == mega.Scan.Target.Parallel &&

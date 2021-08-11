@@ -73,3 +73,16 @@ type VT struct {
 	VTDependencies     []string      // List of plugin's filenames which a VT depends on.-
 	Severity           SeverityType  // Script severity. See SeverityType.
 }
+
+// SingleVT contains a single VT and its preferences
+type SingleVT struct {
+	OID         string                 `json:"oid"`
+	PrefsByID   map[int]interface{}    `json:"prefs_by_id"`
+	PrefsByName map[string]interface{} `json:"prefs_by_name"`
+}
+
+// VTsList list to support multiple VTs with own preferences
+type VTsList struct {
+	Single []SingleVT        `json:"single_vts"`
+	Group  map[string]string `json:"vt_groups"`
+}

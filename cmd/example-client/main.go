@@ -127,10 +127,27 @@ func MegaScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
 		Scan: models.Scan{
 			ID: MEGA_ID,
 			Target: models.Target{
-				ID:       MEGA_ID,
-				Hosts:    []string{"localhost"},
-				Ports:    []string{"80"},
-				Plugins:  []string{"1.3.6.1.4.1.25623.1.0.90022"},
+				ID:    MEGA_ID,
+				Hosts: []string{"localhost"},
+				Ports: []string{"80"},
+				Plugins: models.VTsList{
+					Single: []models.SingleVT{
+						{
+							OID: "1.3.6.1.4.1.25623.1.0.90022",
+							PrefsByID: map[int]interface{}{
+								0: "test1",
+								1: 2,
+							},
+							PrefsByName: map[string]interface{}{
+								"pref1": "test2",
+								"pref2": true,
+							},
+						},
+					},
+					Group: map[string]string{
+						"family": "foobar",
+					},
+				},
 				Exclude:  []string{"exclude1"},
 				Sensor:   "localhorst",
 				Alive:    true,
