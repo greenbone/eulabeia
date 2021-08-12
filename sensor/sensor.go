@@ -79,7 +79,7 @@ func (sensor *Scheduler) QueueScan(scanID string) error {
 	sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 		Identifier: messages.Identifier{
 			ID:      scanID,
-			Message: messages.NewMessage("scan.status", "", ""),
+			Message: messages.NewMessage("status.scan", "", ""),
 		},
 		Status: "queued",
 	})
@@ -101,7 +101,7 @@ func (sensor *Scheduler) StartScan(scanID string) error {
 	sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 		Identifier: messages.Identifier{
 			ID:      sensor.queue.Front(),
-			Message: messages.NewMessage("scan.status", "", ""),
+			Message: messages.NewMessage("status.scan", "", ""),
 		},
 		Status: "init",
 	})
@@ -145,7 +145,7 @@ func (sensor *Scheduler) StopScan(scanID string) error {
 			sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 				Identifier: messages.Identifier{
 					ID:      scanID,
-					Message: messages.NewMessage("scan.status", "", ""),
+					Message: messages.NewMessage("status.scan", "", ""),
 				},
 				Status: "stopped",
 			})
@@ -181,7 +181,7 @@ func (sensor *Scheduler) interruptScan(scanID string) error {
 		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 			Identifier: messages.Identifier{
 				ID:      scanID,
-				Message: messages.NewMessage("scan.status", "", ""),
+				Message: messages.NewMessage("status.scan", "", ""),
 			},
 			Status: "interrupted",
 		})
@@ -268,7 +268,7 @@ func (sensor *Scheduler) Close() error {
 		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 			Identifier: messages.Identifier{
 				ID:      item,
-				Message: messages.NewMessage("scan.status", "", ""),
+				Message: messages.NewMessage("status.scan", "", ""),
 			},
 			Status: "interrupted",
 		})
@@ -279,7 +279,7 @@ func (sensor *Scheduler) Close() error {
 		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 			Identifier: messages.Identifier{
 				ID:      item,
-				Message: messages.NewMessage("scan.status", "", ""),
+				Message: messages.NewMessage("status.scan", "", ""),
 			},
 			Status: "interrupted",
 		})
@@ -291,7 +291,7 @@ func (sensor *Scheduler) Close() error {
 		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 			Identifier: messages.Identifier{
 				ID:      item,
-				Message: messages.NewMessage("scan.status", "", ""),
+				Message: messages.NewMessage("status.scan", "", ""),
 			},
 			Status: "interrupted",
 		})

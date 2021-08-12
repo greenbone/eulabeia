@@ -165,7 +165,7 @@ func MegaScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
 }
 
 func VerifyForScanStatus(i info.IDInfo, b []byte) *connection.SendResponse {
-	if i.Type == "scan.status" {
+	if i.Type == "status.scan" {
 		var status info.Status
 		if json.Unmarshal(b, &status) != nil {
 			log.Panicf("Unable to parse: %s", string(b))
