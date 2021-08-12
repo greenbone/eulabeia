@@ -87,19 +87,19 @@ int eulabeia_json_status(JsonObject *obj,
 	if (!(json_object_has_member(obj, "id") &&
 	      json_object_has_member(obj, "status"))) {
 
-		return -6;
+		return -3;
 	}
 	if (*status == NULL &&
 	    (*status = calloc(1, sizeof(struct EulabeiaStatus))) == NULL) {
-		return -7;
+		return -4;
 	}
 	(*status)->message = msg;
 	// even when explicitely set to id is not allowed to be null
 	if (json_object_get_and_assign_string(obj, "id", &(*status)->id) != 0)
-		return -8;
+		return -5;
 	if (json_object_get_and_assign_string(
 		obj, "status", &(*status)->status) < 0)
-		return -9;
+		return -6;
 	return 0;
 }
 
