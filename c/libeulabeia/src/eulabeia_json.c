@@ -1,3 +1,4 @@
+#include "eulabeia/types.h"
 #include <eulabeia/client.h>
 
 #include <json-glib/json-glib.h>
@@ -52,7 +53,7 @@ int eulabeia_json_failure(JsonObject *obj,
 	int rc;
 	if (msg == NULL || msg->type == NULL)
 		return -1;
-	if (strncmp("failure.", msg->type, 6) != 0)
+	if (eulabeia_message_to_message_type(msg) != EULABEIA_INFO_FAILURE)
 		return -2;
 
 	if (!(json_object_has_member(obj, "id") &&
@@ -74,6 +75,34 @@ int eulabeia_json_failure(JsonObject *obj,
 	return 0;
 }
 
+int eulabeia_json_id_message(JsonObject *obj,
+			     enum eulabeia_message_type type,
+			     struct EulabeiaMessage *msg,
+			     struct EulabeiaIDMessage **idmessage)
+{
+	int rc;
+	if (msg == NULL || msg->type == NULL)
+		return -1;
+	if (eulabeia_message_to_message_type(msg) != type)
+		return -2;
+
+	if (!(json_object_has_member(obj, "id") &&
+	      json_object_has_member(obj, "error"))) {
+
+		return -3;
+	}
+	if (*idmessage == NULL &&
+	    (*idmessage = calloc(1, sizeof(struct EulabeiaIDMessage))) ==
+		NULL) {
+		return -4;
+	}
+	(*idmessage)->message = msg;
+	// even when explicitely set to id is not allowed to be null
+	if (json_object_get_and_assign_string(obj, "id", &(*idmessage)->id) !=
+	    0)
+		return -5;
+	return 0;
+}
 int eulabeia_json_status(JsonObject *obj,
 			 struct EulabeiaMessage *msg,
 			 struct EulabeiaStatus **status)
@@ -81,7 +110,7 @@ int eulabeia_json_status(JsonObject *obj,
 	int rc;
 	if (msg == NULL || msg->type == NULL)
 		return -1;
-	if (strncmp("status.", msg->type, 6) != 0)
+	if (eulabeia_message_to_message_type(msg) != EULABEIA_INFO_STATUS)
 		return -2;
 
 	if (!(json_object_has_member(obj, "id") &&

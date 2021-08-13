@@ -63,12 +63,11 @@ static void free_mega_scan(struct EulabeiaScan *scan)
 	free(scan);
 }
 
-static void start_mega_scan(struct EulabeiaScanProgress *sp)
+static struct EulabeiaScan *start_mega_scan(struct EulabeiaScanProgress *sp)
 {
 	int rc;
 	struct EulabeiaScan *scan;
 	scan = create_mega_scan();
-	sp->id = scan->id;
 
 	if ((rc = eulabeia_start_scan(ec, scan, NULL)) != 0) {
 		printf("[%d] unable to start scan %s\n", rc, scan->id);
@@ -76,12 +75,13 @@ static void start_mega_scan(struct EulabeiaScanProgress *sp)
 		eulabeia_destroy(ec);
 		exit(rc);
 	}
-	free_mega_scan(scan);
+	return scan;
 }
 
 int main()
 {
 	struct EulabeiaScanProgress msp;
+	struct EulabeiaScan *mega_scan;
 	char *topic, *payload;
 	int topic_len, payload_len;
 	int rc;
@@ -93,7 +93,7 @@ int main()
 		goto exit;
 	}
 
-	start_mega_scan(&msp);
+	mega_scan = start_mega_scan(&msp);
 	while (!eulabeia_scan_finished(&msp)) {
 		if ((rc = mqtt_retrieve_message(
 			 &topic, &topic_len, &payload, &payload_len)) == -1) {
@@ -101,9 +101,10 @@ int main()
 			goto exit;
 		}
 		if (rc == 0) {
-			if ((rc = eulabeia_scan_progress(payload, &msp)) == 0) {
+			if ((rc = eulabeia_scan_progress(
+				 payload, mega_scan->id, &msp)) == 0) {
 				printf("[scan_id:%s][status:%d] %s\n",
-				       msp.id,
+				       mega_scan->id,
 				       msp.status,
 				       payload);
 			} else {
@@ -118,6 +119,7 @@ int main()
 			free(topic);
 	}
 exit:
+	free_mega_scan(mega_scan);
 
 	eulabeia_destroy(ec);
 	return rc;

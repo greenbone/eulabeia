@@ -82,16 +82,17 @@ int eulabeia_json_object(const char *payload,
 }
 
 int eulabeia_scan_progress(const char *payload,
+			   const char *id,
 			   struct EulabeiaScanProgress *progress)
 {
-	JsonNode *j_node;
+	JsonNode *j_node = NULL;
 	JsonObject *j_obj;
 	struct EulabeiaStatus *status = NULL;
 	struct EulabeiaFailure *failure = NULL;
 	struct EulabeiaMessage *msg = NULL;
 	int rc;
 
-	if (payload == NULL || progress == NULL || progress->id == NULL) {
+	if (payload == NULL || progress == NULL || id == NULL) {
 		rc = -1;
 		goto clean_exit;
 	}
@@ -103,7 +104,7 @@ int eulabeia_scan_progress(const char *payload,
 		goto clean_exit;
 	}
 	if (eulabeia_json_status(j_obj, msg, &status) == 0) {
-		if (strcmp(progress->id, status->id) != 0) {
+		if (strcmp(id, status->id) != 0) {
 			rc = 1;
 		} else {
 			rc = 0;
@@ -122,10 +123,10 @@ int eulabeia_scan_progress(const char *payload,
 			}
 		}
 	} else if (eulabeia_json_failure(j_obj, msg, &failure) == 0) {
-		if (strcmp(progress->id, failure->id) == 0) {
+		if (strcmp(id, failure->id) == 0) {
 			rc = 0;
 			g_warning("scan (%s) failed with: %s",
-				  progress->id,
+				  id,
 				  failure->error ? failure->error : "N/A");
 			progress->status = EULABEIA_SCAN_RESULT_FAILED;
 		} else {
@@ -301,6 +302,63 @@ int eulabeia_modify_target(const struct EulabeiaClient *eulabeia_client,
 			       EULABEIA_DIRECTOR,
 			       (verify_data *)verify_target_data,
 			       (to_json *)eulabeia_target_message_to_json);
+}
+
+int eulabeia_crud_progress(const char *payload,
+			   const char *id,
+			   enum eulabeia_message_type emt,
+			   struct EulabeiaCRUDProgress *progress)
+{
+	JsonNode *j_node = NULL;
+	JsonObject *j_obj;
+	struct EulabeiaMessage *msg = NULL;
+	struct EulabeiaFailure *failure = NULL;
+	struct EulabeiaIDMessage *idm = NULL;
+	int rc;
+
+	if (payload == NULL || progress == NULL || id == NULL) {
+		rc = -1;
+		goto clean_exit;
+	}
+	if ((rc = eulabeia_json_object(payload, &j_node, &j_obj)) != 0)
+		goto clean_exit;
+
+	if ((rc = eulabeia_json_message(j_obj, &msg)) < 0) {
+		rc = -4;
+		goto clean_exit;
+	}
+	if (eulabeia_message_to_message_type(msg) == emt &&
+	    (rc = eulabeia_json_id_message(j_obj, emt, msg, &idm)) == 0) {
+		rc = 1;
+		if (strncmp(idm->id, id, strlen(id)) == 0) {
+			rc = 0;
+			progress->status = EULABEIA_CRUD_SUCCESS;
+		} else if (eulabeia_json_failure(j_obj, msg, &failure) == 0) {
+			if (strncmp(id, failure->id, strlen(id)) == 0) {
+				rc = 0;
+				g_warning("operation (%s) failed with: %s",
+					  id,
+					  failure->error ? failure->error
+							 : "N/A");
+				progress->status = EULABEIA_CRUD_FAILED;
+			} else {
+				rc = 2;
+			}
+		}
+	} else {
+		rc = 3;
+	}
+clean_exit:
+	if (j_node)
+		json_node_free(j_node);
+	if (failure)
+		free(failure);
+	if (idm)
+		free(idm);
+	if (msg)
+		free(msg);
+
+	return rc;
 }
 
 int eulabeia_scan_finished(const struct EulabeiaScanProgress *progress)

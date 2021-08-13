@@ -68,9 +68,13 @@ enum eulabeia_crud_state {
  *
  */
 #define EULABEIA_MESSAGE_TYPES                                                 \
+	X(EULABEIA_UNKNOWN, NA, NA)                                            \
 	X(EULABEIA_CMD_START, start, cmd)                                      \
 	X(EULABEIA_CMD_STOP, stop, cmd)                                        \
-	X(EULABEIA_CMD_MODIFY, modify, cmd)
+	X(EULABEIA_CMD_MODIFY, modify, cmd)                                    \
+	X(EULABEIA_INFO_MODIFIED, modified, info)                              \
+	X(EULABEIA_INFO_STATUS, status, info)                                  \
+	X(EULABEIA_INFO_FAILURE, failure, info)
 
 //@brief enum generated of first parameter of EULABEIA_MESSAGE_TYPES
 enum eulabeia_message_type {
@@ -127,6 +131,11 @@ struct EulabeiaFailure {
 	char *error;
 };
 
+struct EulabeiaIDMessage {
+	struct EulabeiaMessage *message;
+	char *id;
+};
+
 struct EulabeiaScanResult {
 	char *oid;
 	char *port;
@@ -140,13 +149,11 @@ struct EulabeiaScanResults {
 };
 
 struct EulabeiaScanProgress {
-	char *id;
 	enum eulabeia_scan_result_state status;
 	struct EulabeiaScanResults *results;
 };
 
 struct EulabeiaCRUDProgress {
-	char *id;
 	enum eulabeia_crud_state status;
 };
 
@@ -242,6 +249,15 @@ char *eulabeia_message_type_to_str(enum eulabeia_message_type mt);
  * undefined
  */
 char *eulabeia_aggregate_to_str(enum eulabeia_aggregate mt);
+
+/*
+ * @brief returns the eulabeia_message_type of a message.
+ *
+ * @param[in] message; the message to get the message_type from
+ * @return eulabeia_message_type
+ */
+enum eulabeia_message_type
+eulabeia_message_to_message_type(const struct EulabeiaMessage *message);
 
 /*
  * @brief destroyes an EulabeiaMessage
