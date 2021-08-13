@@ -272,7 +272,6 @@ void builder_add_hosts(JsonBuilder *builder, const struct EulabeiaHosts *hosts)
 // expects a builder with an open object, internal use
 void builder_add_target(JsonBuilder *builder,
 			const struct EulabeiaTarget *target,
-			const int ignore_id, 
 			const int modify)
 {
 	if (target->id) {
@@ -335,7 +334,7 @@ void builder_add_scan(JsonBuilder *builder, const struct EulabeiaScan *scan, con
 	if (scan->target) {
 		// if there is a target-id it will override the scan id due to
 		// flat json design. Therefore we ignore the target id.
-		builder_add_target(builder, scan->target, 1, 0);
+		builder_add_target(builder, scan->target, 0);
 	}
 	if (modify) {
 		json_builder_end_object(builder);
@@ -396,7 +395,7 @@ char *eulabeia_target_message_to_json(const struct EulabeiaMessage *msg,
 
 	json_builder_begin_object(b);
 	builder_add_message(b, msg);
-	builder_add_target(b, target, 0, modify);
+	builder_add_target(b, target, modify);
 	json_builder_end_object(b);
 
 	json_str = json_builder_to_str(b);

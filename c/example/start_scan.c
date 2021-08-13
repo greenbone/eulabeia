@@ -86,7 +86,6 @@ static int check_for_modify_progress(struct EulabeiaCRUDProgress *progress, char
 			rc = -1;
 		}
 		if (rc == 0) {
-			printf("got payload:\n%s\n\n", payload);
 			if ((rc = eulabeia_modify_progress(
 				 payload, id, progress)) == 0) {
 				printf("[id:%s][status:%d] %s\n",
@@ -120,8 +119,7 @@ static int check_scan_progress(struct EulabeiaScanProgress *progress, char *id){
 	int rc;
 	char *payload, *topic;
 	int payload_len, topic_len;
-	while (progress->status != EULABEIA_CRUD_SUCCESS 
-			&& progress->status != EULABEIA_CRUD_FAILED){
+	while (!eulabeia_scan_finished(progress)){
 		if ((rc = mqtt_retrieve_message(
 			 &topic, &topic_len, &payload, &payload_len)) == -1) {
 			printf("unable to retrieve message, quitting\n");
