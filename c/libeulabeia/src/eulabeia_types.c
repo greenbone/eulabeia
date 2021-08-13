@@ -173,3 +173,18 @@ eulabeia_initialize_message(enum eulabeia_message_type message_type,
 
 	return em;
 }
+
+enum eulabeia_message_type
+eulabeia_message_to_message_type(const struct EulabeiaMessage *message)
+{
+	if (message == NULL || message->type == NULL)
+		return EULABEIA_UNKNOWN;
+#define DOT_HACK(a) #a "."
+#define X(a, b, c)                                                             \
+	else if (strncmp(message->type, DOT_HACK(b), strlen(DOT_HACK(b))) ==   \
+		 0) return (a);
+	EULABEIA_MESSAGE_TYPES
+#undef X
+#undef DOT_HACK
+	return EULABEIA_UNKNOWN;
+}

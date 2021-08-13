@@ -95,6 +95,7 @@ int eulabeia_start_scan(const struct EulabeiaClient *eulabeia_client,
  * progress needs to be inititalized and it's scan_id must be set.
  *
  * @param[in] payload, the payload to verify.
+ * @param[in] id, the id to look out for.
  * @param[out] progress, contains the id of the scan and is used to set progress
  *
  * @return 0 when progress got changed,
@@ -106,6 +107,7 @@ int eulabeia_start_scan(const struct EulabeiaClient *eulabeia_client,
  * -5 when the status is not defined in EULABEIA_SCAN_RESULT_STATES.
  */
 int eulabeia_scan_progress(const char *payload,
+			   const char *id,
 			   struct EulabeiaScanProgress *progress);
 
 /*
@@ -127,13 +129,31 @@ int eulabeia_modify_target(const struct EulabeiaClient *eulabeia_client,
 			   const char *group_id);
 
 /*
- * @brief watches for CRUD progress.
+ * @brief set the CRUD progress into progress based on payload.
  *
- * TBD
+ * This function should be called periodically after an create or modify to
+ * verify the retrieved payload if it is progress relevant and sets the
+ * progress accordingly if it is relevant.
+ *
+ * progress needs to be inititalized upfront.
+ *
+ * @param[in] payload, the payload to verify.
+ * @param[in] id, the id to look out for.
+ * @param[in] type, the message type to look for to set it to success
+ * @param[out] progress, is used to set progress
+ *
+ * @return 0 when progress got changed,
+ * 1 when payload is a valid progress message but not for the given scan id,
+ * 2 when payload is a EulabeiaMessage but not progress relevant,
+ * -1 when either payload, progress or progress->id is NULL,
+ * -2 when payload is not valid json, -3 when payload is not a json object,
+ * -4 when the payload is not a valid EulabeiaMessage,
+ * -5 when the status is not defined in EULABEIA_SCAN_RESULT_STATES.
  */
 int eulabeia_crud_progress(const char *payload,
+			   const char *id,
+			   enum eulabeia_message_type type,
 			   struct EulabeiaCRUDProgress *progress);
-
 /*
  * @brief checks progress if the scan is finished.
  *

@@ -58,6 +58,32 @@ int eulabeia_json_message(JsonObject *obj, struct EulabeiaMessage **msg);
 int eulabeia_json_failure(JsonObject *obj,
 			  struct EulabeiaMessage *msg,
 			  struct EulabeiaFailure **failure);
+
+/*
+ * @brief parses already initialized JsonObject to EulabeiaIdMessage
+ *
+ * This function expects an already initialized JsonObject. To initialize one
+ * you can call eulabeia_json_jsonobject.
+ *
+ * @param[in] obj, the JsonObject to be parsed
+ * @param[in] type, the eulabeia_message_type to be expected
+ * @param[in] msg, the EulabeiaMessage to be included into id_message
+ * @param[out] id_message, the EulabeiaIdMessage this function will allocate the
+ * memory. The caller is responsible for cleaning.
+ *
+ * @return 0 on success,
+ * @return 0 on success,
+ *  -1 on msg is NULL
+ *  -2 on msg type is incorrect
+ *  -3 on JsonObject is incorrect
+ *  -4 on allocation id_message
+ *  -5 on missing ID
+ */
+int eulabeia_json_id_message(JsonObject *obj,
+			     enum eulabeia_message_type type,
+			     struct EulabeiaMessage *msg,
+			     struct EulabeiaIDMessage **id_message);
+
 /*
  * @brief parses already initialized JsonObject to EulabeiaStatus
  *

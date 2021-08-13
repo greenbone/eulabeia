@@ -22,30 +22,30 @@ Ensure(Progress, scan_progress_failures)
 {
 	struct EulabeiaScanProgress progress;
 	int rc;
-	rc = eulabeia_scan_progress(NULL, &progress);
+	rc = eulabeia_scan_progress(NULL, "", &progress);
 	assert_equal_with_message(
 	    rc, -1, "expected [%d] to be -1 because payload is NULL", rc);
-	rc = eulabeia_scan_progress("", NULL);
+	rc = eulabeia_scan_progress("", "", NULL);
 	assert_equal_with_message(
 	    rc, -1, "expected [%d] to be -1 because progress is NULL", rc);
-	progress.id = NULL;
-	rc = eulabeia_scan_progress("", &progress);
+	rc = eulabeia_scan_progress("", NULL, &progress);
 	assert_equal_with_message(
-	    rc, -1, "expected [%d] to be -1 because progress->id is NULL", rc);
-	progress.id = "wanted";
-	rc = eulabeia_scan_progress("{ not a json", &progress);
+	    rc, -1, "expected [%d] to be -1 because id is NULL", rc);
+	rc = eulabeia_scan_progress("{ not a json", "wanted", &progress);
 	assert_equal_with_message(
 	    rc,
 	    -2,
 	    "expected [%d] to be -2 because paylod is invalid json",
 	    rc);
-	rc = eulabeia_scan_progress("\"not a json object\"", &progress);
+	rc = eulabeia_scan_progress(
+	    "\"not a json object\"", "wanted", &progress);
 	assert_equal_with_message(
 	    rc,
 	    -3,
 	    "expected [%d] to be -3 because payload is not a json-object",
 	    rc);
-	rc = eulabeia_scan_progress("{\"id\":\"invalid\"}", &progress);
+	rc =
+	    eulabeia_scan_progress("{\"id\":\"invalid\"}", "wanted", &progress);
 	assert_equal_with_message(
 	    rc,
 	    -4,
@@ -59,6 +59,7 @@ Ensure(Progress, scan_progress_failures)
 				    "\"id\": \"wanted\","
 				    "\"status\": null"
 				    "}",
+				    "wanted",
 				    &progress);
 	assert_equal_with_message(
 	    rc, -5, "expected [%d] to be -5 because status is NULL", rc);
@@ -70,6 +71,7 @@ Ensure(Progress, scan_progress_failures)
 				    "\"id\": \"wanted\","
 				    "\"status\": \"unknown\""
 				    "}",
+				    "wanted",
 				    &progress);
 	assert_equal_with_message(
 	    rc, -5, "expected [%d] to be -5 because status is NULL", rc);
@@ -81,6 +83,7 @@ Ensure(Progress, scan_progress_failures)
 				    "\"id\": null,"
 				    "\"status\": \"unknown\""
 				    "}",
+				    "wanted",
 				    &progress);
 	assert_equal_with_message(rc,
 				  3,
@@ -94,7 +97,6 @@ Ensure(Progress, scan_progress_success)
 	struct EulabeiaScanProgress progress;
 	int rc;
 	char *j;
-	progress.id = "wanted";
 	j = calloc(1, 1024);
 
 #define X(a, b)                                                                \
@@ -109,7 +111,7 @@ Ensure(Progress, scan_progress_success)
 		 "\"status\": \"%s\""                                          \
 		 "}",                                                          \
 		 (#b));                                                        \
-	rc = eulabeia_scan_progress(j, &progress);                             \
+	rc = eulabeia_scan_progress(j, "wanted", &progress);                   \
 	assert_equal_with_message(                                             \
 	    rc, 0, "expected [%d] to be 0 on %s", rc, j);                      \
 	assert_equal_with_message(progress.status,                             \
@@ -130,7 +132,7 @@ Ensure(Progress, scan_progress_success)
 		 "\"error\": \"%s\""
 		 "}",
 		 "scan id not found");
-	rc = eulabeia_scan_progress(j, &progress);
+	rc = eulabeia_scan_progress(j, "wanted", &progress);
 	assert_equal_with_message(
 	    progress.status,
 	    EULABEIA_SCAN_RESULT_FAILED,
