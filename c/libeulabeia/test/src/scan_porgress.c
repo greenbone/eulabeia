@@ -119,7 +119,7 @@ Ensure(Progress, scan_progress_success)
 				  "expected [%d] to be %d",                    \
 				  progress.status,                             \
 				  (a));
-	EULABEIA_SCAN_RESULT_STATES
+	EULABEIA_SCAN_STATES
 #undef X
 	snprintf(j,
 		 1024,
@@ -135,12 +135,12 @@ Ensure(Progress, scan_progress_success)
 	rc = eulabeia_scan_progress(j, "wanted", &progress);
 	assert_equal_with_message(
 	    progress.status,
-	    EULABEIA_SCAN_RESULT_FAILED,
+	    EULABEIA_SCAN_FAILED,
 	    "expected %s (%d) to be %s (%d)",
-	    eulabeia_scan_result_state_to_str(progress.status),
+	    eulabeia_scan_state_to_str(progress.status),
 	    progress.status,
-	    eulabeia_scan_result_state_to_str(EULABEIA_SCAN_RESULT_FAILED),
-	    EULABEIA_SCAN_RESULT_FAILED);
+	    eulabeia_scan_state_to_str(EULABEIA_SCAN_FAILED),
+	    EULABEIA_SCAN_FAILED);
 
 	free(j);
 }

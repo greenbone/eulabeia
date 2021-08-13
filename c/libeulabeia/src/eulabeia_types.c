@@ -5,13 +5,13 @@
 #include <string.h>
 #include <time.h>
 
-char *eulabeia_scan_result_state_to_str(enum eulabeia_scan_result_state srs)
+char *eulabeia_scan_state_to_str(enum eulabeia_scan_state srs)
 {
 	switch (srs) {
 #define X(a, b)                                                                \
 	case a:                                                                \
 		return #b;
-		EULABEIA_SCAN_RESULT_STATES
+		EULABEIA_SCAN_STATES
 #undef X
 	default:
 		return NULL;

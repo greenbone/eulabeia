@@ -114,7 +114,7 @@ int eulabeia_scan_progress(const char *payload,
 			}
 #define X(a, b)                                                                \
 	else if (strcmp(status->status, #b) == 0) { progress->status = a; }
-			EULABEIA_SCAN_RESULT_STATES
+			EULABEIA_SCAN_STATES
 #undef X
 			else
 			{
@@ -128,7 +128,7 @@ int eulabeia_scan_progress(const char *payload,
 			g_warning("scan (%s) failed with: %s",
 				  id,
 				  failure->error ? failure->error : "N/A");
-			progress->status = EULABEIA_SCAN_RESULT_FAILED;
+			progress->status = EULABEIA_SCAN_FAILED;
 		} else {
 			rc = 2;
 		}
@@ -370,10 +370,10 @@ int eulabeia_scan_finished(const struct EulabeiaScanProgress *progress)
 	if (progress == NULL)
 		return 0;
 	switch (progress->status) {
-	case EULABEIA_SCAN_RESULT_STOPPED:
-	case EULABEIA_SCAN_RESULT_INTERRUPTED:
-	case EULABEIA_SCAN_RESULT_FAILED:
-	case EULABEIA_SCAN_RESULT_FINISHED:
+	case EULABEIA_SCAN_STOPPED:
+	case EULABEIA_SCAN_INTERRUPTED:
+	case EULABEIA_SCAN_FAILED:
+	case EULABEIA_SCAN_FINISHED:
 		return 1;
 	default:
 		return 0;

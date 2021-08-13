@@ -104,7 +104,7 @@ int eulabeia_start_scan(const struct EulabeiaClient *eulabeia_client,
  * -1 when either payload, progress or progress->id is NULL,
  * -2 when payload is not valid json, -3 when payload is not a json object,
  * -4 when the payload is not a valid EulabeiaMessage,
- * -5 when the status is not defined in EULABEIA_SCAN_RESULT_STATES.
+ * -5 when the status is not defined in EULABEIA_SCAN_STATES.
  */
 int eulabeia_scan_progress(const char *payload,
 			   const char *id,
@@ -148,7 +148,7 @@ int eulabeia_modify_target(const struct EulabeiaClient *eulabeia_client,
  * -1 when either payload, progress or progress->id is NULL,
  * -2 when payload is not valid json, -3 when payload is not a json object,
  * -4 when the payload is not a valid EulabeiaMessage,
- * -5 when the status is not defined in EULABEIA_SCAN_RESULT_STATES.
+ * -5 when the status is not defined in EULABEIA_SCAN_STATES.
  */
 int eulabeia_crud_progress(const char *payload,
 			   const char *id,
@@ -173,7 +173,7 @@ int eulabeia_crud_progress(const char *payload,
  * -1 when either payload, progress or progress->id is NULL,
  * -2 when payload is not valid json, -3 when payload is not a json object,
  * -4 when the payload is not a valid EulabeiaMessage,
- * -5 when the status is not defined in EULABEIA_SCAN_RESULT_STATES.
+ * -5 when the status is not defined in EULABEIA_SCAN_STATES.
  */
 int eulabeia_modify_progress(const char *payload,
 			   const char *id,
@@ -181,8 +181,8 @@ int eulabeia_modify_progress(const char *payload,
 /*
  * @brief checks progress if the scan is finished.
  *
- * @return when the progress status is EULABEIA_SCAN_RESULT_STOPPED,
- * EULABEIA_SCAN_RESULT_INTERRUPTED or EULABEIA_SCAN_RESULT_FINISHED then it
+ * @return when the progress status is EULABEIA_SCAN_STOPPED,
+ * EULABEIA_SCAN_INTERRUPTED or EULABEIA_SCAN_FINISHED then it
  * returns 1 otherwise 0.
  */
 int eulabeia_scan_finished(const struct EulabeiaScanProgress *progress);

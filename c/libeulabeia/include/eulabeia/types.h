@@ -3,29 +3,29 @@
 /**
  * @brief defines the scan result states.
  *
- * The first parameter is used to generate enum eulabeia_scan_result_state and
+ * The first parameter is used to generate enum eulabeia_scan_state and
  * the second parameter is used to translate from and to the json
  * representation.
  *
  * To add a new state add it here and NOT within enum
- * eulabeia_scan_result_state.
+ * eulabeia_scan_state.
  *
  */
-#define EULABEIA_SCAN_RESULT_STATES                                            \
-	X(EULABEIA_SCAN_RESULT_REQUESTED, requested)                           \
-	X(EULABEIA_SCAN_RESULT_QUEUED, queued)                                 \
-	X(EULABEIA_SCAN_RESULT_INIT, init)                                     \
-	X(EULABEIA_SCAN_RESULT_RUNNING, running)                               \
-	X(EULABEIA_SCAN_RESULT_STOPPING, stopping)                             \
-	X(EULABEIA_SCAN_RESULT_STOPPED, stopped)                               \
-	X(EULABEIA_SCAN_RESULT_INTERRUPTED, interrupted)                       \
-	X(EULABEIA_SCAN_RESULT_FAILED, failed)                                 \
-	X(EULABEIA_SCAN_RESULT_FINISHED, finished)
+#define EULABEIA_SCAN_STATES                                            \
+	X(EULABEIA_SCAN_REQUESTED, requested)                           \
+	X(EULABEIA_SCAN_QUEUED, queued)                                 \
+	X(EULABEIA_SCAN_INIT, init)                                     \
+	X(EULABEIA_SCAN_RUNNING, running)                               \
+	X(EULABEIA_SCAN_STOPPING, stopping)                             \
+	X(EULABEIA_SCAN_STOPPED, stopped)                               \
+	X(EULABEIA_SCAN_INTERRUPTED, interrupted)                       \
+	X(EULABEIA_SCAN_FAILED, failed)                                 \
+	X(EULABEIA_SCAN_FINISHED, finished)
 
-//@brief enum generated of first parameter of EULABEIA_SCAN_RESULT_STATES
-enum eulabeia_scan_result_state {
+//@brief enum generated of first parameter of EULABEIA_SCAN_STATES
+enum eulabeia_scan_state {
 #define X(a, b) a,
-	EULABEIA_SCAN_RESULT_STATES
+	EULABEIA_SCAN_STATES
 #undef X
 };
 
@@ -149,7 +149,7 @@ struct EulabeiaScanResults {
 };
 
 struct EulabeiaScanProgress {
-	enum eulabeia_scan_result_state status;
+	enum eulabeia_scan_state status;
 	struct EulabeiaScanResults *results;
 };
 
@@ -216,16 +216,16 @@ struct EulabeiaScan {
 	struct EulabeiaTarget *target;
 };
 /*
- * @brief translates eulabeia_scan_result_state to an char array.
+ * @brief translates eulabeia_scan_state to an char array.
  *
- * The implementation of eulabeia_scan_result_state_to_str is generated via
- * the second parameter of EULABEIA_SCAN_RESULT_STATES.
+ * The implementation of eulabeia_scan_state_to_str is generated via
+ * the second parameter of EULABEIA_SCAN_STATES.
  *
- * @param[in] srs the eulabeia_scan_result_state to translate
- * @return a char array representation of eulabeia_scan_result_state or NULL
+ * @param[in] srs the eulabeia_scan_state to translate
+ * @return a char array representation of eulabeia_scan_state or NULL
  * when undefined
  */
-char *eulabeia_scan_result_state_to_str(enum eulabeia_scan_result_state srs);
+char *eulabeia_scan_state_to_str(enum eulabeia_scan_state srs);
 
 /*
  * @brief translates eulabeia_message_type to an char array.
@@ -278,7 +278,7 @@ eulabeia_initialize_message(enum eulabeia_message_type message_type,
 			    enum eulabeia_aggregate aggregate,
 			    char *group_id);
 
-char *eulabeia_scan_result_state_to_str(enum eulabeia_scan_result_state srs);
+char *eulabeia_scan_state_to_str(enum eulabeia_scan_state srs);
 
 char *eulabeia_message_type_to_event_type(enum eulabeia_message_type mt);
 
