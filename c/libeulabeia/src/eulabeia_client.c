@@ -159,7 +159,7 @@ typedef int verify_data(void *data);
 // @param[in] em is included to the json to identify the message
 // @param[in] data the business data to be included to the json
 // @return json string on success or NULL on failure
-typedef char *to_json(struct EulabeiaMessage *em, void *data);
+typedef char *to_json(struct EulabeiaMessage *em, void *data, const int modify);
 
 // @brief calulates the topic to send the message into
 //
@@ -208,7 +208,8 @@ int publish_message(const struct EulabeiaClient *ec,
 		    void *data,
 		    const char *destination,
 		    verify_data verifier,
-		    to_json tj)
+		    to_json tj,
+			const int modify)
 {
 	char *json, *topic;
 	int rc;
@@ -222,7 +223,7 @@ int publish_message(const struct EulabeiaClient *ec,
 		goto exit;
 	}
 	message = eulabeia_initialize_message(mt, a, group_id);
-	json = tj(message, data);
+	json = tj(message, data, modify);
 	topic = eulabeia_calulate_topic(
 	    mt, a, EULABEIA_SCANNER_CONTEXT, destination);
 	if (ec->publish(topic, json, ec->context) != 0) {
@@ -273,7 +274,8 @@ int eulabeia_start_scan(const struct EulabeiaClient *eulabeia_client,
 			       (void *)scan,
 			       EULABEIA_DIRECTOR,
 			       (verify_data *)verify_scan_data,
-			       (to_json *)eulabeia_scan_message_to_json);
+			       (to_json *)eulabeia_scan_message_to_json,
+				   0);
 }
 
 int eulabeia_modify_scan(const struct EulabeiaClient *eulabeia_client,
@@ -287,7 +289,8 @@ int eulabeia_modify_scan(const struct EulabeiaClient *eulabeia_client,
 			       (void *)scan,
 			       EULABEIA_DIRECTOR,
 			       (verify_data *)verify_scan_data,
-			       (to_json *)eulabeia_scan_message_to_json);
+			       (to_json *)eulabeia_scan_message_to_json,
+				   1);
 }
 
 int eulabeia_modify_target(const struct EulabeiaClient *eulabeia_client,
@@ -301,7 +304,8 @@ int eulabeia_modify_target(const struct EulabeiaClient *eulabeia_client,
 			       (void *)target,
 			       EULABEIA_DIRECTOR,
 			       (verify_data *)verify_target_data,
-			       (to_json *)eulabeia_target_message_to_json);
+			       (to_json *)eulabeia_target_message_to_json,
+				   1);
 }
 
 int eulabeia_crud_progress(const char *payload,
@@ -374,4 +378,12 @@ int eulabeia_scan_finished(const struct EulabeiaScanProgress *progress)
 	default:
 		return 0;
 	}
+}
+
+int eulabeia_modify_progress(const char *payload,
+			     const char *id,
+			     struct EulabeiaCRUDProgress *progress)
+{
+	return eulabeia_crud_progress(
+	    payload, id, EULABEIA_INFO_MODIFIED, progress);
 }

@@ -159,17 +159,19 @@ int eulabeia_json_ports(JsonArray *arr, struct EulabeiaPorts **ports);
  *
  * @param[in] msg, the EulabeiaMessage to include
  * @param[in] scan, the scan to transform to json string.
+ * @param[in] modify, 0 for not a modify message and 1 for it is a modify message
  * @return a json char array or NULL on failure.
  */
 char *eulabeia_scan_message_to_json(const struct EulabeiaMessage *msg,
-				    const struct EulabeiaScan *scan);
+				    const struct EulabeiaScan *scan, const int modify);
 /*
  * @brief transforms EulabeiaTarget to json string.
  *
  * @param[in] msg, the EulabeiaMessage to include
  * @param[in] target, the target to transform to json string.
+ * @param[in] modify, 0 for not a modify message and 1 for it is a modify message
  * @return a json char array or NULL on failure.
  */
 char *eulabeia_target_message_to_json(const struct EulabeiaMessage *msg,
-				      const struct EulabeiaTarget *target);
+				      const struct EulabeiaTarget *target, const int modify);
 #endif

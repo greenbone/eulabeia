@@ -210,6 +210,7 @@ struct EulabeiaTarget {
 
 struct EulabeiaScan {
 	char *id;
+	char *target_id; // set only target_id or target not both.
 	struct EulabeiaHosts *finished;
 	int temporary;
 	struct EulabeiaTarget *target;

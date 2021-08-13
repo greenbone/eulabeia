@@ -86,8 +86,7 @@ int eulabeia_json_id_message(JsonObject *obj,
 	if (eulabeia_message_to_message_type(msg) != type)
 		return -2;
 
-	if (!(json_object_has_member(obj, "id") &&
-	      json_object_has_member(obj, "error"))) {
+	if (!json_object_has_member(obj, "id")) {
 
 		return -3;
 	}
@@ -273,11 +272,16 @@ void builder_add_hosts(JsonBuilder *builder, const struct EulabeiaHosts *hosts)
 // expects a builder with an open object, internal use
 void builder_add_target(JsonBuilder *builder,
 			const struct EulabeiaTarget *target,
-			const int ignore_id)
+			const int ignore_id, 
+			const int modify)
 {
 	if (target->id) {
 		json_builder_set_member_name(builder, "id");
 		json_builder_add_string_value(builder, target->id);
+	}
+	if (modify){
+		json_builder_set_member_name(builder, "values");
+		json_builder_begin_object(builder);
 	}
 	if (target->sensor) {
 		json_builder_set_member_name(builder, "sensor");
@@ -307,20 +311,35 @@ void builder_add_target(JsonBuilder *builder,
 		json_builder_set_member_name(builder, "exclude");
 		builder_add_hosts(builder, target->exclude);
 	}
+	if (modify){
+		json_builder_end_object(builder);
+	}
 }
 
-void builder_add_scan(JsonBuilder *builder, const struct EulabeiaScan *scan)
+void builder_add_scan(JsonBuilder *builder, const struct EulabeiaScan *scan, const int modify)
 {
-	json_builder_set_member_name(builder, "temporary");
-	json_builder_add_boolean_value(builder, scan->temporary);
 	if (scan->id) {
 		json_builder_set_member_name(builder, "id");
 		json_builder_add_string_value(builder, scan->id);
 	}
+	if (modify){
+		json_builder_set_member_name(builder, "values");
+		json_builder_begin_object(builder);
+	}
+	json_builder_set_member_name(builder, "temporary");
+	json_builder_add_boolean_value(builder, scan->temporary);
+	if (scan->target_id) {
+		json_builder_set_member_name(builder, "target_id");
+		json_builder_add_string_value(builder, scan->target_id);
+	}
 	if (scan->target) {
 		// if there is a target-id it will override the scan id due to
 		// flat json design. Therefore we ignore the target id.
-		builder_add_target(builder, scan->target, 1);
+		builder_add_target(builder, scan->target, 1, 0);
+	}
+	if (modify) {
+		json_builder_end_object(builder);
+
 	}
 }
 
@@ -352,7 +371,7 @@ char *json_builder_to_str(JsonBuilder *builder)
 }
 
 char *eulabeia_scan_message_to_json(const struct EulabeiaMessage *msg,
-				    const struct EulabeiaScan *scan)
+				    const struct EulabeiaScan *scan, const int modify)
 {
 	JsonBuilder *b;
 	char *json_str;
@@ -360,7 +379,7 @@ char *eulabeia_scan_message_to_json(const struct EulabeiaMessage *msg,
 
 	json_builder_begin_object(b);
 	builder_add_message(b, msg);
-	builder_add_scan(b, scan);
+	builder_add_scan(b, scan, modify);
 	json_builder_end_object(b);
 
 	json_str = json_builder_to_str(b);
@@ -369,7 +388,7 @@ char *eulabeia_scan_message_to_json(const struct EulabeiaMessage *msg,
 }
 
 char *eulabeia_target_message_to_json(const struct EulabeiaMessage *msg,
-				      const struct EulabeiaTarget *target)
+				      const struct EulabeiaTarget *target, const int modify)
 {
 	JsonBuilder *b;
 	char *json_str;
@@ -377,7 +396,7 @@ char *eulabeia_target_message_to_json(const struct EulabeiaMessage *msg,
 
 	json_builder_begin_object(b);
 	builder_add_message(b, msg);
-	builder_add_target(b, target, 0);
+	builder_add_target(b, target, 0, modify);
 	json_builder_end_object(b);
 
 	json_str = json_builder_to_str(b);
