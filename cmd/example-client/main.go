@@ -145,7 +145,7 @@ func MegaScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
 						},
 					},
 					Group: map[string]string{
-						"family": "foobar",
+						"family": "my test family",
 					},
 				},
 				Exclude:  []string{"exclude1"},

@@ -39,10 +39,10 @@ stop-director:
 start-sensor:
 	docker volume create eulabeia_redis_socket
 	docker volume create eulabeia_feed
-	docker pull greenbone/community-feed-vts:latest
 	docker run -d --rm -v eulabeia_redis_socket:/run/redis --name eulabeia_redis $(REPOSITORY)/eulabeia-redis
-	docker run -d --rm -v eulabeia_feed:/opt/$(REPOSITORY)/feed/plugins greenbone/community-feed-vts:latest echo ""
 	$(MQTT_CONTAINER) -d -v eulabeia_feed:/var/lib/openvas/feed/plugins -v eulabeia_redis_socket:/run/redis --name eulabeia_sensor $(REPOSITORY)/eulabeia-sensor
+	docker cp test.nasl eulabeia_sensor:/var/lib/openvas/feed/plugins/test.nasl
+	docker cp plugin_feed_info.inc eulabeia_sensor:/var/lib/openvas/feed/plugins/plugin_feed_info.inc
 
 stop-sensor:
 	docker stop eulabeia_sensor
