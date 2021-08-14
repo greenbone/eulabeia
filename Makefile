@@ -1,5 +1,5 @@
 GO_BUILD = CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
-DOCKER_BUILD = docker build --force-rm=true --compress=true
+DOCKER_BUILD = docker build --no-cache --force-rm=true --compress=true
 BROKER_IP = $(or $(shell docker container inspect -f '{{ .NetworkSettings.IPAddress }}' eulabeia_broker), $(echo ""))
 MQTT_CONTAINER = docker run -e "MQTT_SERVER=$(call BROKER_IP):9138" --rm
 
@@ -48,6 +48,10 @@ start-sensor:
 	$(MQTT_CONTAINER) -d -v eulabeia_feed:/var/lib/openvas/feed/plugins -v eulabeia_redis_socket:/run/redis --name eulabeia_sensor $(REPOSITORY)/eulabeia-sensor
 	docker cp test.nasl eulabeia_sensor:/var/lib/openvas/feed/plugins/test.nasl
 	docker cp plugin_feed_info.inc eulabeia_sensor:/var/lib/openvas/feed/plugins/plugin_feed_info.inc
+	docker exec eulabeia_sensor chmod 777 /var/lib/openvas/feed/plugins/plugin_feed_info.inc
+	docker exec eulabeia_sensor mkdir -p /etc/openvas
+	docker exec eulabeia_sensor bash -c 'echo "mqtt_server_uri = $(BROKER_IP):9138" >> /etc/openvas/openvas.conf'
+	docker exec eulabeia_sensor openvas -u
 
 stop-sensor:
 	docker stop eulabeia_sensor
