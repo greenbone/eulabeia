@@ -39,13 +39,13 @@ static struct EulabeiaScan *create_mega_scan()
 	t_plugins->cap = 1;
 	t_plugins->len = 1;
 	t_plugins->plugins = calloc(1, sizeof(struct EulabeiaPlugins));
-	t_plugins->plugins[0].oid = "";
+	t_plugins->plugins[0].oid = "1.3.6.1.4.1.25623.1.0.90022";
 	target->plugins = t_plugins;
 	t_ports = calloc(1, sizeof(struct EulabeiaPorts));
 	t_ports->cap = 1;
 	t_ports->len = 1;
 	t_ports->ports = calloc(1, sizeof(struct EulabeiaPorts));
-	t_ports->ports[0].port = "tcp://22";
+	t_ports->ports[0].port = "22";
 	target->ports = t_ports;
 	scan->target = target;
 	return scan;
@@ -108,6 +108,7 @@ int main()
 				       msp.status,
 				       payload);
 			} else {
+				printf("payload:\n%s\n", payload);
 				rc = 0;
 			}
 		} else {

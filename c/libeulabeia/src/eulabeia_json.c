@@ -237,16 +237,21 @@ int eulabeia_json_ports(JsonArray *arr, struct EulabeiaPorts **ports)
 
 	return 0;
 }
-
 void builder_add_plugins(JsonBuilder *builder,
 			 const struct EulabeiaPlugins *plugins)
 {
 	int i;
+	json_builder_begin_object(builder);
+	json_builder_set_member_name(builder, "single_vts");
 	json_builder_begin_array(builder);
 	for (i = 0; i < plugins->len; i++) {
+		json_builder_begin_object(builder);
+		json_builder_set_member_name(builder, "oid");
 		json_builder_add_string_value(builder, plugins->plugins[i].oid);
+		json_builder_end_object(builder);
 	}
 	json_builder_end_array(builder);
+	json_builder_end_object(builder);
 }
 
 void builder_add_ports(JsonBuilder *builder, const struct EulabeiaPorts *ports)

@@ -170,7 +170,7 @@ func VerifyForScanStatus(i info.IDInfo, b []byte) *connection.SendResponse {
 		if json.Unmarshal(b, &status) != nil {
 			log.Panicf("Unable to parse: %s", string(b))
 		}
-		if status.Status == "init" {
+		if status.Status == "finished" {
 			return nil
 		}
 	}
