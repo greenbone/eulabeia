@@ -99,7 +99,6 @@ int eulabeia_json_id_message(JsonObject *obj,
 			     struct EulabeiaMessage *msg,
 			     struct EulabeiaIDMessage **idmessage)
 {
-	int rc;
 	if (msg == NULL || msg->type == NULL)
 		return -1;
 	if (eulabeia_message_to_message_type(msg) != type)
@@ -121,11 +120,60 @@ int eulabeia_json_id_message(JsonObject *obj,
 		return -5;
 	return 0;
 }
+int eulabeia_json_scan_result(JsonObject *obj,
+			      struct EulabeiaMessage *msg,
+			      struct EulabeiaScanResult **scan_result)
+{
+	if (msg == NULL || msg->type == NULL)
+		return -1;
+	if (eulabeia_message_to_message_type(msg) != EULABEIA_INFO_SCAN_RESULT)
+		return -2;
+	if (!(json_object_has_member(obj, "oid") &&
+	      json_object_has_member(obj, "host_ip") &&
+	      json_object_has_member(obj, "host_name") &&
+	      json_object_has_member(obj, "port") &&
+	      json_object_has_member(obj, "value") &&
+	      json_object_has_member(obj, "uri") &&
+	      json_object_has_member(obj, "result_type"))) {
+		return -3;
+	}
+	if (*scan_result == NULL &&
+	    (*scan_result = calloc(1, sizeof(struct EulabeiaScanResult))) ==
+		NULL)
+		return -4;
+
+	(*scan_result)->message = msg;
+	if (json_object_get_and_assign_string(obj, "id", &(*scan_result)->id) !=
+	    0)
+		return -5;
+	if (json_object_get_and_assign_string(
+		obj, "oid", &(*scan_result)->oid) != 0)
+		return -6;
+	if (json_object_get_and_assign_string(
+		obj, "result_type", &(*scan_result)->result_type) < 0)
+		return -7;
+	if (json_object_get_and_assign_string(
+		obj, "host_ip", &(*scan_result)->host_ip) < 0)
+		return -8;
+	if (json_object_get_and_assign_string(
+		obj, "host_name", &(*scan_result)->host_name) < 0)
+		return -9;
+	if (json_object_get_and_assign_string(
+		obj, "port", &(*scan_result)->port) < 0)
+		return -10;
+	if (json_object_get_and_assign_string(
+		obj, "value", &(*scan_result)->value) < 0)
+		return -11;
+	if (json_object_get_and_assign_string(
+		obj, "uri", &(*scan_result)->uri) < 0)
+		return -12;
+
+	return 0;
+}
 int eulabeia_json_status(JsonObject *obj,
 			 struct EulabeiaMessage *msg,
 			 struct EulabeiaStatus **status)
 {
-	int rc;
 	if (msg == NULL || msg->type == NULL)
 		return -1;
 	if (eulabeia_message_to_message_type(msg) != EULABEIA_INFO_STATUS)
@@ -257,6 +305,28 @@ void builder_add_hosts(JsonBuilder *builder, const struct EulabeiaHosts *hosts)
 	json_builder_end_array(builder);
 }
 
+void builder_add_result(JsonBuilder *builder,
+			const struct EulabeiaScanResult *result)
+{
+	json_builder_set_member_name(builder, "result_type");
+	json_builder_add_string_value(builder, result->result_type);
+	json_builder_set_member_name(builder, "host_ip");
+	json_builder_add_string_value(builder, result->host_ip);
+	json_builder_set_member_name(builder, "host_name");
+	json_builder_add_string_value(builder, result->host_name);
+	json_builder_set_member_name(builder, "port");
+	json_builder_add_string_value(builder, result->port);
+	json_builder_set_member_name(builder, "id");
+	json_builder_add_string_value(builder, result->id);
+	json_builder_set_member_name(builder, "oid");
+	json_builder_add_string_value(builder, result->oid);
+	json_builder_set_member_name(builder, "value");
+	json_builder_add_string_value(builder, result->value);
+	json_builder_set_member_name(builder, "uri");
+	json_builder_add_string_value(builder, result->uri);
+}
+
+
 // expects a builder with an open object, internal use
 void builder_add_target(JsonBuilder *builder,
 			const struct EulabeiaTarget *target,
@@ -387,6 +457,23 @@ char *eulabeia_target_message_to_json(const struct EulabeiaMessage *msg,
 	json_builder_begin_object(b);
 	builder_add_message(b, msg);
 	builder_add_target(b, target, modify);
+	json_builder_end_object(b);
+
+	json_str = json_builder_to_str(b);
+	g_object_unref(b);
+	return json_str;
+}
+char *
+eulabeia_scan_result_message_to_json(const struct EulabeiaMessage *msg,
+				     const struct EulabeiaScanResult *result)
+{
+	JsonBuilder *b;
+	char *json_str;
+	b = json_builder_new();
+
+	json_builder_begin_object(b);
+	builder_add_message(b, msg);
+	builder_add_result(b, result);
 	json_builder_end_object(b);
 
 	json_str = json_builder_to_str(b);

@@ -17,7 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "eulabeia/types.h"
 #include <cgreen/cgreen.h>
+#include <cgreen/internal/assertions_internal.h>
+#include <cgreen/legacy.h>
 #include <cgreen/mocks.h>
 #include <cgreen/unit.h>
 
@@ -44,8 +47,8 @@ static const gchar *g_json_str = "{\
 \"hosts\":" HOSTS ",\
 \"message_id\":\"" MESSAGE_ID "\",\
 \"message_type\":\"" MESSAGE_TYPE "\",\
-\"created\":" MESSAGE_CREATED ",\
-\"group_id\":\"" MESSAGE_GROUP_ID "\"\
+\"group_id\":\"" MESSAGE_GROUP_ID "\",\
+\"created\":" MESSAGE_CREATED "\
 }";
 
 #define ERROR_MESSAGE_TYPE "failure.modify.target"
@@ -69,6 +72,20 @@ static const gchar *g_json_plugins_str = "{\
 static const gchar *g_json_ports_str = "{\
 \"ports\": " PORTS "\
 }";
+
+#define RESULT                                                                 \
+	"{\"message_id\":\"fa022daa-1d78-4d02-80b5-83af3086d7d0\","            \
+	"\"message_type\":\"result.scan\","                                    \
+	"\"group_id\":\"e069f31d-7047-4afb-b31a-65c821c98bad\","               \
+	"\"created\":0,"                                                       \
+	"\"id\":\"classic_scan_1\","                                           \
+	"\"result_type\":\"LOG\","                                             \
+	"\"host_ip\":\"127.0.0.1\","                                           \
+	"\"host_name\":\"localhost\","                                         \
+	"\"port\":\"general/tcp\","                                            \
+	"\"oid\":\"1.3.6.1.4.1.25623.1.0.90022\","                             \
+	"\"value\":\"this is a log message\n\","                               \
+	"\"uri\":\"\"}"
 
 #if defined(HAVE_NUMA) && defined(CGREEN_NO_FORK)
 /* Track total size of allocated mem */
@@ -184,11 +201,10 @@ void ensure_alloc_equal_free(const char *call_func)
 
 Ensure(Eulabeia_json, create_object_success)
 {
-	int err;
 	JsonNode *j_node = NULL;
 	JsonObject *j_obj;
 
-	assert_equal(err = eulabeia_json_object(g_json_str, &j_node, &j_obj),
+	assert_equal(eulabeia_json_object(g_json_str, &j_node, &j_obj),
 		     0);
 	assert_not_equal(j_node, NULL);
 	assert_not_equal(j_obj, NULL);

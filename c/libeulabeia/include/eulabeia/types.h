@@ -93,6 +93,7 @@ enum eulabeia_crud_state {
 	X(EULABEIA_CMD_MODIFY, modify, cmd)                                    \
 	X(EULABEIA_INFO_MODIFIED, modified, info)                              \
 	X(EULABEIA_INFO_STATUS, status, info)                                  \
+	X(EULABEIA_INFO_SCAN_RESULT, result, info)                                  \
 	X(EULABEIA_INFO_FAILURE, failure, info)
 
 //@brief enum generated of first parameter of EULABEIA_MESSAGE_TYPES
@@ -156,9 +157,15 @@ struct EulabeiaIDMessage {
 };
 
 struct EulabeiaScanResult {
-	char *oid;
+	struct EulabeiaMessage *message;
+	char *result_type; // TODO enum
+	char *host_ip;
+	char *host_name;
 	char *port;
-	char *ip;
+	char *id;
+	char *oid;
+	char *value;
+	char *uri;
 };
 
 struct EulabeiaScanResults {
@@ -285,24 +292,102 @@ eulabeia_message_to_message_type(const struct EulabeiaMessage *message);
  * @param[out] msg, the EulabeiaMessage to be freed. Sets *msg to NULL.
  */
 void eulabeia_message_destroy(struct EulabeiaMessage **msg);
+/*
+ * @brief destroyes an EulabeiaFailure
+ *
+ * @param[out] failure, the EulabeiaFailure to be freed. Sets *failure to NULL.
+ */
 void eulabeia_failure_destroy(struct EulabeiaFailure **failure);
+/*
+ * @brief destroyes an EulabeiaStatus
+ *
+ * @param[out] status, the EulabeiaStatus to be freed. Sets *status to NULL.
+ */
 void eulabeia_status_destroy(struct EulabeiaStatus **status);
+/*
+ * @brief destroyes an EulabeiaHosts
+ *
+ * @param[out] hosts, the EulabeiaHosts to be freed. Sets *hosts to NULL.
+ */
 void eulabeia_hosts_destroy(struct EulabeiaHosts **hosts);
+/*
+ * @brief destroyes an EulabeiaPlugins
+ *
+ * @param[out] plugins, the EulabeiaPlugins to be freed. Sets *plugins to NULL.
+ */
 void eulabeia_plugins_destroy(struct EulabeiaPlugins **plugins);
+/*
+ * @brief destroyes an EulabeiaPorts
+ *
+ * @param[out] ports, the EulabeiaPorts to be freed. Sets *ports to NULL.
+ */
 void eulabeia_ports_destroy(struct EulabeiaPorts **ports);
+/*
+ * @brief destroyes an EulabeiaScanResult
+ *
+ * @param[out] scan_result, the EulabeiaScanResult to be freed. Sets *scan_result to NULL.
+ */
+void eulabeia_scan_result_destroy(struct EulabeiaScanResult **scan_result);
+/*
+ * @brief builds an message_type char array based on message_type and aggregate
+ *
+ * @param[in] message_type the eulabeia_message_type
+ * @param[in] aggregata the eulabeia_aggregate
+ *
+ * @return a char array according to the definition of a message_type
+ * (message_type.aggregate)
+ */
 char *eulabeia_message_type(enum eulabeia_message_type message_type,
 			    enum eulabeia_aggregate aggregate);
+
+/*
+ * @brief initializes a valud EulabeiaMessage based on message_type, aggregate
+ * and may group_id
+ *
+ * @param[in] message_type the eulabeia_message_type
+ * @param[in] aggregata the eulabeia_aggregate
+ * @param[in] group_id on NULL a new uuid as group_id will be set otherwise the
+ * message will contain the given group_id
+ * @return an EulabeiaMessage or NULL on failure.
+ */
 struct EulabeiaMessage *
 eulabeia_initialize_message(enum eulabeia_message_type message_type,
 			    enum eulabeia_aggregate aggregate,
 			    char *group_id);
 
+/*
+ * @brief translate given eulabeia_scan_state to a char representation
+ *
+ * @param[in] scan_state to translate
+ * @return char array representation of given scan_state
+ */
 char *eulabeia_scan_state_to_str(enum eulabeia_scan_state srs);
 
+/*
+ * @brief translate given eulabeia_scan_state to a event type char array.
+ *
+ * The event type is used to calculate topic based on if given message_type is
+ * an info or cmd event.
+ *
+ * @param[in] scan_state to translate
+ * @return char array representation of the event type (cmd or info)
+ */
 char *eulabeia_message_type_to_event_type(enum eulabeia_message_type mt);
 
+/*
+ * @brief translate given eulabeia_message_type to a char representation
+ *
+ * @param[in] message_type to translate
+ * @return char array representation of given message_type
+ */
 char *eulabeia_message_type_to_str(enum eulabeia_message_type mt);
 
+/*
+ * @brief translate given eulabeia_aggregate to a char representation
+ *
+ * @param[in] aggregate to translate
+ * @return char array representation of given aggregate
+ */
 char *eulabeia_aggregate_to_str(enum eulabeia_aggregate a);
 
 #endif

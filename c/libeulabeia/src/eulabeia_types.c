@@ -182,6 +182,34 @@ void eulabeia_ports_destroy(struct EulabeiaPorts **ports)
 	*ports = NULL;
 }
 
+void eulabeia_scan_result_destroy(struct EulabeiaScanResult **scan_result)
+{
+	if (scan_result == NULL || *scan_result == NULL)
+		return;
+
+	if ((*scan_result)->message)
+		eulabeia_message_destroy(&(*scan_result)->message);
+	if ((*scan_result)->result_type)
+		free((*scan_result)->result_type);
+	if ((*scan_result)->host_ip)
+		free((*scan_result)->host_ip);
+	if ((*scan_result)->host_name)
+		free((*scan_result)->host_name);
+	if ((*scan_result)->oid)
+		free((*scan_result)->oid);
+	if ((*scan_result)->id)
+		free((*scan_result)->id);
+	if ((*scan_result)->uri)
+		free((*scan_result)->uri);
+	if ((*scan_result)->value)
+		free((*scan_result)->value);
+	if ((*scan_result)->port)
+		free((*scan_result)->port);
+
+	free(*scan_result);
+	*scan_result = NULL;
+}
+
 char *eulabeia_message_type(enum eulabeia_message_type message_type,
 			    enum eulabeia_aggregate aggregate)
 {

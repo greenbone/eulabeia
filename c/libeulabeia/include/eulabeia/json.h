@@ -196,4 +196,37 @@ char *eulabeia_scan_message_to_json(const struct EulabeiaMessage *msg,
 char *eulabeia_target_message_to_json(const struct EulabeiaMessage *msg,
 				      const struct EulabeiaTarget *target,
 				      const int modify);
+
+/*
+ * @brief parses already initialized JsonObject to EulabeiaScanResult
+ *
+ * This function expects an already initialized JsonObject. To initialize one
+ * you can call eulabeia_json_jsonobject.
+ *
+ * @param[in] obj, the JsonObject to be parsed
+ * @param[in] msg, the EulabeiaMessage to be included within scan_result
+ * @param[out] scan_result, the EulabeiaScanResult this function will allocate
+ * the memory. The caller is responsible for cleaning.
+ *
+ * @return 0 on success,
+ *  -1 on invalid JsonObject
+ *  -2 on port allocation failure
+ *  -3,-4 on setting value failure
+ */
+int eulabeia_json_scan_result(JsonObject *obj,
+			  struct EulabeiaMessage *msg,
+			       struct EulabeiaScanResult **scan_result);
+
+/*
+ * @brief transforms EulabeiaScanResult to json string.
+ *
+ * @param[in] msg, the EulabeiaMessage to include
+ * @param[in] scan_result, the scan_result to transform to json string.
+ * @param[in] modify, 0 for not a modify message and 1 for it is a modify
+ * message
+ * @return a json char array or NULL on failure.
+ */
+char *
+eulabeia_scan_result_message_to_json(const struct EulabeiaMessage *msg,
+				     const struct EulabeiaScanResult *result);
 #endif
