@@ -1,3 +1,22 @@
+/* Copyright (C) 2021 Greenbone Networks GmbH
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
 #include "eulabeia/types.h"
 #include <eulabeia/client.h>
 
@@ -135,7 +154,7 @@ int eulabeia_json_hosts(JsonArray *arr, struct EulabeiaHosts **hosts)
 {
 	struct EulabeiaHost *h;
 	const char *a;
-	unsigned int arr_len, a_len;
+	unsigned int arr_len;
 	if (*hosts == NULL) {
 		*hosts = calloc(1, sizeof(struct EulabeiaHosts));
 	}
@@ -146,21 +165,9 @@ int eulabeia_json_hosts(JsonArray *arr, struct EulabeiaHosts **hosts)
 	}
 	(*hosts)->cap = arr_len;
 	(*hosts)->len = arr_len;
-	for (; arr_len > 0; --arr_len) {
-		if ((h = calloc(1, sizeof(struct EulabeiaHost))) == NULL) {
-			return -2;
-		}
-		a = json_array_get_string_element(arr, arr_len);
-		a_len = strlen(a);
-		if ((h->address = calloc(1, a_len)) == NULL) {
-			return -3;
-		}
-		if (strncpy(h->address, a, a_len) == NULL) {
-			return -4;
-		}
-		h->address = (char *)a;
-		(*hosts)->hosts[arr_len] = *h;
-		free(h);
+	for (int index = 0; index < arr_len; index++) {
+		a = json_array_get_string_element(arr, index);
+		(*hosts)->hosts[index].address = g_strdup(a);
 	}
 
 	return 0;
@@ -172,7 +179,7 @@ int eulabeia_json_plugins(JsonArray *arr, struct EulabeiaPlugins **plugins)
 {
 	struct EulabeiaPlugin *h;
 	const char *a;
-	unsigned int arr_len, a_len;
+	unsigned int arr_len;
 	if (*plugins == NULL) {
 		*plugins = calloc(1, sizeof(struct EulabeiaPlugins));
 	}
@@ -183,21 +190,9 @@ int eulabeia_json_plugins(JsonArray *arr, struct EulabeiaPlugins **plugins)
 	}
 	(*plugins)->cap = arr_len;
 	(*plugins)->len = arr_len;
-	for (; arr_len > 0; --arr_len) {
-		if ((h = calloc(1, sizeof(struct EulabeiaPlugin))) == NULL) {
-			return -2;
-		}
-		a = json_array_get_string_element(arr, arr_len);
-		a_len = strlen(a);
-		if ((h->oid = calloc(1, a_len)) == NULL) {
-			return -3;
-		}
-		if (strncpy(h->oid, a, a_len) == NULL) {
-			return -4;
-		}
-		h->oid = (char *)a;
-		(*plugins)->plugins[arr_len] = *h;
-		free(h);
+	for (int index = 0; index < arr_len; index++) {
+		a = json_array_get_string_element(arr, index);
+		(*plugins)->plugins[index].oid = g_strdup(a);
 	}
 
 	return 0;
@@ -207,7 +202,7 @@ int eulabeia_json_ports(JsonArray *arr, struct EulabeiaPorts **ports)
 {
 	struct EulabeiaPort *h;
 	const char *a;
-	unsigned int arr_len, a_len;
+	unsigned int arr_len;
 	if (*ports == NULL) {
 		*ports = calloc(1, sizeof(struct EulabeiaPorts));
 	}
@@ -218,21 +213,9 @@ int eulabeia_json_ports(JsonArray *arr, struct EulabeiaPorts **ports)
 	}
 	(*ports)->cap = arr_len;
 	(*ports)->len = arr_len;
-	for (; arr_len > 0; --arr_len) {
-		if ((h = calloc(1, sizeof(struct EulabeiaPort))) == NULL) {
-			return -2;
-		}
-		a = json_array_get_string_element(arr, arr_len);
-		a_len = strlen(a);
-		if ((h->port = calloc(1, a_len)) == NULL) {
-			return -3;
-		}
-		if (strncpy(h->port, a, a_len) == NULL) {
-			return -4;
-		}
-		h->port = (char *)a;
-		(*ports)->ports[arr_len] = *h;
-		free(h);
+	for (int index = 0; index < arr_len; index++) {
+		a = json_array_get_string_element(arr, index);
+		(*ports)->ports[index].port = g_strdup(a);
 	}
 
 	return 0;
@@ -283,7 +266,7 @@ void builder_add_target(JsonBuilder *builder,
 		json_builder_set_member_name(builder, "id");
 		json_builder_add_string_value(builder, target->id);
 	}
-	if (modify){
+	if (modify) {
 		json_builder_set_member_name(builder, "values");
 		json_builder_begin_object(builder);
 	}
@@ -315,18 +298,20 @@ void builder_add_target(JsonBuilder *builder,
 		json_builder_set_member_name(builder, "exclude");
 		builder_add_hosts(builder, target->exclude);
 	}
-	if (modify){
+	if (modify) {
 		json_builder_end_object(builder);
 	}
 }
 
-void builder_add_scan(JsonBuilder *builder, const struct EulabeiaScan *scan, const int modify)
+void builder_add_scan(JsonBuilder *builder,
+		      const struct EulabeiaScan *scan,
+		      const int modify)
 {
 	if (scan->id) {
 		json_builder_set_member_name(builder, "id");
 		json_builder_add_string_value(builder, scan->id);
 	}
-	if (modify){
+	if (modify) {
 		json_builder_set_member_name(builder, "values");
 		json_builder_begin_object(builder);
 	}
@@ -343,7 +328,6 @@ void builder_add_scan(JsonBuilder *builder, const struct EulabeiaScan *scan, con
 	}
 	if (modify) {
 		json_builder_end_object(builder);
-
 	}
 }
 
@@ -375,7 +359,8 @@ char *json_builder_to_str(JsonBuilder *builder)
 }
 
 char *eulabeia_scan_message_to_json(const struct EulabeiaMessage *msg,
-				    const struct EulabeiaScan *scan, const int modify)
+				    const struct EulabeiaScan *scan,
+				    const int modify)
 {
 	JsonBuilder *b;
 	char *json_str;
@@ -392,7 +377,8 @@ char *eulabeia_scan_message_to_json(const struct EulabeiaMessage *msg,
 }
 
 char *eulabeia_target_message_to_json(const struct EulabeiaMessage *msg,
-				      const struct EulabeiaTarget *target, const int modify)
+				      const struct EulabeiaTarget *target,
+				      const int modify)
 {
 	JsonBuilder *b;
 	char *json_str;

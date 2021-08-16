@@ -1,3 +1,22 @@
+/* Copyright (C) 2021 Greenbone Networks GmbH
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
 #ifndef __EULABEIA_JSON_H
 #define __EULABEIA_JSON_H
 #include <eulabeia/types.h>
@@ -46,7 +65,6 @@ int eulabeia_json_message(JsonObject *obj, struct EulabeiaMessage **msg);
  * @param[out] failure, the EulabeiaFailure this function will allocate the
  * memory. The caller is responsible for cleaning.
  *
- * @return 0 on success,
  * @return 0 on success,
  *  -1 on msg is NULL
  *  -2 on msg type is incorrect
@@ -159,19 +177,23 @@ int eulabeia_json_ports(JsonArray *arr, struct EulabeiaPorts **ports);
  *
  * @param[in] msg, the EulabeiaMessage to include
  * @param[in] scan, the scan to transform to json string.
- * @param[in] modify, 0 for not a modify message and 1 for it is a modify message
+ * @param[in] modify, 0 for not a modify message and 1 for it is a modify
+ * message
  * @return a json char array or NULL on failure.
  */
 char *eulabeia_scan_message_to_json(const struct EulabeiaMessage *msg,
-				    const struct EulabeiaScan *scan, const int modify);
+				    const struct EulabeiaScan *scan,
+				    const int modify);
 /*
  * @brief transforms EulabeiaTarget to json string.
  *
  * @param[in] msg, the EulabeiaMessage to include
  * @param[in] target, the target to transform to json string.
- * @param[in] modify, 0 for not a modify message and 1 for it is a modify message
+ * @param[in] modify, 0 for not a modify message and 1 for it is a modify
+ * message
  * @return a json char array or NULL on failure.
  */
 char *eulabeia_target_message_to_json(const struct EulabeiaMessage *msg,
-				      const struct EulabeiaTarget *target, const int modify);
+				      const struct EulabeiaTarget *target,
+				      const int modify);
 #endif

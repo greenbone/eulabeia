@@ -1,3 +1,22 @@
+/* Copyright (C) 2021 Greenbone Networks GmbH
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
 #ifndef _EULABEIA_CLIENT_H
 #define _EULABEIA_CLIENT_H
 #include <eulabeia/types.h>
@@ -176,8 +195,8 @@ int eulabeia_crud_progress(const char *payload,
  * -5 when the status is not defined in EULABEIA_SCAN_STATES.
  */
 int eulabeia_modify_progress(const char *payload,
-			   const char *id,
-			   struct EulabeiaCRUDProgress *progress);
+			     const char *id,
+			     struct EulabeiaCRUDProgress *progress);
 /*
  * @brief checks progress if the scan is finished.
  *

@@ -1,3 +1,22 @@
+/* Copyright (C) 2021 Greenbone Networks GmbH
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
 #ifndef __EULABEIA_DATA_H
 #define __EULABEIA_DATA_H
 /**
@@ -11,15 +30,15 @@
  * eulabeia_scan_state.
  *
  */
-#define EULABEIA_SCAN_STATES                                            \
-	X(EULABEIA_SCAN_REQUESTED, requested)                           \
-	X(EULABEIA_SCAN_QUEUED, queued)                                 \
-	X(EULABEIA_SCAN_INIT, init)                                     \
-	X(EULABEIA_SCAN_RUNNING, running)                               \
-	X(EULABEIA_SCAN_STOPPING, stopping)                             \
-	X(EULABEIA_SCAN_STOPPED, stopped)                               \
-	X(EULABEIA_SCAN_INTERRUPTED, interrupted)                       \
-	X(EULABEIA_SCAN_FAILED, failed)                                 \
+#define EULABEIA_SCAN_STATES                                                   \
+	X(EULABEIA_SCAN_REQUESTED, requested)                                  \
+	X(EULABEIA_SCAN_QUEUED, queued)                                        \
+	X(EULABEIA_SCAN_INIT, init)                                            \
+	X(EULABEIA_SCAN_RUNNING, running)                                      \
+	X(EULABEIA_SCAN_STOPPING, stopping)                                    \
+	X(EULABEIA_SCAN_STOPPED, stopped)                                      \
+	X(EULABEIA_SCAN_INTERRUPTED, interrupted)                              \
+	X(EULABEIA_SCAN_FAILED, failed)                                        \
 	X(EULABEIA_SCAN_FINISHED, finished)
 
 //@brief enum generated of first parameter of EULABEIA_SCAN_STATES
