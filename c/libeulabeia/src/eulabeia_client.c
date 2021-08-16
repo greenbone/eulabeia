@@ -1,3 +1,22 @@
+/* Copyright (C) 2021 Greenbone Networks GmbH
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
 #include "eulabeia/types.h"
 #include <eulabeia/client.h>
 #include <eulabeia/json.h>
@@ -209,7 +228,7 @@ int publish_message(const struct EulabeiaClient *ec,
 		    const char *destination,
 		    verify_data verifier,
 		    to_json tj,
-			const int modify)
+		    const int modify)
 {
 	char *json, *topic;
 	int rc;
@@ -275,7 +294,7 @@ int eulabeia_start_scan(const struct EulabeiaClient *eulabeia_client,
 			       EULABEIA_DIRECTOR,
 			       (verify_data *)verify_scan_data,
 			       (to_json *)eulabeia_scan_message_to_json,
-				   0);
+			       0);
 }
 
 int eulabeia_modify_scan(const struct EulabeiaClient *eulabeia_client,
@@ -290,7 +309,7 @@ int eulabeia_modify_scan(const struct EulabeiaClient *eulabeia_client,
 			       EULABEIA_DIRECTOR,
 			       (verify_data *)verify_scan_data,
 			       (to_json *)eulabeia_scan_message_to_json,
-				   1);
+			       1);
 }
 
 int eulabeia_modify_target(const struct EulabeiaClient *eulabeia_client,
@@ -305,7 +324,7 @@ int eulabeia_modify_target(const struct EulabeiaClient *eulabeia_client,
 			       EULABEIA_DIRECTOR,
 			       (verify_data *)verify_target_data,
 			       (to_json *)eulabeia_target_message_to_json,
-				   1);
+			       1);
 }
 
 int eulabeia_crud_progress(const char *payload,
