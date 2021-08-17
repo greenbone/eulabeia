@@ -287,43 +287,43 @@ enum eulabeia_message_type
 eulabeia_message_to_message_type(const struct EulabeiaMessage *message);
 
 /*
- * @brief destroyes an EulabeiaMessage
+ * @brief destroys an EulabeiaMessage
  *
  * @param[out] msg, the EulabeiaMessage to be freed. Sets *msg to NULL.
  */
 void eulabeia_message_destroy(struct EulabeiaMessage **msg);
 /*
- * @brief destroyes an EulabeiaFailure
+ * @brief destroys an EulabeiaFailure
  *
  * @param[out] failure, the EulabeiaFailure to be freed. Sets *failure to NULL.
  */
 void eulabeia_failure_destroy(struct EulabeiaFailure **failure);
 /*
- * @brief destroyes an EulabeiaStatus
+ * @brief destroys an EulabeiaStatus
  *
  * @param[out] status, the EulabeiaStatus to be freed. Sets *status to NULL.
  */
 void eulabeia_status_destroy(struct EulabeiaStatus **status);
 /*
- * @brief destroyes an EulabeiaHosts
+ * @brief destroys an EulabeiaHosts
  *
  * @param[out] hosts, the EulabeiaHosts to be freed. Sets *hosts to NULL.
  */
 void eulabeia_hosts_destroy(struct EulabeiaHosts **hosts);
 /*
- * @brief destroyes an EulabeiaPlugins
+ * @brief destroys an EulabeiaPlugins
  *
  * @param[out] plugins, the EulabeiaPlugins to be freed. Sets *plugins to NULL.
  */
 void eulabeia_plugins_destroy(struct EulabeiaPlugins **plugins);
 /*
- * @brief destroyes an EulabeiaPorts
+ * @brief destroys an EulabeiaPorts
  *
  * @param[out] ports, the EulabeiaPorts to be freed. Sets *ports to NULL.
  */
 void eulabeia_ports_destroy(struct EulabeiaPorts **ports);
 /*
- * @brief destroyes an EulabeiaScanResult
+ * @brief destroys an EulabeiaScanResult
  *
  * @param[out] scan_result, the EulabeiaScanResult to be freed. Sets *scan_result to NULL.
  */
