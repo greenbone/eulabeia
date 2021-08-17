@@ -204,8 +204,7 @@ Ensure(Eulabeia_json, create_object_success)
 	JsonNode *j_node = NULL;
 	JsonObject *j_obj;
 
-	assert_equal(eulabeia_json_object(g_json_str, &j_node, &j_obj),
-		     0);
+	assert_equal(eulabeia_json_object(g_json_str, &j_node, &j_obj), 0);
 	assert_not_equal(j_node, NULL);
 	assert_not_equal(j_obj, NULL);
 

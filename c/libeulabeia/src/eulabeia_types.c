@@ -182,34 +182,54 @@ void eulabeia_ports_destroy(struct EulabeiaPorts **ports)
 	*ports = NULL;
 }
 
+void free_scan_result_data(struct EulabeiaScanResult *scan_result)
+{
+	if ((scan_result)->result_type)
+		free((scan_result)->result_type);
+	if ((scan_result)->host_ip)
+		free((scan_result)->host_ip);
+	if ((scan_result)->host_name)
+		free((scan_result)->host_name);
+	if ((scan_result)->oid)
+		free((scan_result)->oid);
+	if ((scan_result)->id)
+		free((scan_result)->id);
+	if ((scan_result)->uri)
+		free((scan_result)->uri);
+	if ((scan_result)->value)
+		free((scan_result)->value);
+	if ((scan_result)->port)
+		free((scan_result)->port);
+}
+
 void eulabeia_scan_result_destroy(struct EulabeiaScanResult **scan_result)
 {
 	if (scan_result == NULL || *scan_result == NULL)
 		return;
 
-	if ((*scan_result)->message)
-		eulabeia_message_destroy(&(*scan_result)->message);
-	if ((*scan_result)->result_type)
-		free((*scan_result)->result_type);
-	if ((*scan_result)->host_ip)
-		free((*scan_result)->host_ip);
-	if ((*scan_result)->host_name)
-		free((*scan_result)->host_name);
-	if ((*scan_result)->oid)
-		free((*scan_result)->oid);
-	if ((*scan_result)->id)
-		free((*scan_result)->id);
-	if ((*scan_result)->uri)
-		free((*scan_result)->uri);
-	if ((*scan_result)->value)
-		free((*scan_result)->value);
-	if ((*scan_result)->port)
-		free((*scan_result)->port);
+	free_scan_result_data(*scan_result);
 
 	free(*scan_result);
 	*scan_result = NULL;
 }
 
+void eulabeia_scan_progress_destroy(struct EulabeiaScanProgress **scan_progress)
+{
+	int i;
+	struct EulabeiaScanResult *ptr;
+	if (scan_progress == NULL || *scan_progress == NULL)
+		return;
+	if ((*scan_progress)->results != NULL &&
+	    (*scan_progress)->results->results != NULL) {
+		for (i = 0; i < (*scan_progress)->results->len; i++) {
+			ptr = (*scan_progress)->results->results + i;
+			free_scan_result_data(ptr);
+		}
+		free((*scan_progress)->results->results);
+	}
+	free(*scan_progress);
+	*scan_progress = NULL;
+}
 char *eulabeia_message_type(enum eulabeia_message_type message_type,
 			    enum eulabeia_aggregate aggregate)
 {

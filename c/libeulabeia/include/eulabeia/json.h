@@ -214,8 +214,8 @@ char *eulabeia_target_message_to_json(const struct EulabeiaMessage *msg,
  *  -3,-4 on setting value failure
  */
 int eulabeia_json_scan_result(JsonObject *obj,
-			  struct EulabeiaMessage *msg,
-			       struct EulabeiaScanResult **scan_result);
+			      struct EulabeiaMessage *msg,
+			      struct EulabeiaScanResult **scan_result);
 
 /*
  * @brief transforms EulabeiaScanResult to json string.

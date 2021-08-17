@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "eulabeia/types.h"
 #include <cgreen/cgreen.h>
 #include <cgreen/legacy.h>
 #include <cgreen/unit.h>
@@ -112,10 +113,12 @@ Ensure(Progress, scan_progress_failures)
 
 Ensure(Progress, scan_progress_success)
 {
-	struct EulabeiaScanProgress progress;
+	struct EulabeiaScanProgress *progress;
 	int rc;
 	char *j;
 	j = calloc(1, 1024);
+	progress = calloc(1, sizeof(*progress));
+	progress->results = calloc(1, sizeof(*progress->results));
 
 #define X(a, b)                                                                \
 	snprintf(j,                                                            \
@@ -129,13 +132,13 @@ Ensure(Progress, scan_progress_success)
 		 "\"status\": \"%s\""                                          \
 		 "}",                                                          \
 		 (#b));                                                        \
-	rc = eulabeia_scan_progress(j, "wanted", &progress);                   \
+	rc = eulabeia_scan_progress(j, "wanted", progress);                    \
 	assert_equal_with_message(                                             \
 	    rc, 0, "expected [%d] to be 0 on %s", rc, j);                      \
-	assert_equal_with_message(progress.status,                             \
+	assert_equal_with_message(progress->status,                            \
 				  a,                                           \
 				  "expected [%d] to be %d",                    \
-				  progress.status,                             \
+				  progress->status,                            \
 				  (a));
 	EULABEIA_SCAN_STATES
 #undef X
@@ -150,17 +153,42 @@ Ensure(Progress, scan_progress_success)
 		 "\"error\": \"%s\""
 		 "}",
 		 "scan id not found");
-	rc = eulabeia_scan_progress(j, "wanted", &progress);
+	rc = eulabeia_scan_progress(j, "wanted", progress);
 	assert_equal_with_message(
-	    progress.status,
+	    progress->status,
 	    EULABEIA_SCAN_FAILED,
 	    "expected %s (%d) to be %s (%d)",
-	    eulabeia_scan_state_to_str(progress.status),
-	    progress.status,
+	    eulabeia_scan_state_to_str(progress->status),
+	    progress->status,
 	    eulabeia_scan_state_to_str(EULABEIA_SCAN_FAILED),
 	    EULABEIA_SCAN_FAILED);
+	snprintf(j,
+		 1024,
+		 "{"
+		 "\"message_id\": \"1\","
+		 "\"message_type\":\"result.scan\","
+		 "\"group_id\":null,"
+		 "\"created\": 42,"
+		 "\"id\": \"wanted\","
+		 "\"oid\": \"oid\","
+		 "\"result_type\": \"ALARM\","
+		 "\"host_ip\": \"127.0.0.23\","
+		 "\"host_name\": \"localhorst\","
+		 "\"port\": \"42\","
+		 "\"uri\": \"\","
+		 "\"value\": \"42424242424242424242\""
+		 "}");
+	rc = eulabeia_scan_progress(j, "wanted", progress);
+	assert_equal(rc, 0);
+	assert_equal_with_message(progress->results->len,
+				  1,
+				  "expected length (%d) of results to be %d.",
+				  progress->results->len,
+				  1);
 
+	printf("%s\n\n", j);
 	free(j);
+	eulabeia_scan_progress_destroy(&progress);
 }
 
 TestSuite *progress_tests()

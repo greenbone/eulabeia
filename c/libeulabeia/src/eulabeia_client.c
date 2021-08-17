@@ -100,6 +100,32 @@ int eulabeia_json_object(const char *payload,
 	return 0;
 }
 
+int eulabeia_scan_progress_status(const char *id,
+				  const struct EulabeiaStatus *status,
+				  struct EulabeiaScanProgress *progress)
+{
+	int rc = -6;
+	if (strcmp(id, status->id) != 0) {
+		rc = 1;
+	} else {
+		rc = 0;
+		if (status->status == NULL) {
+			rc = -5;
+			g_warning("status is null.");
+		}
+#define X(a, b)                                                                \
+	else if (strcmp(status->status, #b) == 0) { progress->status = a; }
+		EULABEIA_SCAN_STATES
+#undef X
+		else
+		{
+			rc = -5;
+			g_warning("Unknown status: %s", status->status);
+		}
+	}
+	return rc;
+}
+
 int eulabeia_scan_progress(const char *payload,
 			   const char *id,
 			   struct EulabeiaScanProgress *progress)
@@ -109,38 +135,44 @@ int eulabeia_scan_progress(const char *payload,
 	struct EulabeiaStatus *status = NULL;
 	struct EulabeiaFailure *failure = NULL;
 	struct EulabeiaMessage *msg = NULL;
+	struct EulabeiaScanResult *scan_result = NULL;
 	int rc;
 
 	if (payload == NULL || progress == NULL || id == NULL) {
 		rc = -1;
 		goto clean_exit;
 	}
-	if ((rc = eulabeia_json_object(payload, &j_node, &j_obj)) != 0)
+	if ((rc = eulabeia_json_object(payload, &j_node, &j_obj)) != 0) {
 		goto clean_exit;
-
+	}
 	if ((rc = eulabeia_json_message(j_obj, &msg)) < 0) {
 		rc = -4;
 		goto clean_exit;
 	}
 	if (eulabeia_json_status(j_obj, msg, &status) == 0) {
-		if (strcmp(id, status->id) != 0) {
-			rc = 1;
-		} else {
-			rc = 0;
-			if (status->status == NULL) {
+		rc = eulabeia_scan_progress_status(id, status, progress);
+
+	} else if (eulabeia_json_scan_result(j_obj, msg, &scan_result) == 0) {
+		if (progress->results == NULL) {
+			if ((progress->results = calloc(
+				 1, sizeof(*progress->results))) == NULL) {
 				rc = -5;
-				g_warning("status is null.");
-			}
-#define X(a, b)                                                                \
-	else if (strcmp(status->status, #b) == 0) { progress->status = a; }
-			EULABEIA_SCAN_STATES
-#undef X
-			else
-			{
-				rc = -5;
-				g_warning("Unknown status: %s", status->status);
+				goto clean_exit;
 			}
 		}
+		if (progress->results->cap == progress->results->len) {
+			progress->results->cap += 100;
+			if ((progress->results->results = realloc(
+				 progress->results->results,
+				 progress->results->cap *
+				     sizeof(*progress->results->results))) ==
+			    NULL) {
+				rc = -6;
+				goto clean_exit;
+			}
+		}
+		progress->results->results[progress->results->len++] =
+		    *scan_result;
 	} else if (eulabeia_json_failure(j_obj, msg, &failure) == 0) {
 		if (strcmp(id, failure->id) == 0) {
 			rc = 0;
