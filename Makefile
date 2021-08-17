@@ -99,6 +99,8 @@ build-container-example: build-example
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-example-client -f example-client.Dockerfile .
 
 build-container-build-helper:
+	docker pull debian:testing-slim
+	docker pull debian:stable-slim
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-build-helper -f .docker/build-helper.Dockerfile .docker/
 
 build-container: build-container-build-helper build-container-redis build-container-broker build-container-director build-container-sensor build-container-example
