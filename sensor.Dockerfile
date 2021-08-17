@@ -1,17 +1,12 @@
 ARG VERSION=middleware
-FROM greenbone/eulabeia-build-helper AS lib-gvm
-ARG VERSION
-RUN sed -i 's/deb.debian.org/ftp.de.debian.org/' /etc/apt/sources.list
-COPY .docker/descriptions/gvm-libs /usr/local/src/gvm-libs
-RUN /usr/local/bin/clone.sh gvm-libs $VERSION
-RUN /usr/local/bin/build.sh gvm-libs $VERSION
+FROM greenbone/eulabeia-c-lib AS lib-eulabeia
 
 FROM greenbone/eulabeia-build-helper AS openvas
 ARG VERSION
 RUN sed -i 's/deb.debian.org/ftp.de.debian.org/' /etc/apt/sources.list
 COPY .docker/descriptions/openvas /usr/local/src/openvas-scanner
-COPY --from=lib-gvm /usr/local/src/docker.list /etc/apt/sources.list.d/docker.list
-COPY --from=lib-gvm /usr/local/src/packages /usr/local/src/packages
+COPY --from=lib-eulabeia /etc/apt/sources.list.d/docker.list /etc/apt/sources.list.d/docker.list
+COPY --from=lib-eulabeia /usr/local/src/packages /usr/local/src/packages
 RUN /usr/local/bin/clone.sh openvas-scanner data-loop
 RUN /usr/local/bin/build.sh openvas-scanner $VERSION
 

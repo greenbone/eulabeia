@@ -1,0 +1,23 @@
+Source: lib-eulabeia
+Priority: optional
+Maintainer: Greenbone Networks GmbH <info@greenbone.net>
+Build-Depends:
+  cmake,
+  libgvm-dev,
+  libjson-glib-dev,
+  libcgreen1-dev,
+  libpaho-mqtt-dev
+Standards-Version: 4.4.1
+Section: libs
+
+Package: libeulabeia-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${misc:Depends},
+  libgvm-dev,
+  libjson-glib-1.0-0,
+  libpaho-mqtt1.3,
+#  libsnmp-dev
+Description: library to use eulabeia

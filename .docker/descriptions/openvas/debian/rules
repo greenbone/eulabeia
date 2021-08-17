@@ -10,7 +10,7 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 	dh $@
 
 override_dh_auto_configure:
-	dh_auto_configure -- -DLOCALSTATEDIR=/var -DSYSCONFDIR=/etc -DOPENVAS_RUN_DIR=/run/openvas -DCMAKE_BUILD_TYPE=Release -DOPENVAS_NVT_DIR=/var/lib/openvas/feed/plugins
+	dh_auto_configure -- -DLOCALSTATEDIR=/var -DSYSCONFDIR=/etc -DOPENVAS_RUN_DIR=/run/openvas -DCMAKE_BUILD_TYPE=Release -DOPENVAS_NVT_DIR=/var/lib/openvas/feed/plugins -DCMAKE_MODULE_PATH=/usr/lib/x86_64-linux-gnu/cmake/
 
 override_dh_install:
 	mkdir -p debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)
