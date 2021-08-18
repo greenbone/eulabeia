@@ -184,6 +184,7 @@ int eulabeia_json_ports(JsonArray *arr, struct EulabeiaPorts **ports);
 char *eulabeia_scan_message_to_json(const struct EulabeiaMessage *msg,
 				    const struct EulabeiaScan *scan,
 				    const int modify);
+
 /*
  * @brief transforms EulabeiaTarget to json string.
  *
@@ -196,6 +197,16 @@ char *eulabeia_scan_message_to_json(const struct EulabeiaMessage *msg,
 char *eulabeia_target_message_to_json(const struct EulabeiaMessage *msg,
 				      const struct EulabeiaTarget *target,
 				      const int modify);
+
+/*
+ * @brief transforms EulabeiaFailure to json string.
+ *
+ * @param[in] msg, the EulabeiaMessage to include
+ * @param[in] failure, the failure to transform to json string.
+ * @return a json char array or NULL on failure.
+ */
+char *eulabeia_failure_message_to_json(const struct EulabeiaMessage *msg,
+				      const struct EulabeiaFailure *failure);
 
 /*
  * @brief parses already initialized JsonObject to EulabeiaScanResult
