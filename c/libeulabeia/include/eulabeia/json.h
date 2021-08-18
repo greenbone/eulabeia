@@ -222,11 +222,21 @@ int eulabeia_json_scan_result(JsonObject *obj,
  *
  * @param[in] msg, the EulabeiaMessage to include
  * @param[in] scan_result, the scan_result to transform to json string.
- * @param[in] modify, 0 for not a modify message and 1 for it is a modify
- * message
  * @return a json char array or NULL on failure.
  */
 char *
 eulabeia_scan_result_message_to_json(const struct EulabeiaMessage *msg,
 				     const struct EulabeiaScanResult *result);
+
+/*
+ * @brief transforms EulabeiaStatus to json string.
+ *
+ * @param[in] msg, the EulabeiaMessage to include
+ * @param[in] status, the status to transform to json string.
+ * @return a json char array or NULL on failure.
+ */
+char *
+eulabeia_status_message_to_json(const struct EulabeiaMessage *msg,
+				     const struct EulabeiaStatus *result);
+
 #endif
