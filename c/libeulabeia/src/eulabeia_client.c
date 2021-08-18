@@ -212,18 +212,7 @@ typedef int verify_data(void *data);
 // @return json string on success or NULL on failure
 typedef char *to_json(struct EulabeiaMessage *em, void *data, const int modify);
 
-// @brief calulates the topic to send the message into
-//
-// @param[in] mt is used to identify the event type
-// @param[in] aggregate is used as the aggregate
-// @param[in] context is used as the context; if NULL EULABEIA_SCANNER_CONTEXT
-// is used.
-// @param[in] destination is used to set the destination; if NULL then
-// destination part will be skipped.
-//
-// @return the topic to send the message into. The result must be freed by the
-// caller.
-char *eulabeia_calulate_topic(enum eulabeia_message_type mt,
+char *eulabeia_calculate_topic(enum eulabeia_message_type mt,
 			      enum eulabeia_aggregate aggregate,
 			      const char *context,
 			      const char *destination)
@@ -237,7 +226,6 @@ char *eulabeia_calulate_topic(enum eulabeia_message_type mt,
 	len = strlen(context) + 1 + strlen(a) + 1 + strlen(e) +
 	      (destination ? strlen(destination) + 1 : 0) + 1;
 	result = calloc(1, len);
-	// <context>/<aggregate>/<event>/<destination>
 	snprintf(result,
 		 len,
 		 "%s/%s/%s/%s",
@@ -275,7 +263,7 @@ int publish_message(const struct EulabeiaClient *ec,
 	}
 	message = eulabeia_initialize_message(mt, a, group_id);
 	json = tj(message, data, modify);
-	topic = eulabeia_calulate_topic(
+	topic = eulabeia_calculate_topic(
 	    mt, a, EULABEIA_SCANNER_CONTEXT, destination);
 	if (ec->publish(topic, json, ec->context) != 0) {
 		g_warning("unable to send %s to %s", json, topic);
