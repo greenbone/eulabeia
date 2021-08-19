@@ -7,6 +7,7 @@ Build-Depends:
   cmake,
   libglib2.0-dev (>= 2.16),
   libgcrypt20-dev,
+  libeulabeia-dev,
   libgvm-dev (>= {{major_version}}.0),
   bison,
   pkg-config,

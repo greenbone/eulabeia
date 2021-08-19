@@ -1,7 +1,8 @@
 #!/bin/bash
 
 [ -z "$1" ] && echo "need project name to proceed." && exit 1 || PROJECT=$1
-[ -z "$2" ] && VERSION="latest" || VERSION="$2"
+[ -z "$2" ] && RELEASE_VERSION="latest" || RELEASE_VERSION="$2"
+[ -z "$3" ] || INSTALL_VERSION="$3"
 set -ex
 
 # prepare debian package so that it can be build
@@ -10,13 +11,14 @@ set -ex
 # necessary files to build a deb package.
 BASE="/usr/local/src/$PROJECT"
 DEBIAN_LINK="../debian"
-[ -d $BASE/$VERSION/debian ] && DEBIAN_LINK="../$VERSION/debian"
+[ -d $BASE/$RELEASE_VERSION/debian ] && DEBIAN_LINK="../$RELEASE_VERSION/debian"
 cd $BASE/$PROJECT && ln -s $DEBIAN_LINK .
 # in python use find __version__.py
 # otherwise we would have to install package and than run pontos-version show
-VERSION=$(pontos-version show || find . -name "__version__.py" | xargs -I {} grep "__version__ =" {} | sed 's/.*"\(.*\)"/\1/')
-MAJOR=$(echo $VERSION | sed 's/\..*//')
-FULL="$VERSION~git~$(git rev-parse --short HEAD)-$VERSION"
+[ -z "$INSTALL_VERSION" ] && \
+	INSTALL_VERSION=$(pontos-version show || find . -name "__version__.py" | xargs -I {} grep "__version__ =" {} | sed 's/.*"\(.*\)"/\1/')
+MAJOR=$(echo $INSTALL_VERSION | sed 's/\..*//')
+FULL="$INSTALL_VERSION~git~$(git rev-parse --short HEAD || echo "unknown" )-$INSTALL_VERSION"
 CHANGELOG_DATE=$(date +"%a, %d %b %Y %T %z")
 find ./debian/ -type f | xargs -I {} sed -i "s/{{major_version}}/$MAJOR/g" {}
 find ./debian/ -type f | xargs -I {} sed -i "s/{{full_version}}/$FULL/g" {}

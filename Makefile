@@ -92,7 +92,10 @@ build-container-redis:
 build-container-director: build-director
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-director -f director.Dockerfile .
 
-build-container-sensor: build-sensor
+build-container-clib:
+	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-c-lib -f eulabeia-c-library.Dockerfile .
+
+build-container-sensor: build-container-clib build-sensor
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-sensor -f sensor.Dockerfile .
 
 build-container-example: build-example

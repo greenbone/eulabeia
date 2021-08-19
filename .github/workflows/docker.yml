@@ -56,6 +56,13 @@ jobs:
           push: true
           tags: ${{ github.repository }}-sensor:${{ env.VERSION }}
           file: sensor.Dockerfile
+      - name: ${{ github.repository }}-c-lib:${{ env.VERSION }}
+        uses: docker/build-push-action@v2.5.0
+        with:
+          context: .
+          push: true
+          tags: ${{ github.repository }}-c-lib:${{ env.VERSION }}
+          file: eulabeia-c-library.Dockerfile
       - name: ${{ github.repository }}-example-client:${{ env.VERSION }}
         uses: docker/build-push-action@v2.5.0
         with:

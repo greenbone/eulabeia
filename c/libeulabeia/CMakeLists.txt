@@ -40,6 +40,9 @@ target_link_libraries(eulabeia PUBLIC
 	${LIBGVM_BASE_LDFLAGS}
 	)
 
+set_target_properties(eulabeia PROPERTIES VERSION ${PROJECT_VERSION})
+set_target_properties(eulabeia PROPERTIES SOVERSION 1)
+
 
 #Add an alias so that library can be used inside the build tree, e.g. when testing
 add_library(Eulabeia::eulabeia ALIAS eulabeia)
@@ -96,12 +99,20 @@ configure_package_config_file(${CMAKE_CURRENT_LIST_DIR}/cmake/EulabeiaConfig.cma
     INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
 )
 
+
+configure_file(${CMAKE_CURRENT_LIST_DIR}/cmake/eulabeia.pc.in
+       ${CMAKE_CURRENT_BINARY_DIR}/eulabeia.pc
+       @ONLY
+)
+
 #Install the config, configversion and custom find modules
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/EulabeiaConfig.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/EulabeiaConfigVersion.cmake
     DESTINATION ${INSTALL_CONFIGDIR}
 )
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/eulabeia.pc DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
 
 export(EXPORT eulabeia-targets
     FILE ${CMAKE_CURRENT_BINARY_DIR}/EulabeiaTargets.cmake
