@@ -7,7 +7,6 @@ RUN sed -i 's/deb.debian.org/ftp.de.debian.org/' /etc/apt/sources.list
 COPY .docker/descriptions/openvas /usr/local/src/openvas-scanner
 COPY --from=lib-eulabeia /etc/apt/sources.list.d/docker.list /etc/apt/sources.list.d/docker.list
 COPY --from=lib-eulabeia /usr/local/src/packages /usr/local/src/packages
-RUN /usr/local/bin/clone.sh openvas-scanner data-loop
 RUN /usr/local/bin/build.sh openvas-scanner $VERSION
 
 # we use debian:testing due to paho otherwise we would need to install
