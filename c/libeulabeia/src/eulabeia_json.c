@@ -70,10 +70,19 @@ int eulabeia_json_failure(JsonObject *obj,
 			  struct EulabeiaFailure **failure)
 {
 	int rc;
+	enum eulabeia_message_type failure_type;
 	if (msg == NULL || msg->type == NULL)
 		return -1;
-	if (eulabeia_message_to_message_type(msg) != EULABEIA_INFO_FAILURE)
-		return -2;
+	failure_type = eulabeia_message_to_message_type(msg);
+	switch (failure_type) {
+		case EULABEIA_INFO_FAILURE:
+		case EULABEIA_INFO_MODIFY_FAILURE:
+		case EULABEIA_INFO_START_FAILURE:
+		case EULABEIA_INFO_STOP_FAILURE:
+			break;
+		default:
+			return -2;
+	}
 
 	if (!(json_object_has_member(obj, "id") &&
 	      json_object_has_member(obj, "error"))) {
