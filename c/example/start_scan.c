@@ -1,3 +1,4 @@
+#include <eulabeia/types.h>
 #include <gvm/util/mqtt.h>
 #include <signal.h>
 #include <stdio.h>
@@ -18,7 +19,8 @@ void signalhandler(int signum)
 	exit(0);
 }
 
-static struct EulabeiaTarget *example_target(){
+static struct EulabeiaTarget *example_target()
+{
 	struct EulabeiaTarget *target;
 	target = calloc(1, sizeof(struct EulabeiaTarget));
 	target->id = TARGET_ID;
@@ -68,32 +70,27 @@ static void free_example_target(struct EulabeiaTarget *target)
 	free(target);
 }
 
-static void free_example_scan(struct EulabeiaScan *scan)
+static void free_example_scan(struct EulabeiaScan *scan) { free(scan); }
+
+static int check_for_modify_progress(struct EulabeiaCRUDProgress *progress,
+				     char *id)
 {
-	free(scan);
-}
-
-
-static int check_for_modify_progress(struct EulabeiaCRUDProgress *progress, char *id){
 	int rc;
 	char *payload, *topic;
 	int payload_len, topic_len;
-	while (progress->status != EULABEIA_CRUD_SUCCESS 
-			&& progress->status != EULABEIA_CRUD_FAILED){
+	while (progress->status != EULABEIA_CRUD_SUCCESS &&
+	       progress->status != EULABEIA_CRUD_FAILED) {
 		if ((rc = ec->retrieve(
-			 &topic, &topic_len, &payload, &payload_len, NULL)) == -1) {
+			 &topic, &topic_len, &payload, &payload_len, NULL)) ==
+		    -1) {
 			printf("unable to retrieve message, quitting\n");
 			rc = -1;
 		}
 		if (rc == 0) {
 			if ((rc = eulabeia_modify_progress(
 				 payload, id, progress)) == 0) {
-				printf("[id:%s][status:%d] %s\n",
-				       id,
-				       progress->status,
-				       payload);
+				printf("[id:%s] %d\n", id, progress->status);
 			} else {
-				printf("progress reacted with %d\n", rc);
 				rc = 0;
 			}
 		} else {
@@ -108,18 +105,19 @@ static int check_for_modify_progress(struct EulabeiaCRUDProgress *progress, char
 	}
 exit:
 
-		if (payload != NULL)
-			free(payload);
-		if (topic != NULL)
-			free(topic);
-		return rc;
+	if (payload != NULL)
+		free(payload);
+	if (topic != NULL)
+		free(topic);
+	return rc;
 }
 
-static int check_scan_progress(struct EulabeiaScanProgress *progress, char *id){
+static int check_scan_progress(struct EulabeiaScanProgress *progress, char *id)
+{
 	int rc;
 	char *payload, *topic;
 	int payload_len, topic_len;
-	while (!eulabeia_scan_finished(progress)){
+	while (!eulabeia_scan_finished(progress)) {
 		if ((rc = mqtt_retrieve_message(
 			 &topic, &topic_len, &payload, &payload_len)) == -1) {
 			printf("unable to retrieve message, quitting\n");
@@ -128,14 +126,12 @@ static int check_scan_progress(struct EulabeiaScanProgress *progress, char *id){
 		if (rc == 0) {
 			if ((rc = eulabeia_scan_progress(
 				 payload, id, progress)) == 0) {
-				printf("[%s][scan_id:%s][status:%d] %s\n",
-						__FUNCTION__,
+				printf("[scan_id: %s] %s <= %s\n",
 				       id,
-				       progress->status,
+				       eulabeia_scan_state_to_str(
+					   progress->status),
 				       payload);
 			} else {
-
-				printf("[%d] got message %s\n", rc, payload);
 				rc = 0;
 			}
 		} else {
@@ -150,20 +146,22 @@ static int check_scan_progress(struct EulabeiaScanProgress *progress, char *id){
 	}
 exit:
 
-		if (payload != NULL)
-			free(payload);
-		if (topic != NULL)
-			free(topic);
-		return rc;
+	if (payload != NULL)
+		free(payload);
+	if (topic != NULL)
+		free(topic);
+	return rc;
 }
 int main()
 {
-	struct EulabeiaScanProgress scanp;
-	struct EulabeiaCRUDProgress target_progress, scan_progress;
+	struct EulabeiaScanProgress *scan_progress;
+	struct EulabeiaCRUDProgress target_progress, modify_scan_progress;
 	struct EulabeiaScan *scan;
 	struct EulabeiaTarget *target;
-	int rc;
+	struct EulabeiaScanResult *result;
+	int rc, i;
 
+	scan_progress = calloc(1, sizeof(*scan_progress));
 	signal(SIGINT, signalhandler);
 	if ((ec = eulabeia_initialize("localhost:9138", NULL)) == NULL) {
 		printf("init returned NULL, quitting\n");
@@ -173,24 +171,26 @@ int main()
 
 	target = example_target();
 	printf("creating target %s\n", target->id);
-	if ((rc = eulabeia_modify_target(ec, target, GROUP_ID)) != 0){
+	if ((rc = eulabeia_modify_target(ec, target, GROUP_ID)) != 0) {
 		printf("[%d] failed to pbulish target\n", rc);
 		goto exit;
 	}
 	target_progress.status = EULABEIA_CRUD_REQUESTED;
-	if ((rc = check_for_modify_progress(&target_progress, target->id)) != 0){
+	if ((rc = check_for_modify_progress(&target_progress, target->id)) !=
+	    0) {
 		printf("failed (%d) to verify modify target\n", rc);
 		goto exit;
 	}
 
 	scan = example_scan();
 	printf("successfully created target; creating scan %s\n", scan->id);
-	if ((rc = eulabeia_modify_scan(ec, scan, GROUP_ID)) != 0){
+	if ((rc = eulabeia_modify_scan(ec, scan, GROUP_ID)) != 0) {
 		printf("[%d] failed to pbulish scan\n", rc);
 		goto exit;
 	}
-	scan_progress.status = EULABEIA_CRUD_REQUESTED;
-	if ((rc = check_for_modify_progress(&scan_progress, scan->id)) != 0){
+	modify_scan_progress.status = EULABEIA_CRUD_REQUESTED;
+	if ((rc = check_for_modify_progress(&modify_scan_progress, scan->id)) !=
+	    0) {
 		printf("failed (%d) to verify modify scan\n", rc);
 		goto exit;
 	}
@@ -201,14 +201,31 @@ int main()
 		printf("[%d] unable to start scan %s\n", rc, scan->id);
 		goto exit;
 	}
-	if ((rc = check_scan_progress(&scanp, scan->id)) != 0){
+	if ((rc = check_scan_progress(scan_progress, scan->id)) != 0) {
 		printf("failed (%d) to verify start scan\n", rc);
 		goto exit;
+	}
+
+	printf("Scan is finished, going to print the results:\n");
+	printf("%-36s | %-36s %-11s %-15s: %s \n",
+	       "id",
+	       "oid",
+	       "result_type",
+	       "host_ip",
+	       "value");
+	for (i = 0; i < scan_progress->results->len; i++) {
+		result = &scan_progress->results->results[i];
+		printf("%-36s | %-36s %-11s %-15s: %s \n",
+		       result->id,
+		       result->oid,
+		       result->result_type,
+		       result->host_ip,
+		       result->value);
 	}
 exit:
 	free_example_target(target);
 	free_example_scan(scan);
-
+	eulabeia_scan_progress_destroy(&scan_progress);
 	eulabeia_destroy(ec);
 	return rc;
 }

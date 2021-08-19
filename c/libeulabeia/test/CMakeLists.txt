@@ -37,9 +37,23 @@ endif()
 add_executable(all_tests src/all.c src/eulabeia_json_tests src/start_scan.c src/scan_porgress.c)
 target_link_libraries(all_tests ${NUMA} ${CGREEN_LIBRARIES} ${TEST_LINKER_WRAP_OPTIONS} Eulabeia::eulabeia)
 
-add_test(NAME test_start_scan_fail
+add_test(NAME start_scan_fail
     COMMAND all_tests start_scan_returns_error_on_publish_fail)
-add_test(NAME test_start_scan_success
+add_test(NAME start_scan_success
     COMMAND all_tests start_scan_success)
-add_test(NAME test_progress_fail
+add_test(NAME scan_progress_fail
     COMMAND all_tests scan_progress_failures)
+add_test(NAME scan_progress_success
+    COMMAND all_tests scan_progress_success)
+add_test(NAME json_create_object_success
+	COMMAND all_tests create_object_success)
+add_test(NAME json_create_message_success
+	COMMAND all_tests create_message_success)
+add_test(NAME json_create_failure_success
+	COMMAND all_tests create_failure_success)
+add_test(NAME json_create_hosts_success
+	COMMAND all_tests create_hosts_success)
+add_test(NAME json_plugins_create_success
+	COMMAND all_tests plugins_create_success)
+add_test(NAME json_ports_create_success
+	COMMAND all_tests ports_create_success)

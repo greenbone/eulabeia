@@ -326,7 +326,6 @@ void builder_add_result(JsonBuilder *builder,
 	json_builder_add_string_value(builder, result->uri);
 }
 
-
 // expects a builder with an open object, internal use
 void builder_add_target(JsonBuilder *builder,
 			const struct EulabeiaTarget *target,

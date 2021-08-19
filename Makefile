@@ -21,6 +21,14 @@ format:
 	clang-format -i --style=file ./c/libeulabeia/include/eulabeia/*.h
 	clang-format -i --style=file ./c/example/*.c
 
+c-library:
+	cmake -S c/libeulabeia/ -B c/libeulabeia/build
+	cmake --build c/libeulabeia/build
+	cmake --build c/libeulabeia/build -- test
+
+c-examples:
+	cmake -S c/example/ -B c/example/build
+	cmake --build c/example/build
 
 check:
 	go vet ./...
