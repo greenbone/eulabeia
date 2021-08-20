@@ -94,6 +94,9 @@ enum eulabeia_crud_state {
 	X(EULABEIA_INFO_MODIFIED, modified, info)                              \
 	X(EULABEIA_INFO_STATUS, status, info)                                  \
 	X(EULABEIA_INFO_SCAN_RESULT, result, info)                             \
+	X(EULABEIA_INFO_START_FAILURE, failure.start, info)                    \
+	X(EULABEIA_INFO_STOP_FAILURE, failure.stop, info)                      \
+	X(EULABEIA_INFO_MODIFY_FAILURE, failure.modify, info)                  \
 	X(EULABEIA_INFO_FAILURE, failure, info)
 
 //@brief enum generated of first parameter of EULABEIA_MESSAGE_TYPES

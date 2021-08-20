@@ -242,4 +242,22 @@ struct EulabeiaClient *eulabeia_initialize(const char *broker_address,
  */
 void eulabeia_destroy(struct EulabeiaClient *client);
 
+/*
+ * @brief calculates the topic to send the message into
+ *
+ * @param[in] mt is used to identify the event type
+ * @param[in] aggregate is used as the aggregate
+ * @param[in] context is used as the context; if NULL EULABEIA_SCANNER_CONTEXT
+ * is used.
+ * @param[in] destination is used to set the destination; if NULL then
+ * destination part will be skipped.
+ *
+ * @return the topic to send the message into. The result must be freed by the
+ * caller.
+ */
+char *eulabeia_calculate_topic(enum eulabeia_message_type mt,
+			      enum eulabeia_aggregate aggregate,
+			      const char *context,
+			      const char *destination);
+
 #endif

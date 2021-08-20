@@ -6,8 +6,10 @@
 #define TOPIC "#"
 #include <eulabeia/client.h>
 #define COMPLEX_START_SCAN_ID "classic_scan_1"
+#define INVALID_START_SCAN_ID "failing_scan_1"
 #define OPENVAS_SENSOR "localhorst"
 #define TARGET_ID "example_target_1234"
+#define INVALID_TARGET_ID "example_invalid_target_1234"
 #define GROUP_ID "example_group_1"
 
 struct EulabeiaClient *ec;
@@ -19,11 +21,11 @@ void signalhandler(int signum)
 	exit(0);
 }
 
-static struct EulabeiaTarget *example_target()
+static struct EulabeiaTarget *example_target(const int invalid)
 {
 	struct EulabeiaTarget *target;
 	target = calloc(1, sizeof(struct EulabeiaTarget));
-	target->id = TARGET_ID;
+	target->id = invalid ? INVALID_TARGET_ID : TARGET_ID;
 	target->alive = 1;
 	target->sensor = OPENVAS_SENSOR;
 	struct EulabeiaHosts *t_hosts;
@@ -45,17 +47,17 @@ static struct EulabeiaTarget *example_target()
 	t_ports->cap = 1;
 	t_ports->len = 1;
 	t_ports->ports = calloc(1, sizeof(struct EulabeiaPorts));
-	t_ports->ports[0].port = "22";
+	t_ports->ports[0].port = invalid ? "twentytwo" : "22";
 	target->ports = t_ports;
 	return target;
 }
 
-static struct EulabeiaScan *example_scan()
+static struct EulabeiaScan *example_scan(int invalid)
 {
 	struct EulabeiaScan *scan;
 	scan = calloc(1, sizeof(struct EulabeiaScan));
-	scan->id = COMPLEX_START_SCAN_ID;
-	scan->target_id = TARGET_ID;
+	scan->id = invalid ? INVALID_START_SCAN_ID : COMPLEX_START_SCAN_ID;
+	scan->target_id = invalid ? INVALID_TARGET_ID : TARGET_ID;
 	return scan;
 }
 
@@ -152,8 +154,7 @@ exit:
 		free(topic);
 	return rc;
 }
-int main()
-{
+int start_scan(const int invalid){
 	struct EulabeiaScanProgress *scan_progress;
 	struct EulabeiaCRUDProgress target_progress, modify_scan_progress;
 	struct EulabeiaScan *scan;
@@ -169,7 +170,7 @@ int main()
 		goto exit;
 	}
 
-	target = example_target();
+	target = example_target(invalid);
 	printf("creating target %s\n", target->id);
 	if ((rc = eulabeia_modify_target(ec, target, GROUP_ID)) != 0) {
 		printf("[%d] failed to pbulish target\n", rc);
@@ -182,15 +183,14 @@ int main()
 		goto exit;
 	}
 
-	scan = example_scan();
+	scan = example_scan(invalid);
 	printf("successfully created target; creating scan %s\n", scan->id);
 	if ((rc = eulabeia_modify_scan(ec, scan, GROUP_ID)) != 0) {
 		printf("[%d] failed to pbulish scan\n", rc);
 		goto exit;
 	}
 	modify_scan_progress.status = EULABEIA_CRUD_REQUESTED;
-	if ((rc = check_for_modify_progress(&modify_scan_progress, scan->id)) !=
-	    0) {
+	if ((rc = check_for_modify_progress(&modify_scan_progress, scan->id)) != 0){
 		printf("failed (%d) to verify modify scan\n", rc);
 		goto exit;
 	}
@@ -201,7 +201,7 @@ int main()
 		printf("[%d] unable to start scan %s\n", rc, scan->id);
 		goto exit;
 	}
-	if ((rc = check_scan_progress(scan_progress, scan->id)) != 0) {
+	if ((rc = check_scan_progress(scan_progress, scan->id)) != 0){
 		printf("failed (%d) to verify start scan\n", rc);
 		goto exit;
 	}
@@ -227,5 +227,18 @@ exit:
 	free_example_scan(scan);
 	eulabeia_scan_progress_destroy(&scan_progress);
 	eulabeia_destroy(ec);
+	return rc;
+}
+
+int main()
+{
+	int rc;
+	printf("starting valid scan:\n\n");
+	rc = start_scan(0);
+	if (rc != 0){
+		printf("valid start scan example failed (%d)\n", rc);
+	}
+	printf("starting invalid scan:\n\n");
+	rc += start_scan(1);
 	return rc;
 }

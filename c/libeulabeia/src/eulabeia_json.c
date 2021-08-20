@@ -70,10 +70,19 @@ int eulabeia_json_failure(JsonObject *obj,
 			  struct EulabeiaFailure **failure)
 {
 	int rc;
+	enum eulabeia_message_type failure_type;
 	if (msg == NULL || msg->type == NULL)
 		return -1;
-	if (eulabeia_message_to_message_type(msg) != EULABEIA_INFO_FAILURE)
-		return -2;
+	failure_type = eulabeia_message_to_message_type(msg);
+	switch (failure_type) {
+		case EULABEIA_INFO_FAILURE:
+		case EULABEIA_INFO_MODIFY_FAILURE:
+		case EULABEIA_INFO_START_FAILURE:
+		case EULABEIA_INFO_STOP_FAILURE:
+			break;
+		default:
+			return -2;
+	}
 
 	if (!(json_object_has_member(obj, "id") &&
 	      json_object_has_member(obj, "error"))) {
@@ -326,6 +335,18 @@ void builder_add_result(JsonBuilder *builder,
 	json_builder_add_string_value(builder, result->uri);
 }
 
+void builder_add_status(JsonBuilder *builder,
+			const struct EulabeiaStatus *status)
+{
+	
+	json_builder_set_member_name(builder, "id");
+	json_builder_add_string_value(builder, status->id);
+
+	json_builder_set_member_name(builder, "status");
+	json_builder_add_string_value(builder, status->status);
+	
+}
+
 // expects a builder with an open object, internal use
 void builder_add_target(JsonBuilder *builder,
 			const struct EulabeiaTarget *target,
@@ -413,6 +434,16 @@ void builder_add_message(JsonBuilder *builder,
 	json_builder_add_int_value(builder, msg->created);
 }
 
+void builder_add_failure(JsonBuilder *builder,
+		const struct EulabeiaFailure *failure)
+{
+	json_builder_set_member_name(builder, "id");
+	json_builder_add_string_value(builder, failure->id);
+	json_builder_set_member_name(builder, "error");
+	json_builder_add_string_value(builder, failure->error);
+
+}
+
 char *json_builder_to_str(JsonBuilder *builder)
 {
 	char *json_str;
@@ -445,6 +476,23 @@ char *eulabeia_scan_message_to_json(const struct EulabeiaMessage *msg,
 	return json_str;
 }
 
+char *eulabeia_failure_message_to_json(const struct EulabeiaMessage *msg,
+				      const struct EulabeiaFailure *failure)
+{
+	JsonBuilder *b;
+	char *json_str;
+	b = json_builder_new();
+
+	json_builder_begin_object(b);
+	builder_add_message(b, msg);
+	builder_add_failure(b, failure);
+	json_builder_end_object(b);
+
+	json_str = json_builder_to_str(b);
+	g_object_unref(b);
+	return json_str;
+
+}
 char *eulabeia_target_message_to_json(const struct EulabeiaMessage *msg,
 				      const struct EulabeiaTarget *target,
 				      const int modify)
@@ -473,6 +521,23 @@ eulabeia_scan_result_message_to_json(const struct EulabeiaMessage *msg,
 	json_builder_begin_object(b);
 	builder_add_message(b, msg);
 	builder_add_result(b, result);
+	json_builder_end_object(b);
+
+	json_str = json_builder_to_str(b);
+	g_object_unref(b);
+	return json_str;
+}
+
+char *eulabeia_status_message_to_json(const struct EulabeiaMessage *msg,
+		const struct EulabeiaStatus *status)
+{
+	JsonBuilder *b;
+	char *json_str;
+	b = json_builder_new();
+
+	json_builder_begin_object(b);
+	builder_add_message(b, msg);
+	builder_add_status(b, status);
 	json_builder_end_object(b);
 
 	json_str = json_builder_to_str(b);
