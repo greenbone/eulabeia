@@ -3,7 +3,9 @@ project(eulabeia_example_c VERSION 0.0.1 LANGUAGES C)
 
 add_executable(start_mega_scan ./start_mega_scan.c)
 add_executable(start_scan ./start_scan.c)
+add_executable(generate_md ./generate_description.c)
 find_package(Eulabeia REQUIRED)
 target_link_libraries(start_mega_scan Eulabeia::Eulabeia)
 target_link_libraries(start_scan Eulabeia::Eulabeia)
-
+target_link_libraries(generate_md Eulabeia::Eulabeia)
+target_compile_definitions(generate_md PRIVATE EULABEIA_PRETTY_JSON=1)
