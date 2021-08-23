@@ -78,6 +78,19 @@ char *eulabeia_aggregate_to_str(enum eulabeia_aggregate a)
 	}
 }
 
+char *eulabeia_result_type_to_str(enum eulabeia_result_type mt)
+{
+	switch (mt) {
+#define X(a, b)                                                                \
+	case a:                                                                \
+		return b;
+		EULABEIA_RESULT_TYPES
+#undef X
+	default:
+		return NULL;
+	}
+}
+
 void eulabeia_message_destroy(struct EulabeiaMessage **msg)
 {
 	if (*msg == NULL) {
@@ -231,26 +244,39 @@ void eulabeia_scan_progress_destroy(struct EulabeiaScanProgress **scan_progress)
 	*scan_progress = NULL;
 }
 char *eulabeia_message_type(enum eulabeia_message_type message_type,
-			    enum eulabeia_aggregate aggregate)
+			    enum eulabeia_aggregate aggregate,
+			    char *destination)
 {
 	char *result;
 	unsigned long len;
+	len = destination == NULL ? 0 : strlen(destination);
 	len = strlen(eulabeia_message_type_to_str(message_type)) +
 	      strlen(eulabeia_aggregate_to_str(aggregate)) + 2;
 	if ((result = calloc(1, len)) == NULL)
 		return NULL;
-	snprintf(result,
-		 len,
-		 "%s.%s",
-		 eulabeia_message_type_to_str(message_type),
-		 eulabeia_aggregate_to_str(aggregate));
+	if (destination != NULL) {
+		snprintf(result,
+			 len,
+			 "%s.%s.%s",
+			 eulabeia_message_type_to_str(message_type),
+			 eulabeia_aggregate_to_str(aggregate),
+			 destination);
+
+	} else {
+		snprintf(result,
+			 len,
+			 "%s.%s",
+			 eulabeia_message_type_to_str(message_type),
+			 eulabeia_aggregate_to_str(aggregate));
+	}
 	return result;
 }
 
 struct EulabeiaMessage *
 eulabeia_initialize_message(enum eulabeia_message_type message_type,
 			    enum eulabeia_aggregate aggregate,
-			    char *group_id)
+			    char *group_id,
+			    char *destination)
 {
 	struct EulabeiaMessage *em;
 	struct timespec spec;
@@ -263,10 +289,11 @@ eulabeia_initialize_message(enum eulabeia_message_type message_type,
 		em->group_id = gvm_uuid_make();
 	else
 		em->group_id = group_id;
-	em->type = eulabeia_message_type(message_type, aggregate);
+	em->type = eulabeia_message_type(message_type, aggregate, destination);
 	clock_gettime(CLOCK_REALTIME, &spec);
 	em->created = (unsigned long)spec.tv_sec * 1000000000L +
 		      (unsigned long)spec.tv_nsec;
+	em->destination = destination;
 
 	return em;
 }
@@ -284,4 +311,14 @@ eulabeia_message_to_message_type(const struct EulabeiaMessage *message)
 #undef X
 #undef DOT_HACK
 	return EULABEIA_UNKNOWN;
+}
+
+enum eulabeia_result_type eulabeia_result_type_from_str(char *rt)
+{
+	if (rt == NULL)
+		return EULABEIA_RESULT_TYPE_UNKNOWN;
+#define X(a, b) else if (strncmp(rt, b, strlen(b)) == 0) return (a);
+	EULABEIA_RESULT_TYPES
+#undef X
+	return EULABEIA_RESULT_TYPE_UNKNOWN;
 }

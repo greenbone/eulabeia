@@ -88,15 +88,22 @@ enum eulabeia_crud_state {
  */
 #define EULABEIA_MESSAGE_TYPES                                                 \
 	X(EULABEIA_UNKNOWN, NA, NA)                                            \
+	X(EULABEIA_CMD_CREATE, create, cmd)                                    \
 	X(EULABEIA_CMD_START, start, cmd)                                      \
 	X(EULABEIA_CMD_STOP, stop, cmd)                                        \
+	X(EULABEIA_CMD_GET, get, cmd)                                          \
 	X(EULABEIA_CMD_MODIFY, modify, cmd)                                    \
+	X(EULABEIA_INFO_CREATED, created, info)                                \
 	X(EULABEIA_INFO_MODIFIED, modified, info)                              \
+	X(EULABEIA_INFO_STOPPED, stopped, info)                                \
 	X(EULABEIA_INFO_STATUS, status, info)                                  \
+	X(EULABEIA_INFO_GOT, got, info)                                        \
 	X(EULABEIA_INFO_SCAN_RESULT, result, info)                             \
 	X(EULABEIA_INFO_START_FAILURE, failure.start, info)                    \
 	X(EULABEIA_INFO_STOP_FAILURE, failure.stop, info)                      \
+	X(EULABEIA_INFO_CREATE_FAILURE, failure.create, info)                  \
 	X(EULABEIA_INFO_MODIFY_FAILURE, failure.modify, info)                  \
+	X(EULABEIA_INFO_GET_FAILURE, failure.get, info)                        \
 	X(EULABEIA_INFO_FAILURE, failure, info)
 
 //@brief enum generated of first parameter of EULABEIA_MESSAGE_TYPES
@@ -126,6 +133,33 @@ enum eulabeia_aggregate {
 	EULABEIA_AGGREGATES
 #undef X
 };
+
+/**
+ * @brief defines result types
+ *
+ * Ressult types are send by the scanner. Most of them are from openvas and
+ * don't follow the typical eulabeia format.
+ *
+ * The first value is used as a enum identifier and the second is used to parse
+ * the enum from and to string. Currently openvas is sending it in uppercase.
+ */
+#define EULABEIA_RESULT_TYPES                                                  \
+	X(EULABEIA_RESULT_TYPE_UNKNOWN, "UNKNOWN")                             \
+	X(EULABEIA_RESULT_TYPE_HOST_COUNT, "HOST_COUNT")                       \
+	X(EULABEIA_RESULT_TYPE_DEADHOST, "DEADHOST")                           \
+	X(EULABEIA_RESULT_TYPE_HOST_START, "HOST_START")                       \
+	X(EULABEIA_RESULT_TYPE_HOST_END, "HOST_END")                           \
+	X(EULABEIA_RESULT_TYPE_ERRMSG, "ERRMSG")                               \
+	X(EULABEIA_RESULT_TYPE_LOG, "LOG")                                     \
+	X(EULABEIA_RESULT_TYPE_HOST_DETAIL, "HOST_DETAIL")                     \
+	X(EULABEIA_RESULT_TYPE_ALARM, "ALARM")
+
+enum eulabeia_result_type {
+#define X(a, b) a,
+	EULABEIA_RESULT_TYPES
+#undef X
+};
+
 /*
  * @brief contains all data every message within scanner context must have.
  *
@@ -139,13 +173,14 @@ struct EulabeiaMessage {
 	char *type;
 	char *id;
 	char *group_id;
+	char *destination;
 	unsigned long created;
 };
 
 struct EulabeiaStatus {
 	struct EulabeiaMessage *message;
 	char *id;
-	char *status;
+	char *status; // TODO enum
 };
 
 struct EulabeiaFailure {
@@ -347,12 +382,15 @@ void eulabeia_scan_progress_destroy(
  *
  * @param[in] message_type the eulabeia_message_type
  * @param[in] aggregata the eulabeia_aggregate
+ * @param[in] destination the  message destination or NULL if no specific
+ * target.
  *
  * @return a char array according to the definition of a message_type
  * (message_type.aggregate)
  */
 char *eulabeia_message_type(enum eulabeia_message_type message_type,
-			    enum eulabeia_aggregate aggregate);
+			    enum eulabeia_aggregate aggregate,
+			    char *destination);
 
 /*
  * @brief initializes a valud EulabeiaMessage based on message_type, aggregate
@@ -361,13 +399,15 @@ char *eulabeia_message_type(enum eulabeia_message_type message_type,
  * @param[in] message_type the eulabeia_message_type
  * @param[in] aggregata the eulabeia_aggregate
  * @param[in] group_id on NULL a new uuid as group_id will be set otherwise the
- * message will contain the given group_id
+ * @param[in] destination the  message destination or NULL if no specific
+ * target. message will contain the given group_id
  * @return an EulabeiaMessage or NULL on failure.
  */
 struct EulabeiaMessage *
 eulabeia_initialize_message(enum eulabeia_message_type message_type,
 			    enum eulabeia_aggregate aggregate,
-			    char *group_id);
+			    char *group_id,
+			    char *destination);
 
 /*
  * @brief translate given eulabeia_scan_state to a char representation
@@ -395,38 +435,6 @@ char *eulabeia_message_type_to_event_type(enum eulabeia_message_type mt);
  * @return char array representation of given message_type
  */
 char *eulabeia_message_type_to_str(enum eulabeia_message_type mt);
-
-/*
- * @brief translate given eulabeia_aggregate to a char representation
- *
- * @param[in] aggregate to translate
- * @return char array representation of given aggregate
-/*
- * @brief builds an message_type char array based on message_type and aggregate
- *
- * @param[in] message_type the eulabeia_message_type
- * @param[in] aggregata the eulabeia_aggregate
- *
- * @return a char array according to the definition of a message_type
- * (message_type.aggregate)
- */
-char *eulabeia_message_type(enum eulabeia_message_type message_type,
-			    enum eulabeia_aggregate aggregate);
-
-/*
- * @brief initializes a valud EulabeiaMessage based on message_type, aggregate
- * and may group_id
- *
- * @param[in] message_type the eulabeia_message_type
- * @param[in] aggregata the eulabeia_aggregate
- * @param[in] group_id on NULL a new uuid as group_id will be set otherwise the
- * message will contain the given group_id
- * @return an EulabeiaMessage or NULL on failure.
- */
-struct EulabeiaMessage *
-eulabeia_initialize_message(enum eulabeia_message_type message_type,
-			    enum eulabeia_aggregate aggregate,
-			    char *group_id);
 
 /*
  * @brief translate given eulabeia_scan_state to a char representation
@@ -463,4 +471,19 @@ char *eulabeia_message_type_to_str(enum eulabeia_message_type mt);
  */
 char *eulabeia_aggregate_to_str(enum eulabeia_aggregate a);
 
+/*
+ * @brief translate given eulabeia_result_type to a char representation
+ *
+ * @param[in] result_type to translate
+ * @return char array representation of given result_type
+ */
+char *eulabeia_result_type_to_str(enum eulabeia_result_type rt);
+
+/*
+ * @brief translate a given char representation to eulabeia_result_type
+ *
+ * @param[in] string to translate
+ * @return enum eulabeia_result_type
+ */
+enum eulabeia_result_type eulabeia_result_type_from_str(char *s);
 #endif

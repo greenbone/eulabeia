@@ -213,9 +213,9 @@ typedef int verify_data(void *data);
 typedef char *to_json(struct EulabeiaMessage *em, void *data, const int modify);
 
 char *eulabeia_calculate_topic(enum eulabeia_message_type mt,
-			      enum eulabeia_aggregate aggregate,
-			      const char *context,
-			      const char *destination)
+			       enum eulabeia_aggregate aggregate,
+			       const char *context,
+			       const char *destination)
 {
 	const char *c, *e, *a;
 	char *result;
@@ -261,7 +261,8 @@ int publish_message(const struct EulabeiaClient *ec,
 	if ((rc = verifier(data)) != 0) {
 		goto exit;
 	}
-	message = eulabeia_initialize_message(mt, a, group_id);
+	message =
+	    eulabeia_initialize_message(mt, a, group_id, EULABEIA_DIRECTOR);
 	json = tj(message, data, modify);
 	topic = eulabeia_calculate_topic(
 	    mt, a, EULABEIA_SCANNER_CONTEXT, destination);

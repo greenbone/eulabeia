@@ -256,8 +256,8 @@ void eulabeia_destroy(struct EulabeiaClient *client);
  * caller.
  */
 char *eulabeia_calculate_topic(enum eulabeia_message_type mt,
-			      enum eulabeia_aggregate aggregate,
-			      const char *context,
-			      const char *destination);
+			       enum eulabeia_aggregate aggregate,
+			       const char *context,
+			       const char *destination);
 
 #endif
