@@ -6,13 +6,13 @@ project(
 
 add_executable(start_mega_scan ./start_mega_scan.c)
 add_executable(start_scan ./start_scan.c)
-add_executable(generate_md ./generate_description.c)
+add_executable(message-json-overview-md ./generate_description.c)
 find_package(Eulabeia REQUIRED)
 target_link_libraries(start_mega_scan Eulabeia::Eulabeia)
 target_link_libraries(start_scan Eulabeia::Eulabeia)
-target_link_libraries(generate_md Eulabeia::Eulabeia)
+target_link_libraries(message-json-overview-md Eulabeia::Eulabeia)
 target_compile_options(
-  generate_md
+  message-json-overview-md
   PRIVATE
     $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
     -Wall
