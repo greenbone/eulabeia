@@ -103,6 +103,10 @@ build-container-director: build-director
 build-container-clib:
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-c-lib -f eulabeia-c-library.Dockerfile .
 
+build-container-c-example: build-container-clib
+	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-message-json-overview -f ./message-json-overview-md.Dockerfile .
+
+
 build-container-sensor: build-container-clib build-sensor
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-sensor -f sensor.Dockerfile .
 
