@@ -19,5 +19,10 @@ Depends: ${misc:Depends},
   libgvm-dev,
   libjson-glib-1.0-0,
   libpaho-mqtt1.3,
-#  libsnmp-dev
+Recommends:
+  build-essential,
+  libcgreen1-dev,
+  libjson-glib-dev,
+  libpaho-mqtt-dev,
+  cmake
 Description: library to use eulabeia
