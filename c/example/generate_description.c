@@ -294,6 +294,14 @@ static void print_entry(enum eulabeia_aggregate aggregate,
 				    message, target, modify);
 				break;
 			}
+			addition = calloc(1, 1024);
+
+			snprintf(addition,
+				 1024,
+				 "To get type information please consolidate [ "
+				 "%s model](../models/%s.go)\n\n",
+				 eulabeia_aggregate_to_str(aggregate),
+				 eulabeia_aggregate_to_str(aggregate));
 			break;
 		case EULABEIA_INFO_SCAN_RESULT:
 			esr = calloc(1, sizeof(*esr));
@@ -313,6 +321,10 @@ static void print_entry(enum eulabeia_aggregate aggregate,
 #define X(a, b) strncat(addition, "- `" b "`\n", 1024);
 			EULABEIA_RESULT_TYPES
 #undef X
+			strncat(addition,
+				"\n\nFor more specific information please "
+				"consolidate [result model](../models/result.go)",
+				1024);
 			break;
 
 		case EULABEIA_INFO_STATUS:
@@ -396,8 +408,19 @@ static void print_entry(enum eulabeia_aggregate aggregate,
 void print_message_output(struct TOC *toc)
 {
 	int i, j;
+	char *as;
 	for (i = 0; i < toc->len; i++) {
-		printf("# %s\n\n", eulabeia_aggregate_to_str(i));
+		as = eulabeia_aggregate_to_str(i);
+		printf("# %s\n\n", as);
+		printf(
+		    "To get type information for e.g. `modify.%s` or `got.%s`"
+		    " please consolidate [ %s model](../models/%s.go)\n\n",
+		    as,
+		    as,
+		    as,
+		    as);
+		printf("As a rule of thumb: each type is as shown in the "
+		       "example.\n\n");
 		print_entry(i, &toc->tocs[i]);
 	}
 }
