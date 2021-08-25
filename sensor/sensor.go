@@ -270,33 +270,30 @@ func (sensor *Scheduler) Close() error {
 				ID:      item,
 				Message: messages.NewMessage("status.scan", "", ""),
 			},
-			Status: "interrupted",
+			Status: "stopped",
 		})
 	}
+
+	var wg sync.WaitGroup
 	// Stopping all init processes
 	for item, ok := sensor.init.Dequeue(); ok; item, ok = sensor.init.Dequeue() {
 		log.Printf("Stopping %s\n", item)
-		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
-			Identifier: messages.Identifier{
-				ID:      item,
-				Message: messages.NewMessage("status.scan", "", ""),
-			},
-			Status: "interrupted",
-		})
-		sensor.ovas.StopScan(item, sensor.sudo, sensor.commander)
+		wg.Add(1)
+		go func(item string) {
+			defer wg.Done()
+			sensor.ovas.StopScan(item, sensor.sudo, sensor.commander)
+		}(item)
 	}
 	// Stopping all running processes
 	for item, ok := sensor.running.Dequeue(); ok; item, ok = sensor.running.Dequeue() {
 		log.Printf("Stopping %s\n", item)
-		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
-			Identifier: messages.Identifier{
-				ID:      item,
-				Message: messages.NewMessage("status.scan", "", ""),
-			},
-			Status: "interrupted",
-		})
-		sensor.ovas.StopScan(item, sensor.sudo, sensor.commander)
+		wg.Add(1)
+		go func(item string) {
+			defer wg.Done()
+			sensor.ovas.StopScan(item, sensor.sudo, sensor.commander)
+		}(item)
 	}
+	wg.Wait()
 	return nil
 }
 
