@@ -60,7 +60,7 @@ static char *message_type_aggregate_link(enum eulabeia_message_type mt,
 		 "[%s](%s)",
 		 eulabeia_message_type_to_str(mt),
 		 link);
-	fprintf(stderr, "builded link %s\n", clink);
+	fprintf(stderr, "%s: link %s\n", __func__, clink);
 	free(link);
 	return clink;
 }
@@ -140,9 +140,10 @@ struct TOC {
 struct AggregateTOC *build_aggregate_toc(enum eulabeia_aggregate aggregate)
 {
 	struct AggregateTOC *toc;
+	fprintf(stderr, "%s: build toc for %s\n", __func__, eulabeia_aggregate_to_str(aggregate));
 	toc = calloc(1, sizeof(*toc));
 #define X(a, b, c)                                                             \
-	if (is_relevant(aggregate, (a))) {                                     \
+	if (is_relevant(aggregate, a)) {                                     \
 		if (toc->len == toc->cap) {                                    \
 			toc->cap += 10;                                        \
 			if ((toc->links = realloc(                             \
@@ -155,8 +156,8 @@ struct AggregateTOC *build_aggregate_toc(enum eulabeia_aggregate aggregate)
 				exit(23);                                      \
 		}                                                              \
 		toc->links[toc->len] =                                         \
-		    message_type_aggregate_link((a), aggregate);               \
-		toc->types[toc->len] = (a);                                    \
+		    message_type_aggregate_link(a, aggregate);               \
+		toc->types[toc->len] = a;                                    \
 		toc->len++;                                                    \
 	}
 	EULABEIA_MESSAGE_TYPES
@@ -249,6 +250,7 @@ static void print_entry(enum eulabeia_aggregate aggregate,
 	char *id, *example, *response, *addition = NULL;
 	enum eulabeia_message_type type;
 	int i, modify;
+	fprintf(stderr, "%s: for %s\n", __func__, eulabeia_aggregate_to_str(aggregate));
 
 	for (i = 0; i < toc->len; i++) {
 		type = toc->types[i];
@@ -390,9 +392,7 @@ void print_message_output(struct TOC *toc)
 	int i, j;
 	for (i = 0; i < toc->len; i++) {
 		printf("# %s\n\n", eulabeia_aggregate_to_str(i));
-		for (j = 0; j < toc->tocs[i].len; j++) {
-			print_entry(i, &toc->tocs[i]);
-		}
+		print_entry(i, &toc->tocs[i]);
 	}
 }
 
