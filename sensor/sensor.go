@@ -257,7 +257,7 @@ func (sensor *Scheduler) register() {
 }
 
 // Close cleans all queues and OpenVAS processes, sets all scan stats to
-// interrupted and stops the scheduler
+// stopped and stops the scheduler
 func (sensor *Scheduler) Close() error {
 	sensor.Lock()
 	defer sensor.Unlock()
