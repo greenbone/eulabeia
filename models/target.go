@@ -19,62 +19,75 @@ package models
 
 import (
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/info"
 )
 
 // References are the bid, cve or xrefs entries in a nasl script.
 //eg. an xref from nmap.nasl is type 'URL' with id: 'https://nmap.org/book/man-performance.html'
 type RefType struct {
-	Type string
-	ID   string
+	Type string `json:"type"`
+	ID   string `json:"id"`
 }
 
 // VT's parameters have an ID. The ID 0 (zero) is reserved for the script timeout which is not add to Redis cache as a preference but as script parameter.
 type VTParamType struct {
-	ParameterID           int    // Parameter ID. ID:0 is always to specify a timeout.
-	ParameterName         string // Parameter Name
-	ParameterValue        string // Parameter Value
-	ParameterType         string // Parameter Type
-	ParameterDescription  string // Parameter description
-	ParameterDefaultValue string // Parameter default value
+	ParameterID           int    `json:"id"`          // Parameter ID. ID:0 is always to specify a timeout.
+	ParameterName         string `json:"name"`        // Parameter Name
+	ParameterValue        string `json:"value"`       // Parameter Value
+	ParameterType         string `json:"type"`        // Parameter Type
+	ParameterDescription  string `json:"description"` // Parameter description
+	ParameterDefaultValue string `json:"default"`     // Parameter default value
 }
 
 // Severities are stored as Tag. Because tag names can not be repeated, only one severity is supported.
 // The old tag name for severities are cvss_base and cvss_base_vector. The new extended severities tags has priority over the old format.
 type SeverityType struct {
-	SeverityVector  string // CVSS vector. Supported are CVSSv2 and CVSSv3.x
-	SeverityVersion string // CVSS version
-	SeverityDate    string // CVE creation date. Default to VT creation date
-	SeverityOrigin  string // Serverity Origin
+	SeverityVector  string `json:"severity_vector"` // CVSS vector. Supported are CVSSv2 and CVSSv3.x
+	SeverityVersion string `json:"severity_type"`   // CVSS version
+	SeverityDate    string `json:"severity_date"`   // CVE creation date. Default to VT creation date
+	SeverityOrigin  string `json:"severity_origin"` // Serverity Origin
 }
 
 // Strucure to store the information of a single VT.
 type VT struct {
-	OID                string        // Script OID
-	Name               string        // Script name
-	FileName           string        // Script filename
-	MandatoryKeys      string        // Mandatory keys required to run the script
-	ExcludedKeys       string        // Excluded keys
-	RequiredPorts      string        // Required open ports to run the script
-	RequiredUDPPorts   string        // Required open UDP ports to run the script
-	Category           string        // Script category (e.g. ACT_ATTACK, ACT_END)
-	Family             string        // Script family (Debian LSC, Port scanners)
-	VTCreationTime     string        // Script creation date
-	VTModificationTime string        // Last time the script was modified
-	Summary            string        // Description of the vulnerability test
-	Solution           string        // Script
-	SolutionType       string        // This information shows possible solutions for the remediation of the vulnerability
-	SolutionMethod     string        // Script
-	Impact             string        // Details about the impact of the vulnerability
-	Insight            string        // Some more details about the vulnerability
-	Affected           string        // Script
-	Vuldectect         string        // Description on the method used to detect the vulnerability
-	QoDType            string        // Quality of detection
-	QoDValue           string        // Quality of detection as percentage
-	References         []RefType     // See above RefType
-	VTParameters       []VTParamType // See VTParamType
-	VTDependencies     []string      // List of plugin's filenames which a VT depends on.-
-	Severity           SeverityType  // Script severity. See SeverityType.
+	OID                string        `json:"oid"`                // Script OID
+	Name               string        `json:"name"`               // Script name
+	FileName           string        `json:"filename"`           // Script filename
+	RequiredKeys       string        `json:"required_keys"`      // Required keys
+	MandatoryKeys      string        `json:"mandatory_keys"`     // Mandatory keys required to run the script
+	ExcludedKeys       string        `json:"excluded_keys"`      // Excluded keys
+	RequiredPorts      string        `json:"required_ports"`     // Required open ports to run the script
+	RequiredUDPPorts   string        `json:"required_udp_ports"` // Required open UDP ports to run the script
+	Category           string        `json:"category"`           // Script category (e.g. ACT_ATTACK, ACT_END)
+	Family             string        `json:"family"`             // Script family (Debian LSC, Port scanners)
+	VTCreationTime     string        `json:"created"`            // Script creation date
+	VTModificationTime string        `json:"modified"`           // Last time the script was modified
+	Summary            string        `json:"summary"`            // Description of the vulnerability test
+	Solution           string        `json:"solution"`           // Script
+	SolutionType       string        `json:"solution_type"`      // This information shows possible solutions for the remediation of the vulnerability
+	SolutionMethod     string        `json:"solution_method"`    // Script
+	Impact             string        `json:"impact"`             // Details about the impact of the vulnerability
+	Insight            string        `json:"insight"`            // Some more details about the vulnerability
+	Affected           string        `json:"affected"`           // Script
+	Vuldetect          string        `json:"vuldetect"`          // Description on the method used to detect the vulnerability
+	QoDType            string        `json:"qod_type"`           // Quality of detection
+	QoDValue           string        `json:"qod"`                // Quality of detection as percentage
+	References         []RefType     `json:"references"`         // See above RefType
+	VTParameters       []VTParamType `json:"vt_parameters"`      // See VTParamType
+	VTDependencies     []string      `json:"vt_dependencies"`    // List of plugin's filenames which a VT depends on.-
+	Severity           SeverityType  `json:"severety"`           // Script severity. See SeverityType.
+}
+
+type GetVT struct {
+	cmds.EventType
+	messages.Identifier
+}
+
+type SendVT struct {
+	info.EventType
+	messages.Identifier
+	VT VT `json:"vt"`
 }
 
 // SingleVT contains a single VT and its preferences
