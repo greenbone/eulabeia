@@ -44,7 +44,7 @@ import (
 )
 
 const MEGA_ID = "mega_scan_123"
-const context = "eulabeia"
+const context = "scanner"
 const topic = context + "/+/info"
 
 const (
@@ -246,7 +246,7 @@ func main() {
 		ic <- syscall.SIGABRT
 	}()
 	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
-	err = c.Publish("eulabeia/target/cmd/director", cmds.NewCreate("target", "director", ""))
+	err = c.Publish("scanner/target/cmd/director", cmds.NewCreate("target", "director", ""))
 	if err != nil {
 		log.Panicf("Failed to publish: %s", err)
 	}

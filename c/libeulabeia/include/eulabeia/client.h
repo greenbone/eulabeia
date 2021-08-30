@@ -21,7 +21,7 @@
 #define _EULABEIA_CLIENT_H
 #include <eulabeia/types.h>
 #include <stdlib.h>
-#define EULABEIA_SCANNER_CONTEXT "eulabeia"
+#define EULABEIA_SCANNER_CONTEXT "scanner"
 #define EULABEIA_DIRECTOR "director"
 
 /**

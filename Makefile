@@ -38,7 +38,7 @@ test:
 	go test ./...
 
 start-broker:
-	docker run --rm -d -p 9138:9138 --name eulabeia_broker $(REPOSITORY)/eulabeia-broker:latest
+	docker run --rm -d -p 9138:9138 --name eulabeia_broker $(REPOSITORY)/mqtt-broker:latest
 
 stop-broker:
 	docker kill eulabeia_broker
@@ -92,7 +92,7 @@ build-example:
 build: build-director build-sensor build-example
 
 build-container-broker:
-	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-broker -f broker.Dockerfile .
+	$(DOCKER_BUILD) -t $(REPOSITORY)/mqtt-broker -f broker.Dockerfile .
 
 build-container-redis:
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-redis -f redis.Dockerfile .
@@ -114,7 +114,6 @@ build-container-example: build-example
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-example-client -f example-client.Dockerfile .
 
 build-container-build-helper:
-	docker pull debian:testing-slim
 	docker pull debian:stable-slim
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-build-helper -f .docker/build-helper.Dockerfile .docker/
 

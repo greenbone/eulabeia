@@ -86,7 +86,7 @@ func TestStartScanPreprocessor(t *testing.T) {
 	device := &storage.InMemory{}
 	targetHandler := target.New(device)
 	scanHandler := New(device)
-	preprocessor := StartMegaScan{}
+	preprocessor := ScanPreprocessor{}
 	dataVerifier := func(
 		m handler.Modifier,
 		payload []byte,

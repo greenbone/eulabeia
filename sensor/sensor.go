@@ -301,7 +301,7 @@ func (sensor *Scheduler) Close() error {
 func (sensor *Scheduler) Start() {
 	// Subscribe on Topic to get confirmation about registration
 	sensor.mqtt.Subscribe(map[string]connection.OnMessage{
-		"eulabeia/sensor/info": handler.Registered{
+		fmt.Sprintf("%s/sensor/info", sensor.context): handler.Registered{
 			Register: sensor.regChan,
 			ID:       sensor.id,
 		},

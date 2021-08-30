@@ -19,6 +19,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 
 	"github.com/greenbone/eulabeia/config"
@@ -43,8 +44,12 @@ func main() {
 	config.OverrideViaENV(configuration)
 	server := configuration.Connection.Server
 
-	log.Println("Starting director")
-	client, err := mqtt.New(server, *clientid, "", "", nil, []connection.Preprocessor{scan.StartMegaScan{}})
+	prepare_topic := func(aggregate_name string) string {
+		return fmt.Sprintf("%s/%s/cmd/director", configuration.Context, aggregate_name)
+	}
+	log.Printf("Starting director with context %s\n", configuration.Context)
+	client, err := mqtt.New(server, *clientid, "", "", nil, []connection.Preprocessor{
+		scan.ScanPreprocessor{Context: configuration.Context}})
 	if err != nil {
 		log.Panicf("Failed to create MQTT: %s", err)
 	}
@@ -57,11 +62,10 @@ func main() {
 		log.Panicf("Failed create RSA: %s", err)
 	}
 	device := storage.File{Crypt: crypt, Dir: configuration.Director.StoragePath}
-	context := configuration.Context
 	err = client.Subscribe(map[string]connection.OnMessage{
-		"eulabeia/sensor/cmd/director": handler.New(context, sensor.New(device)),
-		"eulabeia/target/cmd/director": handler.New(context, target.New(device)),
-		"eulabeia/scan/cmd/director":   handler.New(context, scan.New(device)),
+		prepare_topic("sensor"): handler.New(configuration.Context, sensor.New(device)),
+		prepare_topic("target"): handler.New(configuration.Context, target.New(device)),
+		prepare_topic("scan"):   handler.New(configuration.Context, scan.New(device)),
 	})
 	if err != nil {
 		panic(err)

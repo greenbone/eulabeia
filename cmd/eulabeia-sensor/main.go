@@ -31,7 +31,6 @@ import (
 )
 
 func main() {
-	// topic := "eulabeia/+/+/sensor"
 	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
 	flag.Parse()
 	configuration, err := config.New(*configPath, "eulabeia")
@@ -49,10 +48,10 @@ func main() {
 		configuration.Sensor.Id = sensor_id
 	}
 
-	log.Printf("Starting sensor (%s)\n", configuration.Sensor.Id)
+	log.Printf("Starting sensor (%s) on context (%s)\n", configuration.Sensor.Id, configuration.Context)
 	client, err := mqtt.New(server, configuration.Sensor.Id, "", "",
 		&mqtt.LastWillMessage{
-			Topic: "eulabeia/sensor/cmd/director",
+			Topic: "scanner/sensor/cmd/director",
 			MSG: cmds.Delete{
 				Identifier: messages.Identifier{
 					Message: messages.NewMessage("delete.sensor", "", ""),
