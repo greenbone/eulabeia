@@ -81,7 +81,7 @@ func (e *ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse,
 	if !ok {
 		f, ok = e.do[mt.String()]
 		if !ok {
-			log.Panicf("No handler for %s found", mt)
+			return nil, nil
 		}
 	}
 	response := f(infoMSG, msg)

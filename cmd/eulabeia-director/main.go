@@ -52,7 +52,11 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	device := storage.File{Dir: configuration.Director.StoragePath}
+	crypt, err := storage.NewRSACrypt(*configuration)
+	if err != nil {
+		log.Panicf("Failed create RSA: %s", err)
+	}
+	device := storage.File{Crypt: crypt, Dir: configuration.Director.StoragePath}
 	context := configuration.Context
 	err = client.Subscribe(map[string]connection.OnMessage{
 		"eulabeia/sensor/cmd/director": handler.New(context, sensor.New(device)),
