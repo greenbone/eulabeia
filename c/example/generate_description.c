@@ -40,7 +40,7 @@ static char *message_type_aggregate_link(enum eulabeia_message_type mt,
 	char *link, *clink;
 	unsigned int i, j, link_len, a_len;
 	a_len = strlen(eulabeia_aggregate_to_str(a));
-	link_len = a_len + strlen(eulabeia_message_type_to_str(mt)) + +2;
+	link_len = a_len + strlen(eulabeia_message_type_to_str(mt)) + 2;
 	link = calloc(link_len, sizeof(*link));
 	snprintf(link,
 		 link_len,
@@ -321,10 +321,11 @@ static void print_entry(enum eulabeia_aggregate aggregate,
 #define X(a, b) strncat(addition, "- `" b "`\n", 1024);
 			EULABEIA_RESULT_TYPES
 #undef X
-			strncat(addition,
-				"\n\nFor more specific information please "
-				"consolidate [result model](../models/result.go)",
-				1024);
+			strncat(
+			    addition,
+			    "\n\nFor more specific information please "
+			    "consolidate [result model](../models/result.go)",
+			    1024);
 			break;
 
 		case EULABEIA_INFO_STATUS:
