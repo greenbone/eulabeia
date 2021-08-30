@@ -8,21 +8,21 @@ import (
 )
 
 const (
-	NVT_FILENAME_POS           = iota //0
-	NVT_REQUIRED_KEYS_POS             //1
-	NVT_MANDATORY_KEYS_POS            //2
-	NVT_EXCLUDED_KEYS_POS             //3
-	NVT_REQUIRED_UDP_PORTS_POS        //4
-	NVT_REQUIRED_PORTS_POS            //5
-	NVT_DEPENDENCIES_POS              //6
-	NVT_TAGS_POS                      //7
-	NVT_CVES_POS                      //8
-	NVT_BIDS_POS                      //9
-	NVT_XREFS_POS                     //10
-	NVT_CATEGORY_POS                  //11
-	NVT_TIMEOUT_POS                   //12
-	NVT_FAMILY_POS                    //13
-	NVT_NAME_POS                      //14
+	NVT_FILENAME_POS           = 0
+	NVT_REQUIRED_KEYS_POS      = 1
+	NVT_MANDATORY_KEYS_POS     = 2
+	NVT_EXCLUDED_KEYS_POS      = 3
+	NVT_REQUIRED_UDP_PORTS_POS = 4
+	NVT_REQUIRED_PORTS_POS     = 5
+	NVT_DEPENDENCIES_POS       = 6
+	NVT_TAGS_POS               = 7
+	NVT_CVES_POS               = 8
+	NVT_BIDS_POS               = 9
+	NVT_XREFS_POS              = 10
+	NVT_CATEGORY_POS           = 11
+	NVT_TIMEOUT_POS            = 12
+	NVT_FAMILY_POS             = 13
+	NVT_NAME_POS               = 14
 )
 
 type RedisConnection struct {
@@ -35,10 +35,9 @@ func (rc RedisConnection) GetList(db int, key string, start int, end int) ([]str
 
 	conn.Do("SELECT", db)
 
-	var data []string
 	data, err := redis.Strings(conn.Do("LRANGE", key, start, end))
 	if err != nil {
-		return data, fmt.Errorf("unable to get list: %s: %s", key, err)
+		return nil, fmt.Errorf("unable to get list: %s: %s", key, err)
 	}
 	return data, nil
 }
