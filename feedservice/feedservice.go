@@ -12,13 +12,21 @@ import (
 	"github.com/greenbone/eulabeia/models"
 )
 
+type DBConnecion interface {
+	Close() error
+	GetList(db int, key string, start int, end int) ([]string, error)
+}
+
+// feed is the struct representing the feedservice
 type feed struct {
 	mqtt    connection.PubSub
 	context string
-	rc      *redis.RedisConnection
+	rc      DBConnecion
+	id      string
 }
 
-// getSeverity returns a SeverityType with given tags
+// getSeverity filters the necessary infomation from the tags of a nvti to
+// create a models.SeverityType
 func getSeverity(tags map[string]string) models.SeverityType {
 	var severetyVector string
 	var severetyVersion string
@@ -48,6 +56,8 @@ func getSeverity(tags map[string]string) models.SeverityType {
 	}
 }
 
+// getRefs expects a comma separated list of cves, bids and xrefs. The function
+// splitts them and put them into a list of models.RefType
 func getRefs(cves string, bids string, xrefs string) []models.RefType {
 	var cveSlice []string
 	var bidSlice []string
@@ -101,6 +111,8 @@ func getRefs(cves string, bids string, xrefs string) []models.RefType {
 	return ret
 }
 
+// getNvtPrefs expects an oid corresponding to a nvt. The function parses the
+// preferences of a nvt into a list of models.VTParamType
 func (f *feed) getNvtPrefs(oid string) []models.VTParamType {
 	key := fmt.Sprintf("oid:%s:prefs", oid)
 	prefs, err := f.rc.GetList(1, key, 0, -1)
@@ -132,7 +144,7 @@ func (f *feed) getNvtPrefs(oid string) []models.VTParamType {
 
 }
 
-// get_vts expects a list of OIDs of VTs and returns a list of the corresponding
+// getVt expects a list of OIDs of VTs and returns a list of the corresponding
 // VTs. If the oids list is empty all VTs are returned. If the VTs are currently
 // loading nil will be returned.
 func (f *feed) GetVt(oid string) (models.VT, error) {
@@ -206,7 +218,7 @@ func (f *feed) Start() {
 	// MQTT Subscription Map
 
 	f.mqtt.Subscribe(map[string]connection.OnMessage{
-		fmt.Sprintf("%s/feed/cmd", f.context): handler.FeedHandler{
+		fmt.Sprintf("%s/feed/cmd/%s", f.context, f.id): handler.FeedHandler{
 			GetVt:   f.GetVt,
 			Context: f.context,
 		},
@@ -218,10 +230,11 @@ func (f *feed) Close() error {
 }
 
 // NewScheduler creates a new scheduler
-func NewFeed(mqtt connection.PubSub, context string) *feed {
+func NewFeed(mqtt connection.PubSub, context string, id string) *feed {
 	return &feed{
 		mqtt:    mqtt,
 		context: context,
 		rc:      redis.NewRedisConnection("unix", "/run/redis-openvas/redis.sock"),
+		id:      id,
 	}
 }
