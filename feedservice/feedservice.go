@@ -2,7 +2,6 @@ package feedservice
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -156,14 +155,11 @@ func (f *feed) GetVt(oid string) (models.VT, error) {
 	dependecies := strings.Split(pref[redis.NVT_DEPENDENCIES_POS], ", ")
 	allTags := strings.Split(pref[redis.NVT_TAGS_POS], "|")
 	tags := make(map[string]string)
-	log.Println("test")
 
 	for _, v := range allTags {
-		log.Println("test")
 		tag := strings.SplitN(v, "=", 2)
 		tags[tag[0]] = tag[1]
 	}
-	log.Println("test")
 	refs := getRefs(pref[redis.NVT_CVES_POS], pref[redis.NVT_BIDS_POS], pref[redis.NVT_XREFS_POS])
 
 	var params []models.VTParamType
@@ -216,7 +212,6 @@ func (f *feed) GetVt(oid string) (models.VT, error) {
 // Start starts the feed service
 func (f *feed) Start() {
 	// MQTT Subscription Map
-
 	f.mqtt.Subscribe(map[string]connection.OnMessage{
 		fmt.Sprintf("%s/feed/cmd/%s", f.context, f.id): handler.FeedHandler{
 			GetVt:   f.GetVt,
