@@ -50,7 +50,6 @@ type Scheduler struct {
 	commander     openvas.Commander       // commander used for openvas
 	context       string                  // context used for mqtt
 	interruptChan chan string             // channel for signaling interrupted scans
-	loadedVTsChan chan struct{}
 
 	mqtt connection.PubSub         // mqtt connection
 	id   string                    // ID of the sensor
@@ -67,7 +66,6 @@ func (sensor *Scheduler) loadVTs() {
 		log.Panicf("Unable to load VTs into redis: %s", err)
 	}
 	log.Printf("Loading VTs into Redis DB finished\n")
-	sensor.loadedVTsChan <- struct{}{}
 }
 
 // QueueScan queues a scan
