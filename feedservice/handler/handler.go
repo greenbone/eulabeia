@@ -24,7 +24,7 @@ func (handler FeedHandler) On(topic string, message []byte) (*connection.SendRes
 	if err != nil {
 		return nil, err
 	}
-	if mt.Aggregate == "feed" {
+	if mt.Aggregate == "vt" {
 		switch mt.Function {
 		case "get":
 			vt, err := handler.GetVt(msg.ID)
@@ -33,9 +33,9 @@ func (handler FeedHandler) On(topic string, message []byte) (*connection.SendRes
 			}
 
 			return &connection.SendResponse{
-				MSG: models.SendVT{
+				MSG: models.GotVT{
 					Identifier: messages.Identifier{
-						Message: messages.NewMessage("vts.feed", "", msg.GroupID),
+						Message: messages.NewMessage("got.vt", "", msg.GroupID),
 						ID:      handler.ID,
 					},
 					VT: vt,

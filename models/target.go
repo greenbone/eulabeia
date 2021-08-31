@@ -32,21 +32,21 @@ type RefType struct {
 
 // VT's parameters have an ID. The ID 0 (zero) is reserved for the script timeout which is not add to Redis cache as a preference but as script parameter.
 type VTParamType struct {
-	ParameterID           int    `json:"id"`          // Parameter ID. ID:0 is always to specify a timeout.
-	ParameterName         string `json:"name"`        // Parameter Name
-	ParameterValue        string `json:"value"`       // Parameter Value
-	ParameterType         string `json:"type"`        // Parameter Type
-	ParameterDescription  string `json:"description"` // Parameter description
-	ParameterDefaultValue string `json:"default"`     // Parameter default value
+	ID           int    `json:"id"`          // Parameter ID. ID:0 is always to specify a timeout.
+	Name         string `json:"name"`        // Parameter Name
+	Value        string `json:"value"`       // Parameter Value
+	Type         string `json:"type"`        // Parameter Type
+	Description  string `json:"description"` // Parameter description
+	DefaultValue string `json:"default"`     // Parameter default value
 }
 
 // Severities are stored as Tag. Because tag names can not be repeated, only one severity is supported.
 // The old tag name for severities are cvss_base and cvss_base_vector. The new extended severities tags has priority over the old format.
 type SeverityType struct {
-	SeverityVector  string `json:"severity_vector"` // CVSS vector. Supported are CVSSv2 and CVSSv3.x
-	SeverityVersion string `json:"severity_type"`   // CVSS version
-	SeverityDate    string `json:"severity_date"`   // CVE creation date. Default to VT creation date
-	SeverityOrigin  string `json:"severity_origin"` // Serverity Origin
+	Vector  string `json:"severity_vector"` // CVSS vector. Supported are CVSSv2 and CVSSv3.x
+	Version string `json:"severity_type"`   // CVSS version
+	Date    string `json:"severity_date"`   // CVE creation date. Default to VT creation date
+	Origin  string `json:"severity_origin"` // Serverity Origin
 }
 
 // Strucure to store the information of a single VT.
@@ -84,7 +84,7 @@ type GetVT struct {
 	messages.Identifier
 }
 
-type SendVT struct {
+type GotVT struct {
 	info.EventType
 	messages.Identifier
 	VT VT `json:"vt"`

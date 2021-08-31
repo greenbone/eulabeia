@@ -48,10 +48,10 @@ func getSeverity(tags map[string]string) models.SeverityType {
 	}
 
 	return models.SeverityType{
-		SeverityVector:  severetyVector,
-		SeverityVersion: severetyVersion,
-		SeverityDate:    severetyDate,
-		SeverityOrigin:  tags["severity_origin"],
+		Vector:  severetyVector,
+		Version: severetyVersion,
+		Date:    severetyDate,
+		Origin:  tags["severity_origin"],
 	}
 }
 
@@ -131,12 +131,12 @@ func (f *feed) getNvtPrefs(oid string) []models.VTParamType {
 			def = pref[3]
 		}
 		ret[i] = models.VTParamType{
-			ParameterID:           id,
-			ParameterName:         pref[1],
-			ParameterValue:        "",
-			ParameterType:         pref[2],
-			ParameterDescription:  "Description",
-			ParameterDefaultValue: def,
+			ID:           id,
+			Name:         pref[1],
+			Value:        "",
+			Type:         pref[2],
+			Description:  "Description",
+			DefaultValue: def,
 		}
 	}
 	return ret
@@ -168,11 +168,11 @@ func (f *feed) GetVt(oid string) (models.VT, error) {
 	if timeout != "" {
 		params = []models.VTParamType{
 			{
-				ParameterID:           0,
-				ParameterName:         "timeout",
-				ParameterType:         "entry",
-				ParameterDescription:  "Script Timeout",
-				ParameterDefaultValue: timeout,
+				ID:           0,
+				Name:         "timeout",
+				Type:         "entry",
+				Description:  "Script Timeout",
+				DefaultValue: timeout,
 			},
 		}
 		params = append(params, f.getNvtPrefs(oid)...)
@@ -213,7 +213,7 @@ func (f *feed) GetVt(oid string) (models.VT, error) {
 func (f *feed) Start() {
 	// MQTT Subscription Map
 	f.mqtt.Subscribe(map[string]connection.OnMessage{
-		fmt.Sprintf("%s/feed/cmd/%s", f.context, f.id): handler.FeedHandler{
+		fmt.Sprintf("%s/vt/cmd/%s", f.context, f.id): handler.FeedHandler{
 			GetVt:   f.GetVt,
 			Context: f.context,
 		},
