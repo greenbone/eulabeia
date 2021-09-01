@@ -100,7 +100,7 @@ int eulabeia_json_object(const char *payload,
 	return 0;
 }
 
-int eulabeia_scan_progress_status(const char *id,
+static int eulabeia_scan_progress_status(const char *id,
 				  const struct EulabeiaStatus *status,
 				  struct EulabeiaScanProgress *progress)
 {
@@ -240,7 +240,7 @@ char *eulabeia_calculate_topic(enum eulabeia_message_type mt,
 //
 // @return 0 on success, -1 when either ec or data is null, -2 when data in
 // invalid; -3 when data could not be published
-int publish_message(const struct EulabeiaClient *ec,
+static int publish_message(const struct EulabeiaClient *ec,
 		    enum eulabeia_message_type mt,
 		    enum eulabeia_aggregate a,
 		    char *group_id,
@@ -280,7 +280,7 @@ exit:
 }
 
 // @brief verifies scan_data according to @see verify_data.
-int verify_scan_data(struct EulabeiaScan *scan)
+static int verify_scan_data(struct EulabeiaScan *scan)
 {
 	if (scan == NULL) {
 		return -1;
@@ -292,7 +292,7 @@ int verify_scan_data(struct EulabeiaScan *scan)
 }
 
 // @brief verifies target_data according to @see verify_data.
-int verify_target_data(struct EulabeiaTarget *target)
+static int verify_target_data(struct EulabeiaTarget *target)
 {
 	if (target == NULL) {
 		return -1;
