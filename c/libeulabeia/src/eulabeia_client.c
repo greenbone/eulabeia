@@ -35,6 +35,11 @@ volatile int already_connected =
 static int
 default_publish(const char *topic, const char *message, void *context)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-value"
+	(void *)context;
+#pragma GCC diagnostic pop
+
 	return mqtt_publish(topic, message);
 }
 
@@ -44,6 +49,10 @@ static int default_retrieve(char **topic,
 			    int *payload_len,
 			    void *context)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-value"
+	(void *)context;
+#pragma GCC diagnostic pop
 	return mqtt_retrieve_message(topic, topic_len, payload, payload_len);
 }
 
@@ -101,8 +110,8 @@ int eulabeia_json_object(const char *payload,
 }
 
 static int eulabeia_scan_progress_status(const char *id,
-				  const struct EulabeiaStatus *status,
-				  struct EulabeiaScanProgress *progress)
+					 const struct EulabeiaStatus *status,
+					 struct EulabeiaScanProgress *progress)
 {
 	int rc = -6;
 	if (strcmp(id, status->id) != 0) {
@@ -241,14 +250,14 @@ char *eulabeia_calculate_topic(enum eulabeia_message_type mt,
 // @return 0 on success, -1 when either ec or data is null, -2 when data in
 // invalid; -3 when data could not be published
 static int publish_message(const struct EulabeiaClient *ec,
-		    enum eulabeia_message_type mt,
-		    enum eulabeia_aggregate a,
-		    char *group_id,
-		    void *data,
-		    const char *destination,
-		    verify_data verifier,
-		    to_json tj,
-		    const int modify)
+			   enum eulabeia_message_type mt,
+			   enum eulabeia_aggregate a,
+			   char *group_id,
+			   void *data,
+			   const char *destination,
+			   verify_data verifier,
+			   to_json tj,
+			   const int modify)
 {
 	char *json, *topic;
 	int rc;
