@@ -9,14 +9,17 @@ import (
 	"github.com/greenbone/eulabeia/models"
 )
 
+// FeedHandler handles incoming request regarding the feed
 type FeedHandler struct {
-	GetVt   func(oids string) (models.VT, error) // Function to get VTs from feedservice
-	Context string
-	ID      string
+	GetVT         func(oids string) (models.VT, error)             // Get VT metadata from feedservice
+	ResolveFilter func(filter []models.VTFilter) ([]string, error) //
+	Context       string
+	ID            string
 }
 
 func (handler FeedHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
-	var msg models.GetVT
+	// determine message type
+	var msg messages.Message
 	if err := json.Unmarshal(message, &msg); err != nil {
 		return nil, err
 	}
@@ -26,8 +29,12 @@ func (handler FeedHandler) On(topic string, message []byte) (*connection.SendRes
 	}
 	if mt.Aggregate == "vt" {
 		switch mt.Function {
-		case "get":
-			vt, err := handler.GetVt(msg.ID)
+		case "get": // Get single VT metadata
+			var msg models.GetVT
+			if err := json.Unmarshal(message, &msg); err != nil {
+				return nil, err
+			}
+			vt, err := handler.GetVT(msg.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -39,6 +46,24 @@ func (handler FeedHandler) On(topic string, message []byte) (*connection.SendRes
 						ID:      handler.ID,
 					},
 					VT: vt,
+				},
+				Topic: fmt.Sprintf("%s/vt/info", handler.Context),
+			}, nil
+		case "resolve": // Get OIDs that matches given filter
+			var msg models.ResolveFilter
+			if err := json.Unmarshal(message, &msg); err != nil {
+				return nil, err
+			}
+
+			oids, err := handler.ResolveFilter(msg.Filter)
+			if err != nil {
+				return nil, err
+			}
+
+			return &connection.SendResponse{
+				MSG: models.ResolvedFilter{
+					Message: messages.NewMessage("resolved.vt", "", msg.GroupID),
+					OIDs:    oids,
 				},
 				Topic: fmt.Sprintf("%s/vt/info", handler.Context),
 			}, nil

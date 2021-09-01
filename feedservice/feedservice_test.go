@@ -158,6 +158,12 @@ func (rm RedisMock) GetList(db int, key string, start int, end int) ([]string, e
 	}
 }
 
+func (rm RedisMock) GetKeys(db int, filter string) ([]string, error) {
+	return []string{
+		"test",
+	}, nil
+}
+
 func TestGetVT(t *testing.T) {
 	fs := feed{
 		mqtt:    MockPubSub{},
@@ -165,7 +171,7 @@ func TestGetVT(t *testing.T) {
 		rc:      &RedisMock{},
 	}
 
-	vtTest, err := fs.GetVt("test")
+	vtTest, err := fs.GetVT("test")
 	if err != nil {
 		t.Fatalf("Unable to get VT: %s\n", err)
 	}

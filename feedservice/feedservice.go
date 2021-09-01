@@ -14,6 +14,7 @@ import (
 type DBConnecion interface {
 	Close() error
 	GetList(db int, key string, start int, end int) ([]string, error)
+	GetKeys(db int, filter string) ([]string, error)
 }
 
 // feed is the struct representing the feedservice
@@ -143,10 +144,8 @@ func (f *feed) getNvtPrefs(oid string) []models.VTParamType {
 
 }
 
-// getVt expects a list of OIDs of VTs and returns a list of the corresponding
-// VTs. If the oids list is empty all VTs are returned. If the VTs are currently
-// loading nil will be returned.
-func (f *feed) GetVt(oid string) (models.VT, error) {
+// GetVt expects a single OIDs and returns all metadata of the corresponding VT.
+func (f *feed) GetVT(oid string) (models.VT, error) {
 	pref, err := f.rc.GetList(1, fmt.Sprintf("nvt:%s", oid), 0, -1)
 	if err != nil {
 		return models.VT{}, err
@@ -194,18 +193,68 @@ func (f *feed) GetVt(oid string) (models.VT, error) {
 	return vt, err
 }
 
+// GetVTs expects a List of VTFilter and returns a list of oids which match the given filter.
+func (f *feed) ResolveFilter(filter []models.VTFilter) ([]string, error) {
+	ret := make([]string, 0)
+
+	if len(filter) == 0 {
+		return nil, nil
+	}
+
+	vtOIDs, err := f.rc.GetKeys(1, "nvt:*")
+	if err != nil {
+		return nil, err
+	}
+
+	vts := make(map[string][]string, len(vtOIDs))
+	for _, oid := range vtOIDs {
+		vts[strings.TrimPrefix(oid, "nvt:")], _ = f.rc.GetList(1, oid, redis.NVT_FILENAME_POS, redis.NVT_NAME_POS)
+	}
+	var contains bool
+	for oid, vt := range vts {
+		contains = false
+		for _, v := range filter {
+			switch v.Key {
+			case "family":
+				contains = strings.Contains(vt[redis.NVT_FAMILY_POS], v.Value)
+			case "category":
+				contains = strings.Contains(vt[redis.NVT_CATEGORY_POS], v.Value)
+			case "tag":
+				contains = strings.Contains(vt[redis.NVT_TAGS_POS], v.Value)
+			case "cve":
+				contains = strings.Contains(vt[redis.NVT_CVES_POS], v.Value)
+			case "name":
+				contains = strings.Contains(vt[redis.NVT_NAME_POS], v.Value)
+			case "filename":
+				contains = strings.Contains(vt[redis.NVT_FILENAME_POS], v.Value)
+			case "bid":
+				contains = strings.Contains(vt[redis.NVT_BIDS_POS], v.Value)
+			}
+			if contains {
+				ret = append(ret, oid)
+				continue
+			}
+		}
+	}
+
+	return ret, nil
+
+}
+
 // Start starts the feed service
 func (f *feed) Start() {
 	fmt.Printf("%s/vt/cmd/%s\n", f.context, f.id)
 	// MQTT Subscription Map
 	f.mqtt.Subscribe(map[string]connection.OnMessage{
 		fmt.Sprintf("%s/vt/cmd/%s", f.context, f.id): handler.FeedHandler{
-			GetVt:   f.GetVt,
-			Context: f.context,
+			GetVT:         f.GetVT,
+			ResolveFilter: f.ResolveFilter,
+			Context:       f.context,
 		},
 	})
 }
 
+// Close ends the feed service
 func (f *feed) Close() error {
 	return f.rc.Close()
 }
