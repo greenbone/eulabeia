@@ -11,6 +11,8 @@ endif
 all: format check test build
 
 prepare:
+	# this only works for Go <1.16 for Go >=1.16 it should be
+	# go install honnef.co/go/tools/cmd/staticcheck@latest
 	go install honnef.co/go/tools/cmd/staticcheck
 
 format:
