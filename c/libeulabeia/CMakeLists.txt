@@ -21,6 +21,7 @@ project(
   libeulabeia
   VERSION 1.0.0
   LANGUAGES C)
+
 # define library before find packages to allow import of autotools projects
 # (glib)
 add_library(eulabeia src/eulabeia_types.c src/eulabeia_json.c
@@ -50,18 +51,8 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   PRIVATE {CMAKE_CURRENT_SOURCE_DIR}/src)
 
-target_compile_options(
-  eulabeia
-  PRIVATE
-    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-    -Wall
-    -Wextra
-    -Werror
-    -Wsequence-point
-    -Wstrict-prototypes
-    -Wshadow
-    -Wmissing-prototypes
-    -Wpedantic>)
+# Compiler flags.
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror -Wsequence-point -Wstrict-prototypes -Wshadow -Wmissing-prototypes -Wpedantic -fpic")
 
 # Installation instructions
 
