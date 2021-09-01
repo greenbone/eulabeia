@@ -40,7 +40,7 @@ func (handler FeedHandler) On(topic string, message []byte) (*connection.SendRes
 					},
 					VT: vt,
 				},
-				Topic: fmt.Sprintf("%s/feed/info", handler.Context),
+				Topic: fmt.Sprintf("%s/vt/info", handler.Context),
 			}, nil
 
 		}
