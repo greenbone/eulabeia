@@ -9,9 +9,7 @@ COPY --from=lib-eulabeia /usr/local/src/packages /usr/local/src/packages
 RUN /usr/local/bin/clone.sh openvas-scanner $VERSION
 RUN /usr/local/bin/build.sh openvas-scanner $VERSION
 
-# we use debian:testing due to paho otherwise we would need to install
-# manually
-FROM debian:testing-slim
+FROM debian:stable-slim
 # installing openvas scanner into the sensor image
 COPY --from=openvas /usr/local/src/docker.list /etc/apt/sources.list.d/docker.list
 COPY --from=openvas /usr/local/src/packages /usr/local/src/packages
