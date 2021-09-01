@@ -74,7 +74,6 @@ int eulabeia_json_failure(JsonObject *obj,
 			  struct EulabeiaMessage *msg,
 			  struct EulabeiaFailure **failure)
 {
-	int rc;
 	enum eulabeia_message_type failure_type;
 	if (msg == NULL || msg->type == NULL)
 		return -1;
@@ -214,7 +213,6 @@ int eulabeia_json_status(JsonObject *obj,
 
 int eulabeia_json_hosts(JsonArray *arr, struct EulabeiaHosts **hosts)
 {
-	struct EulabeiaHost *h;
 	const char *a;
 	unsigned int arr_len;
 	if (*hosts == NULL) {
@@ -227,7 +225,7 @@ int eulabeia_json_hosts(JsonArray *arr, struct EulabeiaHosts **hosts)
 	}
 	(*hosts)->cap = arr_len;
 	(*hosts)->len = arr_len;
-	for (int index = 0; index < arr_len; index++) {
+	for (unsigned int index = 0; index < arr_len; index++) {
 		a = json_array_get_string_element(arr, index);
 		(*hosts)->hosts[index].address = g_strdup(a);
 	}
@@ -239,7 +237,6 @@ int eulabeia_json_hosts(JsonArray *arr, struct EulabeiaHosts **hosts)
 
 int eulabeia_json_plugins(JsonArray *arr, struct EulabeiaPlugins **plugins)
 {
-	struct EulabeiaPlugin *h;
 	const char *a;
 	unsigned int arr_len;
 	if (*plugins == NULL) {
@@ -252,7 +249,7 @@ int eulabeia_json_plugins(JsonArray *arr, struct EulabeiaPlugins **plugins)
 	}
 	(*plugins)->cap = arr_len;
 	(*plugins)->len = arr_len;
-	for (int index = 0; index < arr_len; index++) {
+	for (unsigned int index = 0; index < arr_len; index++) {
 		a = json_array_get_string_element(arr, index);
 		(*plugins)->plugins[index].oid = g_strdup(a);
 	}
@@ -262,7 +259,6 @@ int eulabeia_json_plugins(JsonArray *arr, struct EulabeiaPlugins **plugins)
 
 int eulabeia_json_ports(JsonArray *arr, struct EulabeiaPorts **ports)
 {
-	struct EulabeiaPort *h;
 	const char *a;
 	unsigned int arr_len;
 	if (*ports == NULL) {
@@ -275,17 +271,18 @@ int eulabeia_json_ports(JsonArray *arr, struct EulabeiaPorts **ports)
 	}
 	(*ports)->cap = arr_len;
 	(*ports)->len = arr_len;
-	for (int index = 0; index < arr_len; index++) {
+	for (unsigned int index = 0; index < arr_len; index++) {
 		a = json_array_get_string_element(arr, index);
 		(*ports)->ports[index].port = g_strdup(a);
 	}
 
 	return 0;
 }
-void builder_add_plugins(JsonBuilder *builder,
+
+static void builder_add_plugins(JsonBuilder *builder,
 			 const struct EulabeiaPlugins *plugins)
 {
-	int i;
+	unsigned int i;
 	json_builder_begin_object(builder);
 	json_builder_set_member_name(builder, "single_vts");
 	json_builder_begin_array(builder);
@@ -299,9 +296,9 @@ void builder_add_plugins(JsonBuilder *builder,
 	json_builder_end_object(builder);
 }
 
-void builder_add_ports(JsonBuilder *builder, const struct EulabeiaPorts *ports)
+static void builder_add_ports(JsonBuilder *builder, const struct EulabeiaPorts *ports)
 {
-	int i;
+	unsigned int i;
 	json_builder_begin_array(builder);
 	for (i = 0; i < ports->len; i++) {
 		json_builder_add_string_value(builder, ports->ports[i].port);
@@ -309,9 +306,9 @@ void builder_add_ports(JsonBuilder *builder, const struct EulabeiaPorts *ports)
 	json_builder_end_array(builder);
 }
 
-void builder_add_hosts(JsonBuilder *builder, const struct EulabeiaHosts *hosts)
+static void builder_add_hosts(JsonBuilder *builder, const struct EulabeiaHosts *hosts)
 {
-	int i;
+	unsigned int i;
 	json_builder_begin_array(builder);
 	for (i = 0; i < hosts->len; i++) {
 		json_builder_add_string_value(builder, hosts->hosts[i].address);
@@ -319,7 +316,7 @@ void builder_add_hosts(JsonBuilder *builder, const struct EulabeiaHosts *hosts)
 	json_builder_end_array(builder);
 }
 
-void builder_add_result(JsonBuilder *builder,
+static void builder_add_result(JsonBuilder *builder,
 			const struct EulabeiaScanResult *result)
 {
 	json_builder_set_member_name(builder, "result_type");
@@ -340,7 +337,7 @@ void builder_add_result(JsonBuilder *builder,
 	json_builder_add_string_value(builder, result->uri);
 }
 
-void builder_add_status(JsonBuilder *builder,
+static void builder_add_status(JsonBuilder *builder,
 			const struct EulabeiaStatus *status)
 {
 
@@ -352,7 +349,7 @@ void builder_add_status(JsonBuilder *builder,
 }
 
 // expects a builder with an open object, internal use
-void builder_add_target(JsonBuilder *builder,
+static void builder_add_target(JsonBuilder *builder,
 			const struct EulabeiaTarget *target,
 			const int modify)
 {
@@ -397,7 +394,7 @@ void builder_add_target(JsonBuilder *builder,
 	}
 }
 
-void builder_add_scan(JsonBuilder *builder,
+static  void builder_add_scan(JsonBuilder *builder,
 		      const struct EulabeiaScan *scan,
 		      const int modify)
 {
@@ -425,7 +422,7 @@ void builder_add_scan(JsonBuilder *builder,
 	}
 }
 
-void builder_add_message(JsonBuilder *builder,
+static void builder_add_message(JsonBuilder *builder,
 			 const struct EulabeiaMessage *msg)
 {
 	json_builder_set_member_name(builder, "message_id");
@@ -438,7 +435,7 @@ void builder_add_message(JsonBuilder *builder,
 	json_builder_add_int_value(builder, msg->created);
 }
 
-void builder_add_failure(JsonBuilder *builder,
+static void builder_add_failure(JsonBuilder *builder,
 			 const struct EulabeiaFailure *failure)
 {
 	json_builder_set_member_name(builder, "id");
@@ -447,7 +444,7 @@ void builder_add_failure(JsonBuilder *builder,
 	json_builder_add_string_value(builder, failure->error);
 }
 
-char *json_builder_to_str(JsonBuilder *builder)
+static char *json_builder_to_str(JsonBuilder *builder)
 {
 	char *json_str;
 	JsonGenerator *gen;
