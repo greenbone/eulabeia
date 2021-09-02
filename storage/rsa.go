@@ -62,9 +62,21 @@ func parseRSAPrivateKey(b []byte) (*rsa.PrivateKey, error) {
 }
 
 func NewRSACrypt(c config.Configuration) (Crypt, error) {
+	if c.Director.KeyFile == "" {
+		return nil, nil
+	}
 	k, err := ioutil.ReadFile(c.Director.KeyFile)
 	var prvKey *rsa.PrivateKey
 	if err != nil {
+		dir := filepath.Dir(c.Director.KeyFile)
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			err := os.MkdirAll(dir, 0700)
+			if err != nil {
+				return nil, err
+			}
+		} else if err != nil {
+			return nil, err
+		}
 		prvKey, err = rsa.GenerateKey(rand.Reader, 4096)
 		if err != nil {
 			return nil, err
