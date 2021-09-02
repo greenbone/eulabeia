@@ -161,7 +161,7 @@ void __wrap_free(void *p)
 /**
  * @brief init global memory size counters and use mem wrapper
  */
-void activate_mem_tracking()
+static void activate_mem_tracking(void)
 {
 #if defined(HAVE_NUMA) && defined(CGREEN_NO_FORK)
 	g_alloc_cnt = 0;
@@ -175,7 +175,7 @@ void activate_mem_tracking()
  * @brief init global memory size counters and use mem wrapper
  *
  */
-void deactivate_mem_tracking()
+static void deactivate_mem_tracking(void)
 {
 #if defined(HAVE_NUMA) && defined(CGREEN_NO_FORK)
 	g_alloc_cnt = 0;
@@ -185,7 +185,9 @@ void deactivate_mem_tracking()
 #endif
 }
 
-void ensure_alloc_equal_free(const char *call_func)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+static void ensure_alloc_equal_free(const char *call_func)
 {
 #if defined(HAVE_NUMA) && defined(CGREEN_NO_FORK)
 	g_warning("%s: (%d:%d)", call_func, g_alloc_cnt, g_free_cnt);
@@ -198,6 +200,7 @@ void ensure_alloc_equal_free(const char *call_func)
 	    g_free_cnt);
 #endif
 }
+#pragma GCC diagnostic pop
 
 Ensure(Eulabeia_json, create_object_success)
 {
@@ -295,7 +298,6 @@ clean_exit:
 Ensure(Eulabeia_json, create_hosts_success)
 {
 	int err;
-	int rc;
 	JsonNode *j_node = NULL;
 	JsonObject *j_obj;
 	JsonArray *host_arr;
@@ -331,7 +333,6 @@ clean_exit:
 Ensure(Eulabeia_json, plugins_create_success)
 {
 	int err;
-	int rc;
 	JsonObject *j_obj;
 	JsonArray *plugin_arr;
 
@@ -403,6 +404,8 @@ clean_exit:
 		json_node_free(j_node);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-prototypes"
 TestSuite *eulabeia_json_tests()
 {
 	TestSuite *suite = create_test_suite();
@@ -414,3 +417,4 @@ TestSuite *eulabeia_json_tests()
 	add_test_with_context(suite, Eulabeia_json, ports_create_success);
 	return suite;
 }
+#pragma GCC diagnostic pop
