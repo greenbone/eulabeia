@@ -198,7 +198,7 @@ func (f *feed) ResolveFilter(filter []models.VTFilter) ([]string, error) {
 	ret := make([]string, 0)
 
 	if len(filter) == 0 {
-		return nil, nil
+		return nil, fmt.Errorf("empty or missing filter")
 	}
 
 	vtOIDs, err := f.rc.GetKeys(1, "nvt:*")
@@ -206,12 +206,13 @@ func (f *feed) ResolveFilter(filter []models.VTFilter) ([]string, error) {
 		return nil, err
 	}
 
-	vts := make(map[string][]string, len(vtOIDs))
-	for _, oid := range vtOIDs {
-		vts[strings.TrimPrefix(oid, "nvt:")], _ = f.rc.GetList(1, oid, redis.NVT_FILENAME_POS, redis.NVT_NAME_POS)
-	}
 	var contains bool
-	for oid, vt := range vts {
+	for _, nvtOID := range vtOIDs {
+		oid := strings.TrimPrefix(nvtOID, "nvt:")
+		vt, err := f.rc.GetList(1, nvtOID, redis.NVT_FILENAME_POS, redis.NVT_NAME_POS)
+		if err != nil {
+			continue
+		}
 		contains = false
 		for _, v := range filter {
 			switch v.Key {

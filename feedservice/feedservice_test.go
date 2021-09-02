@@ -178,7 +178,6 @@ func (rm RedisMock) GetList(db int, key string, start int, end int) ([]string, e
 			"test_bid",
 			"URL:https://example.org, Advisory-ID:testID",
 			"1",
-			"0",
 			"foo_bar_family",
 			"name2",
 		}, nil
