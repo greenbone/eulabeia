@@ -19,8 +19,19 @@
 
 #ifndef __EULABEIA_JSON_H
 #define __EULABEIA_JSON_H
+
 #include <eulabeia/types.h>
 #include <json-glib/json-glib.h>
+
+/**
+ * @brief set json print to either pretty or compact; 0 for compact; 1 for
+ * pretty.
+ *
+ * @param[in] i either 0 or 1
+ *
+ */
+void eulabeia_json_set_pretty_print(int i);
+
 /*
  * @brief inititalizes JsonNode and JsonObject.
  *
@@ -172,6 +183,25 @@ int eulabeia_json_plugins(JsonArray *arr, struct EulabeiaPlugins **plugins);
  *  -3,-4 on setting value failure
  */
 int eulabeia_json_ports(JsonArray *arr, struct EulabeiaPorts **ports);
+
+/*
+ * @brief transform a message which only contains an ID to json.
+ *
+ * Transforms
+ * - EULABEIA_CMD_START,
+ * - EULABEIA_CMD_STOP,
+ * - EULABEIA_CMD_CREATE,
+ * - EULABEIA_CMD_CREATED,
+ * - EULABEIA_CMD_MODIFIED,
+ * messages to json representation.
+ *
+ * @param[in] msg, the EulabeiaMessage to include.
+ * @param[in] id, the ID to set.
+ * @return a json char array or NULL on failure.
+ */
+char *eulabeia_id_message_to_json(const struct EulabeiaMessage *msg,
+				  const char *id);
+
 /*
  * @brief transforms EulabeiaScan to json string.
  *
@@ -206,7 +236,7 @@ char *eulabeia_target_message_to_json(const struct EulabeiaMessage *msg,
  * @return a json char array or NULL on failure.
  */
 char *eulabeia_failure_message_to_json(const struct EulabeiaMessage *msg,
-				      const struct EulabeiaFailure *failure);
+				       const struct EulabeiaFailure *failure);
 
 /*
  * @brief parses already initialized JsonObject to EulabeiaScanResult
@@ -246,8 +276,17 @@ eulabeia_scan_result_message_to_json(const struct EulabeiaMessage *msg,
  * @param[in] status, the status to transform to json string.
  * @return a json char array or NULL on failure.
  */
-char *
-eulabeia_status_message_to_json(const struct EulabeiaMessage *msg,
-				     const struct EulabeiaStatus *result);
+char *eulabeia_status_message_to_json(const struct EulabeiaMessage *msg,
+				      const struct EulabeiaStatus *result);
+
+/*
+ * @brief transforms EulabeiaFailure to json string.
+ *
+ * @param[in] msg, the EulabeiaMessage to include
+ * @param[in] status, the status to transform to json string.
+ * @return a json char array or NULL on failure.
+ */
+char *eulabeia_failure_message_to_json(const struct EulabeiaMessage *msg,
+				       const struct EulabeiaFailure *f);
 
 #endif

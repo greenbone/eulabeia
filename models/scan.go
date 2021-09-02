@@ -30,21 +30,6 @@ type Scan struct {
 	Temporary bool     `json:"temporary"` // Temporary defines if the Target as well as the Scan should be deleted when a scan finished
 }
 
-// Sensor contains registered sensors
-//
-// A sensor is starting and stopping the actual scan process
-type Sensor struct {
-	ID   string `json:"id"`
-	Type string `json:"type"`
-}
-
-// GotSensor is a response for get.sensor
-type GotSensor struct {
-	messages.Message
-	info.EventType
-	Sensor
-}
-
 // GotScan is a response for get.scan
 type GotScan struct {
 	messages.Message

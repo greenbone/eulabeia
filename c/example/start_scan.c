@@ -154,7 +154,8 @@ exit:
 		free(topic);
 	return rc;
 }
-int start_scan(const int invalid){
+int start_scan(const int invalid)
+{
 	struct EulabeiaScanProgress *scan_progress;
 	struct EulabeiaCRUDProgress target_progress, modify_scan_progress;
 	struct EulabeiaScan *scan;
@@ -190,7 +191,8 @@ int start_scan(const int invalid){
 		goto exit;
 	}
 	modify_scan_progress.status = EULABEIA_CRUD_REQUESTED;
-	if ((rc = check_for_modify_progress(&modify_scan_progress, scan->id)) != 0){
+	if ((rc = check_for_modify_progress(&modify_scan_progress, scan->id)) !=
+	    0) {
 		printf("failed (%d) to verify modify scan\n", rc);
 		goto exit;
 	}
@@ -201,7 +203,7 @@ int start_scan(const int invalid){
 		printf("[%d] unable to start scan %s\n", rc, scan->id);
 		goto exit;
 	}
-	if ((rc = check_scan_progress(scan_progress, scan->id)) != 0){
+	if ((rc = check_scan_progress(scan_progress, scan->id)) != 0) {
 		printf("failed (%d) to verify start scan\n", rc);
 		goto exit;
 	}
@@ -235,7 +237,7 @@ int main()
 	int rc;
 	printf("starting valid scan:\n\n");
 	rc = start_scan(0);
-	if (rc != 0){
+	if (rc != 0) {
 		printf("valid start scan example failed (%d)\n", rc);
 	}
 	printf("starting invalid scan:\n\n");

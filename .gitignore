@@ -19,3 +19,8 @@ bin/
 build/
 compile_commands.json
 Testing/
+# doxygen
+html/
+man/
+xml/
+
