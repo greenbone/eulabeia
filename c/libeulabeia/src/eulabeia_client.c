@@ -84,10 +84,6 @@ void eulabeia_destroy(struct EulabeiaClient *ec)
 	if (ec == NULL)
 		return;
 	mqtt_unsubscribe(EULABEIA_INFO);
-	if (!already_connected) {
-		g_info("closing mqtt connection");
-		mqtt_reset();
-	}
 	free(ec);
 }
 
