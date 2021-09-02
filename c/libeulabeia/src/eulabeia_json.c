@@ -280,7 +280,7 @@ int eulabeia_json_ports(JsonArray *arr, struct EulabeiaPorts **ports)
 }
 
 static void builder_add_plugins(JsonBuilder *builder,
-			 const struct EulabeiaPlugins *plugins)
+				const struct EulabeiaPlugins *plugins)
 {
 	unsigned int i;
 	json_builder_begin_object(builder);
@@ -296,7 +296,8 @@ static void builder_add_plugins(JsonBuilder *builder,
 	json_builder_end_object(builder);
 }
 
-static void builder_add_ports(JsonBuilder *builder, const struct EulabeiaPorts *ports)
+static void builder_add_ports(JsonBuilder *builder,
+			      const struct EulabeiaPorts *ports)
 {
 	unsigned int i;
 	json_builder_begin_array(builder);
@@ -306,7 +307,8 @@ static void builder_add_ports(JsonBuilder *builder, const struct EulabeiaPorts *
 	json_builder_end_array(builder);
 }
 
-static void builder_add_hosts(JsonBuilder *builder, const struct EulabeiaHosts *hosts)
+static void builder_add_hosts(JsonBuilder *builder,
+			      const struct EulabeiaHosts *hosts)
 {
 	unsigned int i;
 	json_builder_begin_array(builder);
@@ -317,7 +319,7 @@ static void builder_add_hosts(JsonBuilder *builder, const struct EulabeiaHosts *
 }
 
 static void builder_add_result(JsonBuilder *builder,
-			const struct EulabeiaScanResult *result)
+			       const struct EulabeiaScanResult *result)
 {
 	json_builder_set_member_name(builder, "result_type");
 	json_builder_add_string_value(builder, result->result_type);
@@ -338,7 +340,7 @@ static void builder_add_result(JsonBuilder *builder,
 }
 
 static void builder_add_status(JsonBuilder *builder,
-			const struct EulabeiaStatus *status)
+			       const struct EulabeiaStatus *status)
 {
 
 	json_builder_set_member_name(builder, "id");
@@ -350,8 +352,8 @@ static void builder_add_status(JsonBuilder *builder,
 
 // expects a builder with an open object, internal use
 static void builder_add_target(JsonBuilder *builder,
-			const struct EulabeiaTarget *target,
-			const int modify)
+			       const struct EulabeiaTarget *target,
+			       const int modify)
 {
 	if (target->id) {
 		json_builder_set_member_name(builder, "id");
@@ -394,9 +396,9 @@ static void builder_add_target(JsonBuilder *builder,
 	}
 }
 
-static  void builder_add_scan(JsonBuilder *builder,
-		      const struct EulabeiaScan *scan,
-		      const int modify)
+static void builder_add_scan(JsonBuilder *builder,
+			     const struct EulabeiaScan *scan,
+			     const int modify)
 {
 	if (scan->id) {
 		json_builder_set_member_name(builder, "id");
@@ -423,7 +425,7 @@ static  void builder_add_scan(JsonBuilder *builder,
 }
 
 static void builder_add_message(JsonBuilder *builder,
-			 const struct EulabeiaMessage *msg)
+				const struct EulabeiaMessage *msg)
 {
 	json_builder_set_member_name(builder, "message_id");
 	json_builder_add_string_value(builder, msg->id);
@@ -436,7 +438,7 @@ static void builder_add_message(JsonBuilder *builder,
 }
 
 static void builder_add_failure(JsonBuilder *builder,
-			 const struct EulabeiaFailure *failure)
+				const struct EulabeiaFailure *failure)
 {
 	json_builder_set_member_name(builder, "id");
 	json_builder_add_string_value(builder, failure->id);

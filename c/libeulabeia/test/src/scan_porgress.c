@@ -31,11 +31,15 @@ AfterEach(Progress) {}
 #define SUCCESS 1
 #define FAILURE 0
 
-int progress(const char *topic, const char *message, void *context)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+static int progress(const char *topic, const char *message, void *context)
 {
 	int *c = (int *)context;
 	return *c == SUCCESS ? 0 : -42;
 }
+#pragma GCC diagnostic pop
 
 Ensure(Progress, scan_progress_failures)
 {
@@ -191,6 +195,8 @@ Ensure(Progress, scan_progress_success)
 	eulabeia_scan_progress_destroy(&progress);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-prototypes"
 TestSuite *progress_tests()
 {
 	TestSuite *suite = create_test_suite();
@@ -198,3 +204,4 @@ TestSuite *progress_tests()
 	add_test_with_context(suite, Progress, scan_progress_success);
 	return suite;
 }
+#pragma GCC diagnostic pop
