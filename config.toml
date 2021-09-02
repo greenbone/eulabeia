@@ -23,6 +23,7 @@ Id = "localhorst"
 
 [Director]
 StoragePath = "/var/lib/eulabeia/director/storage"
+KeyFile = "/var/lib/eulabeia/director/private.key"
 
 [Preferences]
 config = "~/.eulabeia/config.toml"
