@@ -29,17 +29,20 @@ AfterEach(Publish) {}
 #define SUCCESS 1
 #define FAILURE 0
 
-int publish(const char *topic, const char *message, void *context)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+static int publish(const char *topic, const char *message, void *context)
 {
 	int *c = (int *)context;
 	return *c == SUCCESS ? 0 : -42;
 }
+#pragma GCC diagnostic pop
 
 Ensure(Publish, start_scan_returns_error_on_publish_fail)
 {
 
 	struct EulabeiaClient *ec = calloc(1, sizeof(struct EulabeiaClient));
-	ec->publish = publish;
+	ec->publish = &publish;
 	struct EulabeiaScan *scan = calloc(1, sizeof(struct EulabeiaScan));
 	int fail = FAILURE;
 	ec->context = &fail;
@@ -69,7 +72,7 @@ Ensure(Publish, start_scan_returns_error_on_publish_fail)
 Ensure(Publish, start_scan_success)
 {
 	struct EulabeiaClient *ec = calloc(1, sizeof(struct EulabeiaClient));
-	ec->publish = publish;
+	ec->publish = &publish;
 	struct EulabeiaScan *scan = calloc(1, sizeof(struct EulabeiaScan));
 	int success = SUCCESS;
 	ec->context = &success;
@@ -85,6 +88,8 @@ Ensure(Publish, start_scan_success)
 	free(scan);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-prototypes"
 TestSuite *publish_tests()
 {
 	TestSuite *suite = create_test_suite();
@@ -93,3 +98,4 @@ TestSuite *publish_tests()
 	add_test_with_context(suite, Publish, start_scan_success);
 	return suite;
 }
+#pragma GCC diagnostic pop

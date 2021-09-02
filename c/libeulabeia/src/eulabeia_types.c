@@ -131,7 +131,7 @@ void eulabeia_status_destroy(struct EulabeiaStatus **status)
 void eulabeia_hosts_destroy(struct EulabeiaHosts **hosts)
 {
 	struct EulabeiaHost *p_index, *p_orig;
-	int i;
+	unsigned int i = 0;
 
 	if (hosts == NULL || *hosts == NULL) {
 		g_warning("hosts == NULL || *hosts == NULL");
@@ -153,7 +153,7 @@ void eulabeia_hosts_destroy(struct EulabeiaHosts **hosts)
 
 void eulabeia_plugins_destroy(struct EulabeiaPlugins **plugins)
 {
-	int i;
+	unsigned int i = 0;
 	struct EulabeiaPlugin *p_index, *p_orig;
 
 	if (plugins == NULL || *plugins == NULL)
@@ -175,7 +175,7 @@ void eulabeia_plugins_destroy(struct EulabeiaPlugins **plugins)
 
 void eulabeia_ports_destroy(struct EulabeiaPorts **ports)
 {
-	int i;
+	unsigned int i = 0;
 	struct EulabeiaPort *p_index, *p_orig;
 
 	if (ports == NULL || *ports == NULL)
@@ -195,7 +195,7 @@ void eulabeia_ports_destroy(struct EulabeiaPorts **ports)
 	*ports = NULL;
 }
 
-void free_scan_result_data(struct EulabeiaScanResult *scan_result)
+static void free_scan_result_data(struct EulabeiaScanResult *scan_result)
 {
 	if ((scan_result)->result_type)
 		free((scan_result)->result_type);
@@ -228,7 +228,7 @@ void eulabeia_scan_result_destroy(struct EulabeiaScanResult **scan_result)
 
 void eulabeia_scan_progress_destroy(struct EulabeiaScanProgress **scan_progress)
 {
-	int i;
+	unsigned int i;
 	struct EulabeiaScanResult *ptr;
 	if (scan_progress == NULL || *scan_progress == NULL)
 		return;

@@ -18,10 +18,9 @@
  */
 
 #include <cgreen/cgreen.h>
-
-TestSuite *publish_tests();
-TestSuite *progress_tests();
-TestSuite *eulabeia_json_tests();
+TestSuite *publish_tests(void);
+TestSuite *progress_tests(void);
+TestSuite *eulabeia_json_tests(void);
 
 int main(int argc, char **argv)
 {
