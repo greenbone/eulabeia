@@ -52,14 +52,6 @@ var vt = models.VT{
 	},
 	VTParameters: []models.VTParamType{
 		{
-			ID:           0,
-			Name:         "timeout",
-			Value:        "",
-			Type:         "entry",
-			Description:  "Script Timeout",
-			DefaultValue: "0",
-		},
-		{
 			ID:           1,
 			Name:         "Test1:",
 			Value:        "",

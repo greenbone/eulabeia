@@ -20,7 +20,6 @@ const (
 	NVT_BIDS_POS               = 9
 	NVT_XREFS_POS              = 10
 	NVT_CATEGORY_POS           = 11
-	NVT_TIMEOUT_POS            = 12
 	NVT_FAMILY_POS             = 13
 	NVT_NAME_POS               = 14
 )

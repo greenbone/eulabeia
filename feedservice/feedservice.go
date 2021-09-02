@@ -162,21 +162,6 @@ func (f *feed) GetVt(oid string) (models.VT, error) {
 	}
 	refs := getRefs(pref[redis.NVT_CVES_POS], pref[redis.NVT_BIDS_POS], pref[redis.NVT_XREFS_POS])
 
-	var params []models.VTParamType
-
-	timeout := pref[redis.NVT_TIMEOUT_POS]
-	if timeout != "" {
-		params = []models.VTParamType{
-			{
-				ID:           0,
-				Name:         "timeout",
-				Type:         "entry",
-				Description:  "Script Timeout",
-				DefaultValue: timeout,
-			},
-		}
-		params = append(params, f.getNvtPrefs(oid)...)
-	}
 	vt := models.VT{
 		OID:                oid,
 		Name:               pref[redis.NVT_NAME_POS],
@@ -201,7 +186,7 @@ func (f *feed) GetVt(oid string) (models.VT, error) {
 		QoDType:            tags["qod_type"],
 		QoDValue:           tags["qod"],
 		References:         refs,
-		VTParameters:       params,
+		VTParameters:       f.getNvtPrefs(oid),
 		VTDependencies:     dependecies,
 		Severity:           getSeverity(tags),
 	}
@@ -211,6 +196,7 @@ func (f *feed) GetVt(oid string) (models.VT, error) {
 
 // Start starts the feed service
 func (f *feed) Start() {
+	fmt.Printf("%s/vt/cmd/%s\n", f.context, f.id)
 	// MQTT Subscription Map
 	f.mqtt.Subscribe(map[string]connection.OnMessage{
 		fmt.Sprintf("%s/vt/cmd/%s", f.context, f.id): handler.FeedHandler{
