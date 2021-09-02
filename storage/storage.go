@@ -80,7 +80,8 @@ func (n *InMemory) Get(id string, v interface{}) error {
 
 // File is a file system based Json implementation
 type File struct {
-	Dir string
+	Dir   string
+	Crypt Crypt
 }
 
 func (fs File) path(id string) (string, error) {
@@ -94,6 +95,12 @@ func (fs File) Put(id string, data interface{}) error {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return err
+	}
+	if fs.Crypt != nil {
+		b, err = fs.Crypt.Encrypt(b)
+		if err != nil {
+			return err
+		}
 	}
 	if p, err := fs.path(id); err == nil {
 		return ioutil.WriteFile(p, b, 0640)
@@ -115,6 +122,12 @@ func (fs File) Get(id string, v interface{}) error {
 		b, err := ioutil.ReadFile(p)
 		if err != nil {
 			return err
+		}
+		if fs.Crypt != nil {
+			b, err = fs.Crypt.Decrypt(b)
+			if err != nil {
+				return err
+			}
 		}
 		return json.Unmarshal(b, v)
 	} else {
