@@ -9,6 +9,8 @@ import (
 	"encoding/pem"
 	"errors"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 
 	"github.com/greenbone/eulabeia/config"
 )
