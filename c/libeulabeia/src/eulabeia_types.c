@@ -131,7 +131,7 @@ void eulabeia_status_destroy(struct EulabeiaStatus **status)
 void eulabeia_hosts_destroy(struct EulabeiaHosts **hosts)
 {
 	struct EulabeiaHost *p_index, *p_orig;
-	unsigned int i;
+	unsigned int i = 0;
 
 	if (hosts == NULL || *hosts == NULL) {
 		g_warning("hosts == NULL || *hosts == NULL");
@@ -153,7 +153,7 @@ void eulabeia_hosts_destroy(struct EulabeiaHosts **hosts)
 
 void eulabeia_plugins_destroy(struct EulabeiaPlugins **plugins)
 {
-	unsigned int i;
+	unsigned int i = 0;
 	struct EulabeiaPlugin *p_index, *p_orig;
 
 	if (plugins == NULL || *plugins == NULL)
@@ -175,7 +175,7 @@ void eulabeia_plugins_destroy(struct EulabeiaPlugins **plugins)
 
 void eulabeia_ports_destroy(struct EulabeiaPorts **ports)
 {
-	unsigned int i;
+	unsigned int i = 0;
 	struct EulabeiaPort *p_index, *p_orig;
 
 	if (ports == NULL || *ports == NULL)

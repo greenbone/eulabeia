@@ -33,15 +33,14 @@ static int json_object_get_and_assign_string(JsonObject *obj,
 					     char **value)
 {
 	const char *jvalue;
-	unsigned int len;
+
 	if ((jvalue = json_object_get_string_member(obj, key)) == NULL) {
 		return 1;
 	}
-	len = strlen(jvalue);
-	if ((*value = calloc(1, len)) == NULL)
+
+	if ((*value = g_strdup(jvalue)) == NULL)
 		return -1;
-	if (strncpy(*value, jvalue, len) == NULL)
-		return -2;
+
 	return 0;
 }
 
