@@ -106,7 +106,6 @@ build-container-clib:
 build-container-c-example: build-container-clib
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-message-json-overview -f ./message-json-overview-md.Dockerfile .
 
-
 build-container-sensor: build-container-clib build-sensor
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-sensor -f sensor.Dockerfile .
 
