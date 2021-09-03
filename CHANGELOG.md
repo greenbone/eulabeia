@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Tests for sensor, QueueList and handler(sensor) [39](https://github.com/greenbone/eulabeia/pull/39)
 - Handling interrupted scans [39](https://github.com/greenbone/eulabeia/pull/39)
 - Possibility to set VT preferences and select VT Groups [43](https://github.com/greenbone/eulabeia/pull/43)
+- Feedservice to handle Get VT [54](https://github.com/greenbone/eulabeia/pull/54)
 
 ### Changed
 - Split cmds and info messages into own module [8](https://github.com/greenbone/eulabeia/pull/8)

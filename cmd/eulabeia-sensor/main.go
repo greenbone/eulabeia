@@ -24,6 +24,7 @@ import (
 
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection/mqtt"
+	"github.com/greenbone/eulabeia/feedservice"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/process"
@@ -67,8 +68,11 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
+	feed := feedservice.NewFeed(client, configuration.Context, configuration.Sensor.Id)
+	log.Printf("Starting Feed Service\n")
+	feed.Start()
 	sens := sensor.NewScheduler(client, configuration.Sensor.Id, configuration.ScannerPreferences, configuration.Context)
 	log.Printf("Starting Scheduler\n")
 	sens.Start()
-	process.Block(client, sens)
+	process.Block(client, sens, feed)
 }
