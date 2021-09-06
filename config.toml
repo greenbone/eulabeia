@@ -1,4 +1,4 @@
-context = "eulabeia"
+Context = "scanner"
 title = "eulabeia config"
 
 [Cert]

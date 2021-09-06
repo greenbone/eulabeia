@@ -44,8 +44,10 @@ import (
 )
 
 const MEGA_ID = "mega_scan_123"
-const context = "eulabeia"
+const context = "scanner"
 const topic = context + "/+/info"
+
+var firstContact = false
 
 const (
 	CREATED_TARGET  = "created.target"
@@ -100,6 +102,7 @@ func (e *ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse,
 }
 
 func ModifyTarget(msg info.IDInfo, _ []byte) *connection.SendResponse {
+	firstContact = true
 	modify := cmds.NewModify(
 		"target",
 		msg.ID,
@@ -246,9 +249,14 @@ func main() {
 		ic <- syscall.SIGABRT
 	}()
 	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
-	err = c.Publish("eulabeia/target/cmd/director", cmds.NewCreate("target", "director", ""))
-	if err != nil {
-		log.Panicf("Failed to publish: %s", err)
+	for !firstContact {
+		err = c.Publish("scanner/target/cmd/director", cmds.NewCreate("target", "director", ""))
+		if err != nil {
+			log.Panicf("Failed to publish: %s", err)
+		}
+		if !firstContact {
+			time.Sleep(1 * time.Second)
+		}
 	}
 	<-ic
 	log.Printf("After handling %s it is time to say good bye", mh.handled)

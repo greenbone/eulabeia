@@ -2,6 +2,8 @@ package scan
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
@@ -27,15 +29,19 @@ func toJson(v interface{}) []byte {
 	return b
 }
 
-func toTopicData(v messages.Event) connection.TopicData {
+func toTopicData(context string, v messages.Event) connection.TopicData {
 	return connection.TopicData{
-		Topic:   messages.EventToResponse("eulabeia", v).Topic,
+		Topic:   messages.EventToResponse("scanner", v).Topic,
 		Message: toJson(v),
 	}
 }
 
-func (s StartMegaScan) Preprocess(topic string, payload []byte) ([]connection.TopicData, bool) {
-	if topic != "eulabeia/scan/cmd/director" {
+type ScanPreprocessor struct {
+	Context string
+}
+
+func (s ScanPreprocessor) Preprocess(topic string, payload []byte) ([]connection.TopicData, bool) {
+	if !strings.HasSuffix(topic, "/scan/cmd/director") {
 		return nil, false
 	}
 	mt, err := handler.ParseMessageType(payload)
@@ -65,10 +71,11 @@ func (s StartMegaScan) Preprocess(topic string, payload []byte) ([]connection.To
 		"temporary": true,
 	}, "director", sms.GroupID)
 	start := cmds.NewStart("scan", sms.ID, "director", sms.GroupID)
+	fmt.Printf("Using context: %s\n", s.Context)
 	return []connection.TopicData{
-		toTopicData(target),
-		toTopicData(scan),
-		toTopicData(start),
+		toTopicData(s.Context, target),
+		toTopicData(s.Context, scan),
+		toTopicData(s.Context, start),
 	}, true
 
 }

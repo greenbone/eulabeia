@@ -19,6 +19,8 @@ RUN apt-get update &&\
 	rm -rf /var/lib/apt/lists/*
 RUN rm -rf /usr/local/src/*
 RUN rm /etc/apt/sources.list.d/docker.list
+COPY openvas_log.conf /etc/openvas/openvas_log.conf
 COPY config.toml /usr/etc/eulabeia/config.toml
 COPY bin/eulabeia-sensor /usr/bin/eulabeia-sensor
+RUN echo "mqtt_context = scanner" >> /etc/openvas/openvas.conf
 CMD [ "/usr/bin/eulabeia-sensor" ]
