@@ -45,6 +45,10 @@ type Sensor struct {
 	Id string // The Id (a uuid) of this sensor
 }
 
+type Feedservice struct {
+	Redis string
+}
+
 type Director struct {
 	Id          string // The Id (a uuid) of this director
 	StoragePath string // The path to store the json into
@@ -59,6 +63,7 @@ type Configuration struct {
 	ScannerPreferences ScannerPreferences
 	Preferences        Preferences
 	Sensor             Sensor
+	Feedservice        Feedservice
 	Director           Director
 	path               string
 }

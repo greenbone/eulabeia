@@ -22,6 +22,9 @@ niceness = 10
 [Sensor]
 Id = "localhorst"
 
+[Feedservice]
+Redis = "/run/redis/redis.sock"
+
 [Director]
 StoragePath = "/var/lib/eulabeia/director/storage"
 KeyFile = "/var/lib/eulabeia/director/private.key"

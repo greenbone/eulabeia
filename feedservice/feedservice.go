@@ -264,11 +264,19 @@ func (f *feed) Close() error {
 }
 
 // NewScheduler creates a new scheduler
+<<<<<<< HEAD
 func NewFeed(mqtt connection.PubSub, context string, id string, redisDbAddress string) *feed {
 	return &feed{
 		mqtt:    mqtt,
 		context: context,
 		rc:      redis.NewRedisConnection("unix", redisDbAddress),
+=======
+func NewFeed(mqtt connection.PubSub, context string, id string, redisPath string) *feed {
+	return &feed{
+		mqtt:    mqtt,
+		context: context,
+		rc:      redis.NewRedisConnection("unix", redisPath),
+>>>>>>> adjustable redis path
 		id:      id,
 	}
 }
