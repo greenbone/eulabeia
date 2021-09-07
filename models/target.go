@@ -83,6 +83,7 @@ type VT struct {
 type GetVT struct {
 	cmds.EventType
 	messages.Identifier
+	OID string `json:"oid"`
 }
 
 // GotVT is the response to GetVT. It contains all Metadata of a single VT

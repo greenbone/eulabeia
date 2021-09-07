@@ -34,7 +34,7 @@ func (handler FeedHandler) On(topic string, message []byte) (*connection.SendRes
 			if err := json.Unmarshal(message, &msg); err != nil {
 				return nil, err
 			}
-			vt, err := handler.GetVT(msg.ID)
+			vt, err := handler.GetVT(msg.OID)
 			if err != nil {
 				return nil, err
 			}

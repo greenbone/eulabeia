@@ -54,6 +54,7 @@ const (
 	CREATED_TARGET  = "created.target"
 	MODIFIED_TARGET = "modified.target"
 	MODIFIED_SCAN   = "modified.scan"
+	GET_VT          = "get.vt"
 )
 
 // ExampleHandler parses the message and calls corresponding function of MessageType within do map.
@@ -116,6 +117,10 @@ func ModifyTarget(msg info.IDInfo, _ []byte) *connection.SendResponse {
 		"director",
 		msg.GroupID)
 	return messages.EventToResponse(context, modify)
+}
+
+func GetVT(msg info.IDInfo, _ []byte) *connection.SendResponse {
+	return nil
 }
 
 func CreateScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
