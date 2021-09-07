@@ -150,6 +150,9 @@ func (f *feed) GetVT(oid string) (models.VT, error) {
 	if err != nil {
 		return models.VT{}, err
 	}
+	if len(pref) == 0 {
+		return models.VT{}, fmt.Errorf("oid %s not found", oid)
+	}
 
 	dependecies := strings.Split(pref[redis.NVT_DEPENDENCIES_POS], ", ")
 	allTags := strings.Split(pref[redis.NVT_TAGS_POS], "|")
