@@ -40,7 +40,7 @@ const (
 
 // Result
 type Result struct {
-	ScanId   string     `json:"scan_id"`     // Scan id
+	ScanId   string     `json:"id"`          // Scan id
 	Type     ResultType `json:"result_type"` // Result type
 	Host     string     `json:"host_ip"`     // Host's IP the result belongs to
 	Hostname string     `json:"host_name"`   // DNS name of the host
