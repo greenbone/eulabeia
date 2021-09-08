@@ -61,14 +61,17 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed create RSA: %s", err)
 	}
-	device := storage.File{Crypt: crypt, Dir: configuration.Director.StoragePath}
+	device, err := storage.New(configuration.Director.StoragePath, crypt)
+	if err != nil {
+		log.Panicf("Failed to create storage: %s", err)
+	}
 	err = client.Subscribe(map[string]connection.OnMessage{
 		prepare_topic("sensor"): handler.New(configuration.Context, sensor.New(device)),
 		prepare_topic("target"): handler.New(configuration.Context, target.New(device)),
 		prepare_topic("scan"):   handler.New(configuration.Context, scan.New(device)),
 	})
 	if err != nil {
-		panic(err)
+		log.Panicf("Subscribing failed: %s", err)
 	}
 
 	process.Block(client)
