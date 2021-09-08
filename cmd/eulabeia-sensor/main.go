@@ -29,6 +29,7 @@ import (
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/process"
 	"github.com/greenbone/eulabeia/sensor"
+	"github.com/greenbone/eulabeia/topic"
 )
 
 func main() {
@@ -52,7 +53,7 @@ func main() {
 	log.Printf("Starting sensor (%s) on context (%s)\n", configuration.Sensor.Id, configuration.Context)
 	client, err := mqtt.New(server, configuration.Sensor.Id, "", "",
 		&mqtt.LastWillMessage{
-			Topic: "scanner/sensor/cmd/director",
+			Topic: topic.NewCmd(configuration.Context, "sensor", "director"),
 			MSG: cmds.Delete{
 				Identifier: messages.Identifier{
 					Message: messages.NewMessage("delete.sensor", "", ""),

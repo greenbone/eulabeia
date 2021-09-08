@@ -41,11 +41,11 @@ import (
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
+	"github.com/greenbone/eulabeia/topic"
 )
 
 const MEGA_ID = "mega_scan_123"
 const context = "scanner"
-const topic = context + "/+/info"
 
 var firstContact = false
 
@@ -238,7 +238,7 @@ func main() {
 		exit: ic,
 	}
 	defer Verify(&mh)
-	err = c.Subscribe(map[string]connection.OnMessage{topic: &mh})
+	err = c.Subscribe(map[string]connection.OnMessage{topic.NewInfo(context, "", ""): &mh})
 	if err != nil {
 		panic(err)
 	}
@@ -250,7 +250,7 @@ func main() {
 	}()
 	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
 	for !firstContact {
-		err = c.Publish("scanner/target/cmd/director", cmds.NewCreate("target", "director", ""))
+		err = c.Publish(topic.NewCmd(context, "target", "director"), cmds.NewCreate("target", "director", ""))
 		if err != nil {
 			log.Panicf("Failed to publish: %s", err)
 		}

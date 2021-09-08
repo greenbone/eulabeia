@@ -19,7 +19,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 
 	"github.com/greenbone/eulabeia/config"
@@ -31,6 +30,7 @@ import (
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/process"
 	"github.com/greenbone/eulabeia/storage"
+	"github.com/greenbone/eulabeia/topic"
 )
 
 func main() {
@@ -44,9 +44,6 @@ func main() {
 	config.OverrideViaENV(configuration)
 	server := configuration.Connection.Server
 
-	prepare_topic := func(aggregate_name string) string {
-		return fmt.Sprintf("%s/%s/cmd/director", configuration.Context, aggregate_name)
-	}
 	log.Printf("Starting director with context %s\n", configuration.Context)
 	client, err := mqtt.New(server, *clientid, "", "", nil, []connection.Preprocessor{
 		scan.ScanPreprocessor{Context: configuration.Context}})
@@ -63,9 +60,9 @@ func main() {
 	}
 	device := storage.File{Crypt: crypt, Dir: configuration.Director.StoragePath}
 	err = client.Subscribe(map[string]connection.OnMessage{
-		prepare_topic("sensor"): handler.New(configuration.Context, sensor.New(device)),
-		prepare_topic("target"): handler.New(configuration.Context, target.New(device)),
-		prepare_topic("scan"):   handler.New(configuration.Context, scan.New(device)),
+		topic.NewCmd(configuration.Context, "sensor", "director"): handler.New(configuration.Context, sensor.New(device)),
+		topic.NewCmd(configuration.Context, "target", "director"): handler.New(configuration.Context, target.New(device)),
+		topic.NewCmd(configuration.Context, "scan", "director"):   handler.New(configuration.Context, scan.New(device)),
 	})
 	if err != nil {
 		panic(err)
