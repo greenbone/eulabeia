@@ -137,7 +137,7 @@ enum eulabeia_aggregate {
 /**
  * @brief defines result types
  *
- * Ressult types are send by the scanner. Most of them are from openvas and
+ * Result types are sent by the scanner. Most of them are from openvas and
  * don't follow the typical eulabeia format.
  *
  * The first value is used as a enum identifier and the second is used to parse
@@ -145,8 +145,6 @@ enum eulabeia_aggregate {
  */
 #define EULABEIA_RESULT_TYPES                                                  \
 	X(EULABEIA_RESULT_TYPE_UNKNOWN, "UNKNOWN")                             \
-	X(EULABEIA_RESULT_TYPE_HOST_COUNT, "HOST_COUNT")                       \
-	X(EULABEIA_RESULT_TYPE_DEADHOST, "DEADHOST")                           \
 	X(EULABEIA_RESULT_TYPE_HOST_START, "HOST_START")                       \
 	X(EULABEIA_RESULT_TYPE_HOST_END, "HOST_END")                           \
 	X(EULABEIA_RESULT_TYPE_ERRMSG, "ERRMSG")                               \
@@ -157,6 +155,30 @@ enum eulabeia_aggregate {
 enum eulabeia_result_type {
 #define X(a, b) a,
 	EULABEIA_RESULT_TYPES
+#undef X
+};
+
+/**
+ * @brief Defines host status types
+ *
+ * Host status are sent by the scanner main process or the host process.
+ * They don't follow the typical eulabeia format.
+ * These messages are mainly for progress calculation and don't end in the
+ * client.
+ *
+ * The first value is used as a enum identifier and the second is used to parse
+ * the enum from and to string. Currently openvas is sending it in uppercase.
+ */
+#define EULABEIA_HOST_STATUS_TYPES                                             \
+	X(EULABEIA_HOST_STATUS_TYPE_UNKNOWN, "HOST_STATUS_UNKNOWN")            \
+	X(EULABEIA_HOST_STATUS_TYPE_HOST_COUNT, "HOST_COUNT")                  \
+	X(EULABEIA_HOST_STATUS_TYPE_DEADHOST, "DEADHOST")                      \
+	X(EULABEIA_HOST_STATUS_TYPE_HOST_STATUS, "HOST_PROGRESS")              \
+	X(EULABEIA_HOST_STATUS_TYPE_ERRMSG, "HOST_ERRMSG")
+
+enum eulabeia_host_status_type {
+#define X(a, b) a,
+	EULABEIA_HOST_STATUS_TYPES
 #undef X
 };
 
@@ -204,6 +226,14 @@ struct EulabeiaScanResult {
 	char *oid;
 	char *value;
 	char *uri;
+};
+
+struct EulabeiaHostStatus {
+	struct EulabeiaMessage *message;
+	enum eulabeia_host_status_type host_status_type; // TODO enum
+	char *host_ip;
+	char *id;
+	char *value;
 };
 
 struct EulabeiaScanResults {
@@ -369,6 +399,14 @@ void eulabeia_ports_destroy(struct EulabeiaPorts **ports);
 void eulabeia_scan_result_destroy(struct EulabeiaScanResult **scan_result);
 
 /*
+ * @brief destroys an EulabeiaHostStatus
+ *
+ * @param[out] scan_result, the EulabeiaScanResult to be freed. Sets
+ * *scan_result to NULL.
+ */
+void eulabeia_host_status_destroy(struct EulabeiaHostStatus **status);
+
+/*
  * @brief destroys an EulabeiaScanProgress
  *
  * @param[out] scan_progress, the EulabeiaScanProgress to be freed. Sets
@@ -486,4 +524,20 @@ char *eulabeia_result_type_to_str(enum eulabeia_result_type rt);
  * @return enum eulabeia_result_type
  */
 enum eulabeia_result_type eulabeia_result_type_from_str(char *s);
+
+/*
+ * @brief translate given eulabeia_host_status_type to a char representation
+ *
+ * @param[in] host_status_type to translate
+ * @return char array representation of given host_status_type
+ */
+char *eulabeia_host_status_type_to_str(enum eulabeia_host_status_type rt);
+
+/*
+ * @brief translate a given char representation to eulabeia_host_status_type
+ *
+ * @param[in] string to translate
+ * @return enum eulabeia_host_status_type
+ */
+enum eulabeia_host_status_type eulabeia_host_status_type_from_str(char *s);
 #endif

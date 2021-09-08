@@ -338,6 +338,19 @@ static void builder_add_result(JsonBuilder *builder,
 	json_builder_add_string_value(builder, result->uri);
 }
 
+static void builder_add_host_status(JsonBuilder *builder,
+			       const struct EulabeiaHostStatus *status)
+{
+	json_builder_set_member_name(builder, "status_type");
+	json_builder_add_int_value(builder, status->host_status_type);
+	json_builder_set_member_name(builder, "host_ip");
+	json_builder_add_string_value(builder, status->host_ip);
+	json_builder_set_member_name(builder, "id");
+	json_builder_add_string_value(builder, status->id);
+	json_builder_set_member_name(builder, "value");
+	json_builder_add_string_value(builder, status->value);
+}
+
 static void builder_add_status(JsonBuilder *builder,
 			       const struct EulabeiaStatus *status)
 {
@@ -522,6 +535,24 @@ eulabeia_scan_result_message_to_json(const struct EulabeiaMessage *msg,
 	json_builder_begin_object(b);
 	builder_add_message(b, msg);
 	builder_add_result(b, result);
+	json_builder_end_object(b);
+
+	json_str = json_builder_to_str(b);
+	g_object_unref(b);
+	return json_str;
+}
+
+char *
+eulabeia_host_status_message_to_json(const struct EulabeiaMessage *msg,
+				     const struct EulabeiaHostStatus *status)
+{
+	JsonBuilder *b;
+	char *json_str;
+	b = json_builder_new();
+
+	json_builder_begin_object(b);
+	builder_add_message(b, msg);
+	builder_add_host_status(b, status);
 	json_builder_end_object(b);
 
 	json_str = json_builder_to_str(b);

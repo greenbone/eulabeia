@@ -91,6 +91,19 @@ char *eulabeia_result_type_to_str(enum eulabeia_result_type mt)
 	}
 }
 
+char *eulabeia_host_status_type_to_str(enum eulabeia_host_status_type mt)
+{
+	switch (mt) {
+#define X(a, b)                                                                \
+	case a:                                                                \
+		return b;
+		EULABEIA_HOST_STATUS_TYPES
+#undef X
+	default:
+		return NULL;
+	}
+}
+
 void eulabeia_message_destroy(struct EulabeiaMessage **msg)
 {
 	if (*msg == NULL) {
@@ -226,6 +239,27 @@ void eulabeia_scan_result_destroy(struct EulabeiaScanResult **scan_result)
 	*scan_result = NULL;
 }
 
+static void free_host_status_data(struct EulabeiaHostStatus *status)
+{
+	if ((status)->host_ip)
+		free((status)->host_ip);
+	if ((status)->id)
+		free((status)->id);;
+	if ((status)->value)
+		free((status)->value);
+}
+
+void eulabeia_host_status_destroy(struct EulabeiaHostStatus **status)
+{
+	if (status == NULL || *status == NULL)
+		return;
+
+	free_host_status_data(*status);
+
+	free(*status);
+	*status = NULL;
+}
+
 void eulabeia_scan_progress_destroy(struct EulabeiaScanProgress **scan_progress)
 {
 	unsigned int i;
@@ -321,4 +355,14 @@ enum eulabeia_result_type eulabeia_result_type_from_str(char *rt)
 	EULABEIA_RESULT_TYPES
 #undef X
 	return EULABEIA_RESULT_TYPE_UNKNOWN;
+}
+
+enum eulabeia_host_status_type eulabeia_host_status_type_from_str(char *rt)
+{
+	if (rt == NULL)
+		return EULABEIA_HOST_STATUS_TYPE_UNKNOWN;
+#define X(a, b) else if (strncmp(rt, b, strlen(b)) == 0) return (a);
+	EULABEIA_HOST_STATUS_TYPES
+#undef X
+	return EULABEIA_HOST_STATUS_TYPE_UNKNOWN;
 }
