@@ -33,6 +33,7 @@ type ScannerPreferences struct {
 	MaxQueuedScans      int64  // Maxi number of scans that can be queued
 	Niceness            int64  // Niceness of the openvas Process
 	MinFreeMemScanQueue uint64 // Min Memory necessary for a Scan to start
+
 }
 
 type Preferences struct {
@@ -53,6 +54,7 @@ type Director struct {
 type Configuration struct {
 	Context            string
 	Certificate        Certificate
+	RedisDbAddress     string
 	Connection         Connection
 	ScannerPreferences ScannerPreferences
 	Preferences        Preferences
