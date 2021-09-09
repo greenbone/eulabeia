@@ -23,13 +23,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Handling interrupted scans [39](https://github.com/greenbone/eulabeia/pull/39)
 - Possibility to set VT preferences and select VT Groups [43](https://github.com/greenbone/eulabeia/pull/43)
 - Feedservice to handle Get VT [54](https://github.com/greenbone/eulabeia/pull/54)
-- Reolving VT Groups into OIDs [59](https://github.com/greenbone/eulabeia/pull/59)
+- Resolving VT Groups into OIDs [59](https://github.com/greenbone/eulabeia/pull/59)
 
 ### Changed
 - Split cmds and info messages into own module [8](https://github.com/greenbone/eulabeia/pull/8)
 - Normalized topic structure to `group/aggregate/event/destination`; setting topic based on return message rather than configuration [8](https://github.com/greenbone/eulabeia/pull/8)
 - Simplified block until sigterm handling [11](https://github.com/greenbone/eulabeia/pull/11)
 - When sensor is closing stop all scans simultaniously [52](https://github.com/greenbone/eulabeia/pull/52)
+- Make redis socket path configurable [69](https://github.com/greenbone/eulabeia/pull/69)
+
 ### Fixed
 - Fix handling for finished scans [46](https://github.com/greenbone/eulabeia/pull/46)
 ### Removed
