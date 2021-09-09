@@ -2,6 +2,7 @@ GO_BUILD = CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 DOCKER_BUILD = docker build --no-cache --force-rm=true --compress=true
 BROKER_IP = $(or $(shell docker container inspect -f '{{ .NetworkSettings.IPAddress }}' eulabeia_broker), $(echo ""))
 MQTT_CONTAINER = docker run -e "MQTT_SERVER=$(call BROKER_IP):9138" --rm
+GO_MINOR_VERSION = $(shell go version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f2)
 
 ifndef REPOSITORY
 	REPOSITORY := "greenbone"
@@ -11,9 +12,11 @@ endif
 all: format prepare check test build
 
 prepare:
-	# this only works for Go <1.16 for Go >=1.16 it should be
-	# go install honnef.co/go/tools/cmd/staticcheck@latest
-	go install honnef.co/go/tools/cmd/staticcheck
+	@if [ $(GO_MINOR_VERSION) -gt 15 ]; then\
+		go install honnef.co/go/tools/cmd/staticcheck@latest;\
+	else\
+		go install honnef.co/go/tools/cmd/staticcheck;\
+	fi
 
 format:
 	go mod tidy

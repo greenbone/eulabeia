@@ -50,6 +50,7 @@ const context = "scanner"
 var firstContact = false
 
 const (
+	GOT_SENSOR      = "got.sensor"
 	CREATED_TARGET  = "created.target"
 	MODIFIED_TARGET = "modified.target"
 	MODIFIED_SCAN   = "modified.scan"
@@ -101,8 +102,13 @@ func (e *ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse,
 	return response, nil
 }
 
-func ModifyTarget(msg info.IDInfo, _ []byte) *connection.SendResponse {
+func CreateTarget(_ info.IDInfo, _ []byte) *connection.SendResponse {
 	firstContact = true
+	create := cmds.NewCreate("target", "director", "")
+	return messages.EventToResponse(context, create)
+}
+
+func ModifyTarget(msg info.IDInfo, _ []byte) *connection.SendResponse {
 	modify := cmds.NewModify(
 		"target",
 		msg.ID,
@@ -124,7 +130,7 @@ func CreateScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
 	return messages.EventToResponse(context, modify)
 }
 
-func MegaScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
+func MegaScan(_ info.IDInfo, _ []byte) *connection.SendResponse {
 	mega := scan.StartMegaScan{
 		Message: messages.NewMessage("start.scan.director", "", ""),
 		Scan: models.Scan{
@@ -230,6 +236,7 @@ func main() {
 	defer close(ic)
 	mh := ExampleHandler{
 		do: map[string]func(info.IDInfo, []byte) *connection.SendResponse{
+			GOT_SENSOR:      CreateTarget,
 			CREATED_TARGET:  ModifyTarget,
 			MODIFIED_TARGET: CreateScan,
 			MODIFIED_SCAN:   MegaScan,
@@ -242,15 +249,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	timer := time.NewTimer(1 * time.Minute)
-	defer timer.Stop()
-	go func() {
-		<-timer.C
-		ic <- syscall.SIGABRT
-	}()
+
 	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
-	for !firstContact {
-		err = c.Publish(topic.NewCmd(context, "target", "director"), cmds.NewCreate("target", "director", ""))
+	for i := 0; i < 10 && !firstContact; i++ {
+		err = c.Publish(topic.NewCmd(context, "sensor", "director"), cmds.NewGet("sensor", "localhorst", "director", "0"))
 		if err != nil {
 			log.Panicf("Failed to publish: %s", err)
 		}
@@ -258,6 +260,12 @@ func main() {
 			time.Sleep(1 * time.Second)
 		}
 	}
+	timer := time.NewTimer(1 * time.Minute)
+	defer timer.Stop()
+	go func() {
+		<-timer.C
+		ic <- syscall.SIGABRT
+	}()
 	<-ic
 	log.Printf("After handling %s it is time to say good bye", mh.handled)
 }

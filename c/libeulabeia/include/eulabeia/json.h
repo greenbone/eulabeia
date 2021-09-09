@@ -270,6 +270,17 @@ eulabeia_scan_result_message_to_json(const struct EulabeiaMessage *msg,
 				     const struct EulabeiaScanResult *result);
 
 /*
+ * @brief transforms EulabeiaScanResult to json string.
+ *
+ * @param[in] msg, the EulabeiaMessage to include
+ * @param[in] scan_result, the scan_result to transform to json string.
+ * @return a json char array or NULL on failure.
+ */
+char *
+eulabeia_host_status_message_to_json(const struct EulabeiaMessage *msg,
+				     const struct EulabeiaHostStatus *status);
+
+/*
  * @brief transforms EulabeiaStatus to json string.
  *
  * @param[in] msg, the EulabeiaMessage to include
