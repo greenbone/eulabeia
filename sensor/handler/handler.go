@@ -69,7 +69,11 @@ func (handler Registered) On(topic string, message []byte) (*connection.SendResp
 	if err != nil {
 		return nil, err
 	}
-	if msg.ID == handler.ID {
+	mt, err := messages.ParseMessageType(msg.Type)
+	if err != nil {
+		return nil, err
+	}
+	if msg.ID == handler.ID && mt.Function == "modified" && mt.Aggregate == "sensor" {
 		handler.Register <- struct{}{}
 	}
 	return nil, nil
