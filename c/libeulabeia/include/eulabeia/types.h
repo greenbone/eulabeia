@@ -230,7 +230,7 @@ struct EulabeiaScanResult {
 
 struct EulabeiaHostStatus {
 	struct EulabeiaMessage *message;
-	enum eulabeia_host_status_type host_status_type; // TODO enum
+	enum eulabeia_host_status_type host_status_type;
 	char *host_ip;
 	char *id;
 	char *value;
