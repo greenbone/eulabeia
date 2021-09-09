@@ -134,3 +134,20 @@ func (fs File) Get(id string, v interface{}) error {
 		return err
 	}
 }
+
+// Returns new file system based JSON implementation. The dir is created if it
+// does not exist.
+func New(dir string, crypt Crypt) (*File, error) {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err := os.MkdirAll(dir, 0700)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+	return &File{
+		Dir:   dir,
+		Crypt: crypt,
+	}, nil
+}
