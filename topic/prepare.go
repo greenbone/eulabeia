@@ -19,6 +19,8 @@ package topic
 
 import "fmt"
 
+// returns a new topic string in the form of
+// <context>/<aggregate>/<event>/<dest>
 func new(context string, aggregate string, event string, dest string) string {
 	if aggregate == "" {
 		aggregate = "+"
