@@ -153,8 +153,11 @@ func MegaScan(_ info.IDInfo, _ []byte) *connection.SendResponse {
 							},
 						},
 					},
-					Group: map[string]string{
-						"family": "my test family",
+					Group: []models.VTFilter{
+						{
+							Key:   "family",
+							Value: "my test family",
+						},
 					},
 				},
 				Exclude:  []string{"exclude1"},

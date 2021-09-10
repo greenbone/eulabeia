@@ -79,15 +79,32 @@ type VT struct {
 	Severity           SeverityType  `json:"severety"`           // Script severity. See SeverityType.
 }
 
+// GetVT is a request for metadata of a VT
 type GetVT struct {
 	cmds.EventType
 	messages.Identifier
 }
 
+// GotVT is the response to GetVT. It contains all Metadata of a single VT
 type GotVT struct {
 	info.EventType
 	messages.Identifier
 	VT VT `json:"vt"`
+}
+
+// ResolveFilter is a request to get all OIDs matching the given Filter
+type ResolveFilter struct {
+	cmds.EventType
+	messages.Message
+	Filter []VTFilter `json:"filter"`
+}
+
+// ResolvedFilter is the response to ResolveFilter. It contains all oids which
+// match the given filter.
+type ResolvedFilter struct {
+	info.EventType
+	messages.Message
+	OIDs []string `json:"oids"`
 }
 
 // SingleVT contains a single VT and its preferences
@@ -97,10 +114,17 @@ type SingleVT struct {
 	PrefsByName map[string]interface{} `json:"prefs_by_name"`
 }
 
+// VTFilter contains a key and a value of a Filter entry. The key can be:
+// family, category, tag, cve, name, filename or bid.
+type VTFilter struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 // VTsList list to support multiple VTs with own preferences
 type VTsList struct {
-	Single []SingleVT        `json:"single_vts"`
-	Group  map[string]string `json:"vt_groups"`
+	Single []SingleVT `json:"single_vts"`
+	Group  []VTFilter `json:"vt_groups"`
 }
 
 // Target contains all information needed to start a scan

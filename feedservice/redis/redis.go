@@ -41,6 +41,19 @@ func (rc RedisConnection) GetList(db int, key string, start int, end int) ([]str
 	return data, nil
 }
 
+func (rc RedisConnection) GetKeys(db int, filter string) ([]string, error) {
+	conn := rc.pool.Get()
+	defer conn.Close()
+
+	conn.Do("SELECT", db)
+
+	data, err := redis.Strings(conn.Do("KEYS", filter))
+	if err != nil {
+		return nil, fmt.Errorf("unable to get keys with filter %s: %s", filter, err)
+	}
+	return data, nil
+}
+
 func (rc RedisConnection) Close() error {
 	return rc.pool.Close()
 }
