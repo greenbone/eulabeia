@@ -261,11 +261,11 @@ func (f *feed) Close() error {
 }
 
 // NewScheduler creates a new scheduler
-func NewFeed(mqtt connection.PubSub, context string, id string) *feed {
+func NewFeed(mqtt connection.PubSub, context string, id string, redisDbAddress string) *feed {
 	return &feed{
 		mqtt:    mqtt,
 		context: context,
-		rc:      redis.NewRedisConnection("unix", "/run/redis-openvas/redis.sock"),
+		rc:      redis.NewRedisConnection("unix", redisDbAddress),
 		id:      id,
 	}
 }
