@@ -130,6 +130,9 @@ func GetVT(_ info.IDInfo, msg []byte) *connection.SendResponse {
 	if err != nil {
 		log.Panicf("unable to parse result: %s", string(msg))
 	}
+	if result.OID == "" {
+		return nil
+	}
 
 	getVT := models.GetVT{
 		Identifier: messages.Identifier{
