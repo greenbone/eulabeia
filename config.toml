@@ -1,5 +1,6 @@
 Context = "scanner"
 title = "eulabeia config"
+RedisDbAddress = "/run/redis-openvas/redis.sock"
 
 [Cert]
 defaultKeyFile = "/usr/var/lib/gvm/private/CA/serverkey.pem"

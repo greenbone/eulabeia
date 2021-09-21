@@ -1,19 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 589c1dd1..c049b6a6 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -202,7 +202,7 @@ configure_file (src/openvas_log_conf.cma
+@@ -228,7 +228,7 @@ add_subdirectory (doc)
  
  ## Testing
  
 -enable_testing ()
-+#enable_testing ()
++# enable_testing ()
  
  add_custom_target (tests
-                    DEPENDS attack-test pcap-test)
-@@ -235,6 +235,6 @@ add_subdirectory (doc)
- 
- ## Tests
- 
--enable_testing ()
-+#enable_testing ()
- 
- ## End
+                    DEPENDS pcap-test)
