@@ -67,7 +67,7 @@ func main() {
 	if err != nil {
 		log.Panicf("Failed to connect: %s", err)
 	}
-	feed := feedservice.NewFeed(client, configuration.Context, configuration.Sensor.Id, configuration.Feedservice.Redis)
+	feed := feedservice.NewFeed(client, configuration.Context, configuration.Sensor.Id, configuration.Feedservice.RedisDbAddress)
 	log.Printf("Starting Feed Service\n")
 	feed.Start()
 	sens := sensor.NewScheduler(client, configuration.Sensor.Id, configuration.ScannerPreferences, configuration.Context)

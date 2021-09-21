@@ -1,6 +1,5 @@
 Context = "scanner"
 title = "eulabeia config"
-RedisDbAddress = "/run/redis-openvas/redis.sock"
 
 [Cert]
 defaultKeyFile = "/usr/var/lib/gvm/private/CA/serverkey.pem"
@@ -23,7 +22,7 @@ niceness = 10
 Id = "localhorst"
 
 [Feedservice]
-Redis = "/run/redis/redis.sock"
+RedisDbAddress = "/run/redis/redis.sock"
 
 [Director]
 StoragePath = "/var/lib/eulabeia/director/storage"

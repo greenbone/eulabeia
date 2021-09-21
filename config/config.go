@@ -46,7 +46,7 @@ type Sensor struct {
 }
 
 type Feedservice struct {
-	Redis string
+	RedisDbAddress string
 }
 
 type Director struct {
@@ -58,7 +58,6 @@ type Director struct {
 type Configuration struct {
 	Context            string
 	Certificate        Certificate
-	RedisDbAddress     string
 	Connection         Connection
 	ScannerPreferences ScannerPreferences
 	Preferences        Preferences
