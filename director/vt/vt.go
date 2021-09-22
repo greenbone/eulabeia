@@ -17,6 +17,7 @@ type vtHandler struct {
 }
 
 func (vt vtHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
+	// Determine message type
 	var msg messages.Message
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
@@ -29,6 +30,7 @@ func (vt vtHandler) On(topic string, message []byte) (*connection.SendResponse, 
 	if mt.Aggregate == "vt" {
 		switch mt.Function {
 		case "get":
+			// send get vt request to corresponding sensor
 			var getVT models.GetVT
 			err := json.Unmarshal(message, &getVT)
 			if err != nil {
