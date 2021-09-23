@@ -41,11 +41,8 @@ func (handler FeedHandler) On(topic string, message []byte) (*connection.SendRes
 
 			return &connection.SendResponse{
 				MSG: models.GotVT{
-					Identifier: messages.Identifier{
-						Message: messages.NewMessage("got.vt", "", msg.GroupID),
-						ID:      handler.ID,
-					},
-					VT: vt,
+					Message: messages.NewMessage("got.vt", "", msg.GroupID),
+					VT:      vt,
 				},
 				Topic: fmt.Sprintf("%s/vt/info", handler.Context),
 			}, nil

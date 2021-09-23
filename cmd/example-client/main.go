@@ -24,6 +24,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -54,6 +55,9 @@ const (
 	CREATED_TARGET  = "created.target"
 	MODIFIED_TARGET = "modified.target"
 	MODIFIED_SCAN   = "modified.scan"
+	RESULT_SCAN     = "result.scan"
+	GOT_VT          = "got.vt"
+	STATUS_SCAN     = "status.scan"
 )
 
 // ExampleHandler parses the message and calls corresponding function of MessageType within do map.
@@ -94,11 +98,13 @@ func (e *ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse,
 	}
 	e.handled = append(e.handled, mt.String())
 	e.handled = append(e.handled, infoMSG.ID)
-	// We assume that if there is no response message that the test scenario is finished
-	if response == nil {
+
+	// When the topic is set to exit the scenario finished
+	if response != nil && response.Topic == "exit" {
 		e.exit <- syscall.SIGCONT
-		// on response.Topic ignore SendResponse
+		return nil, nil
 	}
+
 	return response, nil
 }
 
@@ -118,9 +124,45 @@ func ModifyTarget(msg info.IDInfo, _ []byte) *connection.SendResponse {
 	return messages.EventToResponse(context, modify)
 }
 
+func GetVT(_ info.IDInfo, msg []byte) *connection.SendResponse {
+	var result models.Result
+	err := json.Unmarshal(msg, &result)
+	if err != nil {
+		log.Panicf("unable to parse result: %s", string(msg))
+	}
+	if result.OID == "" {
+		return nil
+	}
+
+	getVT := models.GetVT{
+		Identifier: messages.Identifier{
+			ID:      result.OID,
+			Message: messages.NewMessage("get.vt", "", ""),
+		},
+	}
+	return &connection.SendResponse{
+		Topic: fmt.Sprintf("%s/%s/%s/%s", context, "vt", "cmd", "director"),
+		MSG:   getVT,
+	}
+}
+
+func VerifyVT(i info.IDInfo, b []byte) *connection.SendResponse {
+	if i.Type == "got.vt" {
+		var vt models.GotVT
+		if json.Unmarshal(b, &vt) != nil {
+			log.Panicf("unable to parse vt: %s", string(b))
+		}
+		return nil
+	}
+	return &connection.SendResponse{}
+}
+
 func CreateScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
 	// We use the principle modify over create to directly create a scan with a target ID.
 	// Otherwise we need to store the target ID and reuse it on created.scan.
+	if msg.ID == MEGA_ID {
+		return &connection.SendResponse{}
+	}
 	modify := cmds.NewModify(
 		"scan",
 		uuid.NewString(),
@@ -130,7 +172,10 @@ func CreateScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
 	return messages.EventToResponse(context, modify)
 }
 
-func MegaScan(_ info.IDInfo, _ []byte) *connection.SendResponse {
+func MegaScan(i info.IDInfo, _ []byte) *connection.SendResponse {
+	if i.ID == MEGA_ID {
+		return &connection.SendResponse{}
+	}
 	mega := scan.StartMegaScan{
 		Message: messages.NewMessage("start.scan.director", "", ""),
 		Scan: models.Scan{
@@ -183,7 +228,9 @@ func VerifyForScanStatus(i info.IDInfo, b []byte) *connection.SendResponse {
 			log.Panicf("Unable to parse: %s", string(b))
 		}
 		if status.Status == "finished" {
-			return nil
+			return &connection.SendResponse{
+				Topic: "exit",
+			}
 		}
 	}
 	return &connection.SendResponse{}
@@ -243,7 +290,9 @@ func main() {
 			CREATED_TARGET:  ModifyTarget,
 			MODIFIED_TARGET: CreateScan,
 			MODIFIED_SCAN:   MegaScan,
-			MEGA_ID:         VerifyForScanStatus,
+			RESULT_SCAN:     GetVT,
+			GOT_VT:          VerifyVT,
+			STATUS_SCAN:     VerifyForScanStatus,
 		},
 		exit: ic,
 	}

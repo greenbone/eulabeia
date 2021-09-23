@@ -1,6 +1,5 @@
 Context = "scanner"
 title = "eulabeia config"
-RedisDbAddress = "/run/redis-openvas/redis.sock"
 
 [Cert]
 defaultKeyFile = "/usr/var/lib/gvm/private/CA/serverkey.pem"
@@ -22,9 +21,13 @@ niceness = 10
 [Sensor]
 Id = "localhorst"
 
+[Feedservice]
+RedisDbAddress = "/run/redis/redis.sock"
+
 [Director]
 StoragePath = "/var/lib/eulabeia/director/storage"
 KeyFile = "/var/lib/eulabeia/director/private.key"
+VTSensor = "localhorst"
 
 [Preferences]
 config = "~/.eulabeia/config.toml"

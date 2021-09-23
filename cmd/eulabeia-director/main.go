@@ -28,6 +28,7 @@ import (
 	"github.com/greenbone/eulabeia/director/scan"
 	"github.com/greenbone/eulabeia/director/sensor"
 	"github.com/greenbone/eulabeia/director/target"
+	"github.com/greenbone/eulabeia/director/vt"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/process"
 	"github.com/greenbone/eulabeia/storage"
@@ -69,6 +70,7 @@ func main() {
 		prepare_topic("sensor"): handler.New(configuration.Context, sensor.New(device)),
 		prepare_topic("target"): handler.New(configuration.Context, target.New(device)),
 		prepare_topic("scan"):   handler.New(configuration.Context, scan.New(device)),
+		prepare_topic("vt"):     vt.New(device, configuration.Context, configuration.Director.VTSensor),
 	})
 	if err != nil {
 		log.Panicf("Subscribing failed: %s", err)

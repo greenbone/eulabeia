@@ -150,6 +150,9 @@ func (f *feed) GetVT(oid string) (models.VT, error) {
 	if err != nil {
 		return models.VT{}, err
 	}
+	if len(pref) == 0 {
+		return models.VT{}, fmt.Errorf("oid %s not found", oid)
+	}
 
 	dependecies := strings.Split(pref[redis.NVT_DEPENDENCIES_POS], ", ")
 	allTags := strings.Split(pref[redis.NVT_TAGS_POS], "|")
@@ -261,11 +264,11 @@ func (f *feed) Close() error {
 }
 
 // NewScheduler creates a new scheduler
-func NewFeed(mqtt connection.PubSub, context string, id string, redisDbAddress string) *feed {
+func NewFeed(mqtt connection.PubSub, context string, id string, redisPath string) *feed {
 	return &feed{
 		mqtt:    mqtt,
 		context: context,
-		rc:      redis.NewRedisConnection("unix", redisDbAddress),
+		rc:      redis.NewRedisConnection("unix", redisPath),
 		id:      id,
 	}
 }
