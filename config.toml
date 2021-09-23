@@ -27,6 +27,7 @@ RedisDbAddress = "/run/redis/redis.sock"
 [Director]
 StoragePath = "/var/lib/eulabeia/director/storage"
 KeyFile = "/var/lib/eulabeia/director/private.key"
+VTSensor = "localhorst"
 
 [Preferences]
 config = "~/.eulabeia/config.toml"

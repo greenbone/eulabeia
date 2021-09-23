@@ -53,6 +53,7 @@ type Director struct {
 	Id          string // The Id (a uuid) of this director
 	StoragePath string // The path to store the json into
 	KeyFile     string // The path to the private RSA key used to crypt json
+	VTSensor    string // Sensor used to send get vt messages
 }
 
 type Configuration struct {

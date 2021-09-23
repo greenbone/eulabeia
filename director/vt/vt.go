@@ -14,6 +14,7 @@ import (
 type vtHandler struct {
 	storage scan.Storage
 	context string
+	sensor  string
 }
 
 func (vt vtHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
@@ -36,13 +37,12 @@ func (vt vtHandler) On(topic string, message []byte) (*connection.SendResponse, 
 			if err != nil {
 				return nil, err
 			}
-			sensor, err := vt.getSensor(getVT.ID)
 			if err != nil {
 				return nil, err
 			}
 
 			return &connection.SendResponse{
-				Topic: fmt.Sprintf("%s/%s/%s/%s", vt.context, "vt", "cmd", sensor),
+				Topic: fmt.Sprintf("%s/%s/%s/%s", vt.context, "vt", "cmd", vt.sensor),
 				MSG:   getVT,
 			}, nil
 		}
@@ -50,17 +50,10 @@ func (vt vtHandler) On(topic string, message []byte) (*connection.SendResponse, 
 	return nil, nil
 }
 
-func (vt vtHandler) getSensor(scanID string) (string, error) {
-	scan, err := vt.storage.Get(scanID)
-	if err != nil {
-		return "", err
-	}
-	return scan.Sensor, nil
-}
-
-func New(storage storage.Json, context string) vtHandler {
+func New(storage storage.Json, context string, sensor string) vtHandler {
 	return vtHandler{
 		storage: scan.NewStorage(storage),
 		context: context,
+		sensor:  sensor,
 	}
 }

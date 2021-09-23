@@ -34,18 +34,15 @@ func (handler FeedHandler) On(topic string, message []byte) (*connection.SendRes
 			if err := json.Unmarshal(message, &msg); err != nil {
 				return nil, err
 			}
-			vt, err := handler.GetVT(msg.OID)
+			vt, err := handler.GetVT(msg.ID)
 			if err != nil {
 				return nil, err
 			}
 
 			return &connection.SendResponse{
 				MSG: models.GotVT{
-					Identifier: messages.Identifier{
-						Message: messages.NewMessage("got.vt", "", msg.GroupID),
-						ID:      handler.ID,
-					},
-					VT: vt,
+					Message: messages.NewMessage("got.vt", "", msg.GroupID),
+					VT:      vt,
 				},
 				Topic: fmt.Sprintf("%s/vt/info", handler.Context),
 			}, nil

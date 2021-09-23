@@ -8,11 +8,11 @@ import (
 	"github.com/greenbone/eulabeia/storage"
 )
 
-const success = "{\"id\":\"testScan\",\"created\":0,\"message_type\":\"get.vt\",\"message_id\":\"0\",\"group_id\":\"0\",\"oid\":\"testOID\"}"
+const success = "{\"id\":\"testOID\",\"created\":0,\"message_type\":\"get.vt\",\"message_id\":\"0\",\"group_id\":\"0\"}"
 
 func TestResponse(t *testing.T) {
 	s := storage.InMemory{Pretend: false}
-	h := New(&s, "test")
+	h := New(&s, "test", "testSensor")
 
 	m := models.Scan{
 		ID: "testScan",
@@ -35,7 +35,7 @@ func TestResponse(t *testing.T) {
 		t.Fatal(err)
 	}
 	if string(respString) != success {
-		t.Fatalf("Error in response.\nShould be:\n%s\n\nIs:\n%s\n", success, resp.MSG)
+		t.Fatalf("Error in response.\nShould be:\n%s\n\nIs:\n%s\n", success, respString)
 	}
 
 }

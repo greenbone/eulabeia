@@ -136,10 +136,9 @@ func GetVT(_ info.IDInfo, msg []byte) *connection.SendResponse {
 
 	getVT := models.GetVT{
 		Identifier: messages.Identifier{
-			ID:      result.ScanId,
+			ID:      result.OID,
 			Message: messages.NewMessage("get.vt", "", ""),
 		},
-		OID: result.OID,
 	}
 	return &connection.SendResponse{
 		Topic: fmt.Sprintf("%s/%s/%s/%s", context, "vt", "cmd", "director"),
