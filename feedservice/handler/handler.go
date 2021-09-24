@@ -6,6 +6,7 @@ import (
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/models"
 )
 
@@ -30,7 +31,7 @@ func (handler FeedHandler) On(topic string, message []byte) (*connection.SendRes
 	if mt.Aggregate == "vt" {
 		switch mt.Function {
 		case "get": // Get single VT metadata
-			var msg models.GetVT
+			var msg cmds.Get
 			if err := json.Unmarshal(message, &msg); err != nil {
 				return nil, err
 			}

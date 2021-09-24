@@ -51,7 +51,7 @@ type SeverityType struct {
 
 // Strucure to store the information of a single VT.
 type VT struct {
-	OID                string        `json:"oid"`                // Script OID
+	OID                string        `json:"id"`                 // Script OID
 	Name               string        `json:"name"`               // Script name
 	FileName           string        `json:"filename"`           // Script filename
 	RequiredKeys       string        `json:"required_keys"`      // Required keys
@@ -79,17 +79,11 @@ type VT struct {
 	Severity           SeverityType  `json:"severety"`           // Script severity. See SeverityType.
 }
 
-// GetVT is a request for metadata of a VT
-type GetVT struct {
-	cmds.EventType
-	messages.Identifier
-}
-
 // GotVT is the response to GetVT. It contains all Metadata of a single VT
 type GotVT struct {
 	info.EventType
 	messages.Message
-	VT VT `json:"vt"`
+	VT
 }
 
 // ResolveFilter is a request to get all OIDs matching the given Filter

@@ -48,7 +48,7 @@ int eulabeia_json_message(JsonObject *obj, struct EulabeiaMessage **msg)
 {
 	if (!(json_object_has_member(obj, "message_id") &&
 	      json_object_has_member(obj, "message_type") &&
-	      json_object_has_member(obj, "created") &&
+	      json_object_has_member(obj, "message_created") &&
 	      json_object_has_member(obj, "group_id"))) {
 		return -1;
 	}
@@ -56,7 +56,7 @@ int eulabeia_json_message(JsonObject *obj, struct EulabeiaMessage **msg)
 	    (*msg = calloc(1, sizeof(struct EulabeiaMessage))) == NULL) {
 		return -2;
 	}
-	(*msg)->created = json_object_get_int_member(obj, "created");
+	(*msg)->created = json_object_get_int_member(obj, "message_created");
 	if (json_object_get_and_assign_string(obj, "message_id", &(*msg)->id) <
 	    0)
 		return -3;
@@ -339,7 +339,7 @@ static void builder_add_result(JsonBuilder *builder,
 }
 
 static void builder_add_host_status(JsonBuilder *builder,
-			       const struct EulabeiaHostStatus *status)
+				    const struct EulabeiaHostStatus *status)
 {
 	json_builder_set_member_name(builder, "status_type");
 	json_builder_add_int_value(builder, status->host_status_type);
@@ -445,7 +445,7 @@ static void builder_add_message(JsonBuilder *builder,
 	json_builder_add_string_value(builder, msg->type);
 	json_builder_set_member_name(builder, "group_id");
 	json_builder_add_string_value(builder, msg->id);
-	json_builder_set_member_name(builder, "created");
+	json_builder_set_member_name(builder, "message_created");
 	json_builder_add_int_value(builder, msg->created);
 }
 

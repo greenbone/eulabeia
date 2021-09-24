@@ -244,7 +244,8 @@ static void free_host_status_data(struct EulabeiaHostStatus *status)
 	if ((status)->host_ip)
 		free((status)->host_ip);
 	if ((status)->id)
-		free((status)->id);;
+		free((status)->id);
+	;
 	if ((status)->value)
 		free((status)->value);
 }

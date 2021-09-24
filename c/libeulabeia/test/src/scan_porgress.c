@@ -78,7 +78,7 @@ Ensure(Progress, scan_progress_failures)
 				    "\"message_id\": \"1\","
 				    "\"message_type\":\"status.scan\","
 				    "\"group_id\":null,"
-				    "\"created\": 42,"
+				    "\"message_created\": 42,"
 				    "\"id\": \"wanted\","
 				    "\"status\": null"
 				    "}",
@@ -90,7 +90,7 @@ Ensure(Progress, scan_progress_failures)
 				    "\"message_id\": \"1\","
 				    "\"message_type\":\"status.scan\","
 				    "\"group_id\":null,"
-				    "\"created\": 42,"
+				    "\"message_created\": 42,"
 				    "\"id\": \"wanted\","
 				    "\"status\": \"unknown\""
 				    "}",
@@ -102,7 +102,7 @@ Ensure(Progress, scan_progress_failures)
 				    "\"message_id\": \"1\","
 				    "\"message_type\":\"status.scan\","
 				    "\"group_id\":null,"
-				    "\"created\": 42,"
+				    "\"message_created\": 42,"
 				    "\"id\": null,"
 				    "\"status\": \"unknown\""
 				    "}",
@@ -131,7 +131,7 @@ Ensure(Progress, scan_progress_success)
 		 "\"message_id\": \"1\","                                      \
 		 "\"message_type\":\"status.scan\","                           \
 		 "\"group_id\":null,"                                          \
-		 "\"created\": 42,"                                            \
+		 "\"message_created\": 42,"                                    \
 		 "\"id\": \"wanted\","                                         \
 		 "\"status\": \"%s\""                                          \
 		 "}",                                                          \
@@ -152,7 +152,7 @@ Ensure(Progress, scan_progress_success)
 		 "\"message_id\": \"1\","
 		 "\"message_type\":\"failure.start.scan\","
 		 "\"group_id\":null,"
-		 "\"created\": 42,"
+		 "\"message_created\": 42,"
 		 "\"id\": \"wanted\","
 		 "\"error\": \"%s\""
 		 "}",
@@ -172,7 +172,7 @@ Ensure(Progress, scan_progress_success)
 		 "\"message_id\": \"1\","
 		 "\"message_type\":\"result.scan\","
 		 "\"group_id\":null,"
-		 "\"created\": 42,"
+		 "\"message_created\": 42,"
 		 "\"id\": \"wanted\","
 		 "\"oid\": \"oid\","
 		 "\"result_type\": \"ALARM\","
