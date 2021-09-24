@@ -7,7 +7,7 @@ import (
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/director/scan"
 	"github.com/greenbone/eulabeia/messages"
-	"github.com/greenbone/eulabeia/models"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/storage"
 )
 
@@ -32,7 +32,7 @@ func (vt vtHandler) On(topic string, message []byte) (*connection.SendResponse, 
 		switch mt.Function {
 		case "get":
 			// send get vt request to corresponding sensor
-			var getVT models.GetVT
+			var getVT cmds.Get
 			err := json.Unmarshal(message, &getVT)
 			if err != nil {
 				return nil, err

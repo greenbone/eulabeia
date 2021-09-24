@@ -58,10 +58,10 @@ func EventToResponse(context string, e Event) *connection.SendResponse {
 // Message contains the meta data for each sent message.
 // It should be embedded into all messages send to or received by eulabeia.
 type Message struct {
-	Created   int    `json:"created"`      // Timestamp when this message was created
-	Type      string `json:"message_type"` // Identifier what this message actually contains
-	MessageID string `json:"message_id"`   // The ID of a message, responses will have the same ID
-	GroupID   string `json:"group_id"`     // The ID of a group of messages, responses will have the same ID
+	Created   int    `json:"message_created"` // Timestamp when this message was created
+	Type      string `json:"message_type"`    // Identifier what this message actually contains
+	MessageID string `json:"message_id"`      // The ID of a message, responses will have the same ID
+	GroupID   string `json:"group_id"`        // The ID of a group of messages, responses will have the same ID
 }
 
 func (m Message) MessageType() MessageType {

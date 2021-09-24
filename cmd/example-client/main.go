@@ -24,7 +24,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -134,16 +133,8 @@ func GetVT(_ info.IDInfo, msg []byte) *connection.SendResponse {
 		return nil
 	}
 
-	getVT := models.GetVT{
-		Identifier: messages.Identifier{
-			ID:      result.OID,
-			Message: messages.NewMessage("get.vt", "", ""),
-		},
-	}
-	return &connection.SendResponse{
-		Topic: fmt.Sprintf("%s/%s/%s/%s", context, "vt", "cmd", "director"),
-		MSG:   getVT,
-	}
+	getVT := cmds.NewGet("vt", result.OID, "director", "")
+	return messages.EventToResponse(context, getVT)
 }
 
 func VerifyVT(i info.IDInfo, b []byte) *connection.SendResponse {

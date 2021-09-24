@@ -39,13 +39,13 @@ As a rule of thumb: each type is as shown in the example.
 
 ## create/scan
 
-Topic: eulabeia/scan/cmd/director
+Topic: scanner/scan/cmd/director
 ```
 {
-  "message_id" : "9d9c0a03-2a7d-499a-8adf-d3e0843425b2",
+  "message_id" : "312e2177-2a15-4b4c-ba92-4d217ebb3144",
   "message_type" : "create.scan",
-  "group_id" : "9d9c0a03-2a7d-499a-8adf-d3e0843425b2",
-  "created" : 1629896000451425361
+  "group_id" : "312e2177-2a15-4b4c-ba92-4d217ebb3144",
+  "message_created" : 1632752557579025545
 }
 ```
 Responses:
@@ -54,13 +54,13 @@ Responses:
 - [failure.create](#failurecreatescan)
 ## start/scan
 
-Topic: eulabeia/scan/cmd/director
+Topic: scanner/scan/cmd/director
 ```
 {
-  "message_id" : "9d1c5eb3-28ed-4afc-acde-b51a1c3fb72f",
+  "message_id" : "393667bc-3bfb-4c1e-888e-c77631296431",
   "message_type" : "start.scan",
-  "group_id" : "9d1c5eb3-28ed-4afc-acde-b51a1c3fb72f",
-  "created" : 1629896000451522911,
+  "group_id" : "393667bc-3bfb-4c1e-888e-c77631296431",
+  "message_created" : 1632752557579208756,
   "id" : "example.id.scan"
 }
 ```
@@ -70,13 +70,13 @@ Responses:
 - [failure.start](#failurestartscan)
 ## stop/scan
 
-Topic: eulabeia/scan/cmd/director
+Topic: scanner/scan/cmd/director
 ```
 {
-  "message_id" : "ef37f9f2-0bc5-45fd-b743-54a9ac9c9fdd",
+  "message_id" : "3b35ed9d-12fd-4bbe-be6e-b9ee77a4bc32",
   "message_type" : "stop.scan",
-  "group_id" : "ef37f9f2-0bc5-45fd-b743-54a9ac9c9fdd",
-  "created" : 1629896000451549540,
+  "group_id" : "3b35ed9d-12fd-4bbe-be6e-b9ee77a4bc32",
+  "message_created" : 1632752557579252445,
   "id" : "example.id.scan"
 }
 ```
@@ -86,13 +86,13 @@ Responses:
 - [failure.stop](#failurestopscan)
 ## get/scan
 
-Topic: eulabeia/scan/cmd/director
+Topic: scanner/scan/cmd/director
 ```
 {
-  "message_id" : "613592e9-74d6-4d6d-af3a-692e58f729a4",
+  "message_id" : "616d7b08-4028-4a24-acd2-4304d422bf5f",
   "message_type" : "get.scan",
-  "group_id" : "613592e9-74d6-4d6d-af3a-692e58f729a4",
-  "created" : 1629896000451572271,
+  "group_id" : "616d7b08-4028-4a24-acd2-4304d422bf5f",
+  "message_created" : 1632752557579291643,
   "id" : "example.id.scan"
 }
 ```
@@ -102,13 +102,13 @@ Responses:
 - [failure.get](#failuregetscan)
 ## modify/scan
 
-Topic: eulabeia/scan/cmd/director
+Topic: scanner/scan/cmd/director
 ```
 {
-  "message_id" : "ebb40611-c62a-4bd1-a371-d5efce57756e",
+  "message_id" : "61cde83b-c544-429c-9e1d-f3010f788b98",
   "message_type" : "modify.scan",
-  "group_id" : "ebb40611-c62a-4bd1-a371-d5efce57756e",
-  "created" : 1629896000451593275,
+  "group_id" : "61cde83b-c544-429c-9e1d-f3010f788b98",
+  "message_created" : 1632752557579344720,
   "id" : "example.scan.id",
   "values" : {
     "temporary" : false,
@@ -125,49 +125,49 @@ Responses:
 - [failure.modify](#failuremodifyscan)
 ## created/scan
 
-Topic: eulabeia/scan/info
+Topic: scanner/scan/info
 ```
 {
-  "message_id" : "8666f202-abde-4ba3-950b-6a18907602ba",
+  "message_id" : "b83edc47-cb4d-4d56-84a3-c8175ab41fe8",
   "message_type" : "created.scan",
-  "group_id" : "8666f202-abde-4ba3-950b-6a18907602ba",
-  "created" : 1629896000451619396,
+  "group_id" : "b83edc47-cb4d-4d56-84a3-c8175ab41fe8",
+  "message_created" : 1632752557579404136,
   "id" : "example.id.scan"
 }
 ```
 ## modified/scan
 
-Topic: eulabeia/scan/info
+Topic: scanner/scan/info
 ```
 {
-  "message_id" : "d28115b4-9348-437f-881f-f8893cf823ff",
+  "message_id" : "fef10c1c-1e19-49de-bfa4-d1912fba2ca2",
   "message_type" : "modified.scan",
-  "group_id" : "d28115b4-9348-437f-881f-f8893cf823ff",
-  "created" : 1629896000451636621,
+  "group_id" : "fef10c1c-1e19-49de-bfa4-d1912fba2ca2",
+  "message_created" : 1632752557579434808,
   "id" : "example.id.scan"
 }
 ```
 ## stopped/scan
 
-Topic: eulabeia/scan/info
+Topic: scanner/scan/info
 ```
 {
-  "message_id" : "b9d963fa-8ffc-4dc2-b2ee-1af5a4b9867b",
+  "message_id" : "9ded600d-b225-42d1-b3df-2bb246fb3164",
   "message_type" : "stopped.scan",
-  "group_id" : "b9d963fa-8ffc-4dc2-b2ee-1af5a4b9867b",
-  "created" : 1629896000451648980,
+  "group_id" : "9ded600d-b225-42d1-b3df-2bb246fb3164",
+  "message_created" : 1632752557579457401,
   "id" : "example.id.scan"
 }
 ```
 ## status/scan
 
-Topic: eulabeia/scan/info
+Topic: scanner/scan/info
 ```
 {
-  "message_id" : "8466eb24-f666-49b7-93af-6fdf021749ae",
+  "message_id" : "ac5d6860-9010-48b4-bd2c-8bccc0e2c286",
   "message_type" : "status.scan",
-  "group_id" : "8466eb24-f666-49b7-93af-6fdf021749ae",
-  "created" : 1629896000451660386,
+  "group_id" : "ac5d6860-9010-48b4-bd2c-8bccc0e2c286",
+  "message_created" : 1632752557579478475,
   "id" : "example.id.scan",
   "status" : "requested"
 }
@@ -185,13 +185,13 @@ Valid `status` are:
 
 ## got/scan
 
-Topic: eulabeia/scan/info
+Topic: scanner/scan/info
 ```
 {
-  "message_id" : "a3f74910-a3c3-4d97-a56c-2ba6a48fe702",
+  "message_id" : "9623ec9b-ff31-499b-9981-03d5c86a8ed0",
   "message_type" : "got.scan",
-  "group_id" : "a3f74910-a3c3-4d97-a56c-2ba6a48fe702",
-  "created" : 1629896000451692548,
+  "group_id" : "9623ec9b-ff31-499b-9981-03d5c86a8ed0",
+  "message_created" : 1632752557579535485,
   "id" : "example.id.scan",
   "temporary" : false,
   "sensor" : "example.sensor.1",
@@ -216,13 +216,13 @@ To get type information please consolidate [ scan model](../models/scan.go)
 
 ## result/scan
 
-Topic: eulabeia/scan/info
+Topic: scanner/scan/info
 ```
 {
-  "message_id" : "d9c531d7-ae49-4438-9c30-fdde713d0106",
+  "message_id" : "0ef38736-ecc9-4814-b436-9c0806fa28a9",
   "message_type" : "result.scan",
-  "group_id" : "d9c531d7-ae49-4438-9c30-fdde713d0106",
-  "created" : 1629896000451722556,
+  "group_id" : "0ef38736-ecc9-4814-b436-9c0806fa28a9",
+  "message_created" : 1632752557579589301,
   "result_type" : "LOG",
   "host_ip" : "192.168.1.1",
   "host_name" : "example.host.domain",
@@ -235,8 +235,6 @@ Topic: eulabeia/scan/info
 ```
 Valid `result_type` are:
 - `UNKNOWN`
-- `HOST_COUNT`
-- `DEADHOST`
 - `HOST_START`
 - `HOST_END`
 - `ERRMSG`
@@ -248,78 +246,78 @@ Valid `result_type` are:
 For more specific information please consolidate [result model](../models/result.go)
 ## failure.start/scan
 
-Topic: eulabeia/scan/info
+Topic: scanner/scan/info
 ```
 {
-  "message_id" : "00f6dd8a-9c6f-4d65-ab53-f563af6914f0",
+  "message_id" : "db6607db-6d2e-4885-a10a-62c86e0f5e24",
   "message_type" : "failure.start.scan",
-  "group_id" : "00f6dd8a-9c6f-4d65-ab53-f563af6914f0",
-  "created" : 1629896000451742896,
+  "group_id" : "db6607db-6d2e-4885-a10a-62c86e0f5e24",
+  "message_created" : 1632752557579624911,
   "id" : "example.id.scan",
   "error" : "some error description"
 }
 ```
 ## failure.stop/scan
 
-Topic: eulabeia/scan/info
+Topic: scanner/scan/info
 ```
 {
-  "message_id" : "30cd5c6c-2470-4151-81c8-4d598c73d503",
+  "message_id" : "65ecbcca-9bd0-4150-80ac-3ee19347ccd3",
   "message_type" : "failure.stop.scan",
-  "group_id" : "30cd5c6c-2470-4151-81c8-4d598c73d503",
-  "created" : 1629896000451756745,
+  "group_id" : "65ecbcca-9bd0-4150-80ac-3ee19347ccd3",
+  "message_created" : 1632752557579649788,
   "id" : "example.id.scan",
   "error" : "some error description"
 }
 ```
 ## failure.create/scan
 
-Topic: eulabeia/scan/info
+Topic: scanner/scan/info
 ```
 {
-  "message_id" : "8cdecd5f-c017-47e8-9373-e327458f1608",
+  "message_id" : "1249a1db-1eda-4818-bd9e-d77be9205f0b",
   "message_type" : "failure.create.scan",
-  "group_id" : "8cdecd5f-c017-47e8-9373-e327458f1608",
-  "created" : 1629896000451769987,
+  "group_id" : "1249a1db-1eda-4818-bd9e-d77be9205f0b",
+  "message_created" : 1632752557579673270,
   "id" : "example.id.scan",
   "error" : "some error description"
 }
 ```
 ## failure.modify/scan
 
-Topic: eulabeia/scan/info
+Topic: scanner/scan/info
 ```
 {
-  "message_id" : "448c4cea-48fa-4538-aae8-1d92b279305b",
+  "message_id" : "9e8f382d-b363-4cca-8a9e-1b07cea1dc57",
   "message_type" : "failure.modify.scan",
-  "group_id" : "448c4cea-48fa-4538-aae8-1d92b279305b",
-  "created" : 1629896000451782349,
+  "group_id" : "9e8f382d-b363-4cca-8a9e-1b07cea1dc57",
+  "message_created" : 1632752557579695181,
   "id" : "example.id.scan",
   "error" : "some error description"
 }
 ```
 ## failure.get/scan
 
-Topic: eulabeia/scan/info
+Topic: scanner/scan/info
 ```
 {
-  "message_id" : "0e1128c6-1f4d-447a-827e-0a718404fc39",
+  "message_id" : "7898db21-657f-4ad5-a728-ecd905a5bdf7",
   "message_type" : "failure.get.scan",
-  "group_id" : "0e1128c6-1f4d-447a-827e-0a718404fc39",
-  "created" : 1629896000451794551,
+  "group_id" : "7898db21-657f-4ad5-a728-ecd905a5bdf7",
+  "message_created" : 1632752557579720463,
   "id" : "example.id.scan",
   "error" : "some error description"
 }
 ```
 ## failure/scan
 
-Topic: eulabeia/scan/info
+Topic: scanner/scan/info
 ```
 {
-  "message_id" : "7517bd59-9eaf-4249-aead-93f2717f44e8",
+  "message_id" : "4a6f931e-e201-4e50-a333-2cee63115676",
   "message_type" : "failure.scan",
-  "group_id" : "7517bd59-9eaf-4249-aead-93f2717f44e8",
-  "created" : 1629896000451808686,
+  "group_id" : "4a6f931e-e201-4e50-a333-2cee63115676",
+  "message_created" : 1632752557579742638,
   "id" : "example.id.scan",
   "error" : "some error description"
 }
@@ -332,13 +330,13 @@ As a rule of thumb: each type is as shown in the example.
 
 ## create/target
 
-Topic: eulabeia/target/cmd/director
+Topic: scanner/target/cmd/director
 ```
 {
-  "message_id" : "bde26616-4502-4dcc-86ae-2e3fab4f25cc",
+  "message_id" : "1fb1a03c-c1ae-4d67-bb61-5f80eb3d211b",
   "message_type" : "create.target",
-  "group_id" : "bde26616-4502-4dcc-86ae-2e3fab4f25cc",
-  "created" : 1629896000451826473
+  "group_id" : "1fb1a03c-c1ae-4d67-bb61-5f80eb3d211b",
+  "message_created" : 1632752557579773365
 }
 ```
 Responses:
@@ -347,13 +345,13 @@ Responses:
 - [failure.create](#failurecreatetarget)
 ## get/target
 
-Topic: eulabeia/target/cmd/director
+Topic: scanner/target/cmd/director
 ```
 {
-  "message_id" : "658f3136-5238-4e1c-a434-3b4f5660238f",
+  "message_id" : "23c6bba7-bb92-48ad-aa8b-346196c9da6d",
   "message_type" : "get.target",
-  "group_id" : "658f3136-5238-4e1c-a434-3b4f5660238f",
-  "created" : 1629896000451845722,
+  "group_id" : "23c6bba7-bb92-48ad-aa8b-346196c9da6d",
+  "message_created" : 1632752557579807912,
   "id" : "example.id.target"
 }
 ```
@@ -363,13 +361,13 @@ Responses:
 - [failure.get](#failuregettarget)
 ## modify/target
 
-Topic: eulabeia/target/cmd/director
+Topic: scanner/target/cmd/director
 ```
 {
-  "message_id" : "974e72b9-4783-4e8c-806b-32b37547e67f",
+  "message_id" : "604c6f86-e114-41f1-bb4d-85823c84b9b9",
   "message_type" : "modify.target",
-  "group_id" : "974e72b9-4783-4e8c-806b-32b37547e67f",
-  "created" : 1629896000451864631,
+  "group_id" : "604c6f86-e114-41f1-bb4d-85823c84b9b9",
+  "message_created" : 1632752557579855794,
   "id" : "example.id.target",
   "sensor" : "example.sensor.1",
   "alive" : true,
@@ -397,37 +395,37 @@ Responses:
 - [failure.modify](#failuremodifytarget)
 ## created/target
 
-Topic: eulabeia/target/info
+Topic: scanner/target/info
 ```
 {
-  "message_id" : "1f479776-af51-4248-9d6c-6992df5f6ed7",
+  "message_id" : "0b6111bf-f738-4da8-b16d-254ba6b5d932",
   "message_type" : "created.target",
-  "group_id" : "1f479776-af51-4248-9d6c-6992df5f6ed7",
-  "created" : 1629896000451903369,
+  "group_id" : "0b6111bf-f738-4da8-b16d-254ba6b5d932",
+  "message_created" : 1632752557579914340,
   "id" : "example.id.target"
 }
 ```
 ## modified/target
 
-Topic: eulabeia/target/info
+Topic: scanner/target/info
 ```
 {
-  "message_id" : "f35f60c4-51d3-4442-bfcd-c1f22adc2f75",
+  "message_id" : "f0fcd300-3e04-4d88-9437-9042e1634859",
   "message_type" : "modified.target",
-  "group_id" : "f35f60c4-51d3-4442-bfcd-c1f22adc2f75",
-  "created" : 1629896000451920901,
+  "group_id" : "f0fcd300-3e04-4d88-9437-9042e1634859",
+  "message_created" : 1632752557579939237,
   "id" : "example.id.target"
 }
 ```
 ## got/target
 
-Topic: eulabeia/target/info
+Topic: scanner/target/info
 ```
 {
-  "message_id" : "1b86d15b-0049-4c7d-90d0-29a322794c1d",
+  "message_id" : "2bca2b44-cb31-470c-afa7-05cb571109be",
   "message_type" : "got.target",
-  "group_id" : "1b86d15b-0049-4c7d-90d0-29a322794c1d",
-  "created" : 1629896000451934689,
+  "group_id" : "2bca2b44-cb31-470c-afa7-05cb571109be",
+  "message_created" : 1632752557579960951,
   "id" : "example.id.target",
   "sensor" : "example.sensor.1",
   "alive" : true,
@@ -451,52 +449,52 @@ To get type information please consolidate [ target model](../models/target.go)
 
 ## failure.create/target
 
-Topic: eulabeia/target/info
+Topic: scanner/target/info
 ```
 {
-  "message_id" : "a824e4cb-3d0b-4a9e-bf76-e3c3db75e802",
+  "message_id" : "e590b272-d905-4082-bd68-f83afcec2737",
   "message_type" : "failure.create.target",
-  "group_id" : "a824e4cb-3d0b-4a9e-bf76-e3c3db75e802",
-  "created" : 1629896000451957906,
+  "group_id" : "e590b272-d905-4082-bd68-f83afcec2737",
+  "message_created" : 1632752557579997367,
   "id" : "example.id.target",
   "error" : "some error description"
 }
 ```
 ## failure.modify/target
 
-Topic: eulabeia/target/info
+Topic: scanner/target/info
 ```
 {
-  "message_id" : "894240e2-6fd2-41b4-b0a3-6de9090b77be",
+  "message_id" : "f3780712-1687-4929-b1e6-2dbcf0b1b16a",
   "message_type" : "failure.modify.target",
-  "group_id" : "894240e2-6fd2-41b4-b0a3-6de9090b77be",
-  "created" : 1629896000451970858,
+  "group_id" : "f3780712-1687-4929-b1e6-2dbcf0b1b16a",
+  "message_created" : 1632752557580020924,
   "id" : "example.id.target",
   "error" : "some error description"
 }
 ```
 ## failure.get/target
 
-Topic: eulabeia/target/info
+Topic: scanner/target/info
 ```
 {
-  "message_id" : "1575e4c3-fa83-4146-9307-491488c3cec9",
+  "message_id" : "b51abf24-508e-4e9c-b0cd-62957c1ba50c",
   "message_type" : "failure.get.target",
-  "group_id" : "1575e4c3-fa83-4146-9307-491488c3cec9",
-  "created" : 1629896000451983267,
+  "group_id" : "b51abf24-508e-4e9c-b0cd-62957c1ba50c",
+  "message_created" : 1632752557580043434,
   "id" : "example.id.target",
   "error" : "some error description"
 }
 ```
 ## failure/target
 
-Topic: eulabeia/target/info
+Topic: scanner/target/info
 ```
 {
-  "message_id" : "752c9df4-0e2f-4e70-b7f4-ff3a0c4f887d",
+  "message_id" : "4108e236-f21c-48a9-9c12-f728d0af140f",
   "message_type" : "failure.target",
-  "group_id" : "752c9df4-0e2f-4e70-b7f4-ff3a0c4f887d",
-  "created" : 1629896000451995707,
+  "group_id" : "4108e236-f21c-48a9-9c12-f728d0af140f",
+  "message_created" : 1632752557580069703,
   "id" : "example.id.target",
   "error" : "some error description"
 }

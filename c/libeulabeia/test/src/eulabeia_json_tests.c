@@ -48,7 +48,7 @@ static const gchar *g_json_str = "{\
 \"message_id\":\"" MESSAGE_ID "\",\
 \"message_type\":\"" MESSAGE_TYPE "\",\
 \"group_id\":\"" MESSAGE_GROUP_ID "\",\
-\"created\":" MESSAGE_CREATED "\
+\"message_created\":" MESSAGE_CREATED "\
 }";
 
 #define ERROR_MESSAGE_TYPE "failure.modify.target"
@@ -56,7 +56,7 @@ static const gchar *g_json_str = "{\
 #define ERROR_MESSAGE_ID "error1e0-768d-4a86-ab6a-dd28e3f45776"
 static const gchar *g_json_error_str = "{\
 \"id\": \"" ERROR_MESSAGE_ID "\",\
-\"created\": " MESSAGE_CREATED ",\
+\"message_created\": " MESSAGE_CREATED ",\
 \"message_type\": \"" ERROR_MESSAGE_TYPE "\",\
 \"message_id\": \"" MESSAGE_ID "\",\
 \"group_id\": \"" MESSAGE_GROUP_ID "\",\
@@ -77,7 +77,7 @@ static const gchar *g_json_ports_str = "{\
 	"{\"message_id\":\"fa022daa-1d78-4d02-80b5-83af3086d7d0\","            \
 	"\"message_type\":\"result.scan\","                                    \
 	"\"group_id\":\"e069f31d-7047-4afb-b31a-65c821c98bad\","               \
-	"\"created\":0,"                                                       \
+	"\"message_created\":0,"                                               \
 	"\"id\":\"classic_scan_1\","                                           \
 	"\"result_type\":\"LOG\","                                             \
 	"\"host_ip\":\"127.0.0.1\","                                           \

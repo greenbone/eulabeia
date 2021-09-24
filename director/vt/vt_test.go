@@ -8,7 +8,7 @@ import (
 	"github.com/greenbone/eulabeia/storage"
 )
 
-const success = "{\"id\":\"testOID\",\"created\":0,\"message_type\":\"get.vt\",\"message_id\":\"0\",\"group_id\":\"0\"}"
+const success = "{\"id\":\"testOID\",\"message_created\":0,\"message_type\":\"get.vt\",\"message_id\":\"0\",\"group_id\":\"0\"}"
 
 func TestResponse(t *testing.T) {
 	s := storage.InMemory{Pretend: false}
