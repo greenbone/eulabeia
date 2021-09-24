@@ -63,7 +63,7 @@ static const gchar *g_json_error_str = "{\
 \"error\": \"" ERROR_MESSAGE_DESCR "\"\
 }";
 
-#define PLUGINS "[\"pluginOID1\",\"pluginOID2\"]"
+#define PLUGINS "[ { \"oid\": \"pluginOID1\" }, { \"oid\": \"pluginOID2\" }]"
 static const gchar *g_json_plugins_str = "{\
 \"plugins\": " PLUGINS "\
 }";

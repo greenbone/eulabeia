@@ -78,6 +78,16 @@ char *eulabeia_aggregate_to_str(enum eulabeia_aggregate a)
 	}
 }
 
+enum eulabeia_aggregate eulabeia_aggregate_from_str(char *rt)
+{
+	if (rt == NULL)
+		return EULABEIA_AGGREGATE_UNKNOWN;
+#define X(a, b) else if (strncmp(rt, #b, strlen(#b)) == 0) return (a);
+	EULABEIA_AGGREGATES
+#undef X
+	return EULABEIA_AGGREGATE_UNKNOWN;
+}
+
 char *eulabeia_result_type_to_str(enum eulabeia_result_type mt)
 {
 	switch (mt) {
@@ -164,6 +174,94 @@ void eulabeia_hosts_destroy(struct EulabeiaHosts **hosts)
 	*hosts = NULL;
 }
 
+static void
+plugin_parameters_destroy(struct EulabeiaPluginParameters **parameters)
+{
+	unsigned int i = 0;
+	struct EulabeiaPluginParameter *pi, *po;
+
+	if (parameters == NULL || *parameters == NULL)
+		return;
+
+	pi = (*parameters)->parameter;
+	po = (*parameters)->parameter;
+	for (; i < (*parameters)->len; pi++, i++) {
+		if (pi->id != NULL)
+			free(pi->id);
+		if (pi->type != NULL)
+			free(pi->type);
+	}
+	free(po);
+	free(*parameters);
+	*parameters = NULL;
+}
+
+static void
+plugin_dependencies_destroy(struct EulabeiaPluginDependencies **dependencies)
+{
+	unsigned int i = 0;
+	struct EulabeiaPluginDependency *di, *deo;
+
+	if (dependencies == NULL || *dependencies == NULL)
+		return;
+
+	di = (*dependencies)->dependency;
+	deo = (*dependencies)->dependency;
+	for (; i < (*dependencies)->len; di++, i++) {
+		if (di->oid != NULL)
+			free(di->oid);
+	}
+	free(deo);
+	free(*dependencies);
+	*dependencies = NULL;
+}
+
+static void
+plugin_references_destroy(struct EulabeiaPluginReferences **references)
+{
+	unsigned int i = 0;
+	struct EulabeiaPluginReference *ri, *ro;
+
+	if (references == NULL || *references == NULL)
+		return;
+
+	ri = (*references)->reference;
+	ro = (*references)->reference;
+	for (; i < (*references)->len; ri++, i++) {
+		if (ri->id != NULL)
+			free(ri->id);
+		if (ri->name != NULL)
+			free(ri->name);
+		if (ri->value != NULL)
+			free(ri->value);
+		if (ri->type != NULL)
+			free(ri->type);
+		if (ri->description != NULL)
+			free(ri->description);
+		if (ri->defaultvalue != NULL)
+			free(ri->defaultvalue);
+	}
+	free(ro);
+	free(*references);
+	*references = NULL;
+}
+
+static void plugin_severity_destroy(struct EulabeiaPluginSeverity **severity)
+{
+	if (severity == NULL || *severity == NULL)
+		return;
+	if ((*severity)->vector != NULL)
+		free((*severity)->vector);
+	if ((*severity)->type != NULL)
+		free((*severity)->type);
+	if ((*severity)->date != NULL)
+		free((*severity)->date);
+	if ((*severity)->origin != NULL)
+		free((*severity)->origin);
+
+	*severity = NULL;
+}
+
 void eulabeia_plugins_destroy(struct EulabeiaPlugins **plugins)
 {
 	unsigned int i = 0;
@@ -174,9 +272,57 @@ void eulabeia_plugins_destroy(struct EulabeiaPlugins **plugins)
 
 	p_index = (*plugins)->plugins;
 	p_orig = (*plugins)->plugins;
-	/* Free oids of EulabeiaPlugin structs in array */
 	for (; i < (*plugins)->len; p_index++, i++) {
-		free(p_index->oid);
+		if (p_index->oid != NULL)
+			free(p_index->oid);
+		if (p_index->affected != NULL)
+			free(p_index->affected);
+		if (p_index->category != NULL)
+			free(p_index->category);
+		if (p_index->created != NULL)
+			free(p_index->created);
+		if (p_index->excluded_keys != NULL)
+			free(p_index->excluded_keys);
+		if (p_index->family != NULL)
+			free(p_index->family);
+		if (p_index->filename != NULL)
+			free(p_index->filename);
+		if (p_index->impact != NULL)
+			free(p_index->impact);
+		if (p_index->insight != NULL)
+			free(p_index->insight);
+		if (p_index->mandatory_keys != NULL)
+			free(p_index->mandatory_keys);
+		if (p_index->modified != NULL)
+			free(p_index->modified);
+		if (p_index->name != NULL)
+			free(p_index->name);
+		if (p_index->qod != NULL)
+			free(p_index->qod);
+		if (p_index->qod_type != NULL)
+			free(p_index->qod_type);
+		if (p_index->required_keys != NULL)
+			free(p_index->required_keys);
+		if (p_index->required_ports != NULL)
+			free(p_index->required_ports);
+		if (p_index->required_udp_ports != NULL)
+			free(p_index->required_udp_ports);
+		if (p_index->solution != NULL)
+			free(p_index->solution);
+		if (p_index->solution_method != NULL)
+			free(p_index->solution_method);
+		if (p_index->summary != NULL)
+			free(p_index->summary);
+		if (p_index->vuldetect != NULL)
+			free(p_index->vuldetect);
+		if (p_index->references != NULL)
+			plugin_references_destroy(&p_index->references);
+		if (p_index->parameters != NULL)
+			plugin_parameters_destroy(&p_index->parameters);
+		if (p_index->dependencies != NULL)
+			plugin_dependencies_destroy(&p_index->dependencies);
+		if (p_index->severity != NULL)
+			plugin_severity_destroy(&p_index->severity);
 	}
 	/* Free EulabeiaPlugin array */
 	free(p_orig);

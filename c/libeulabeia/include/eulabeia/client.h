@@ -148,6 +148,27 @@ int eulabeia_modify_target(const struct EulabeiaClient *eulabeia_client,
 			   const char *group_id);
 
 /*
+ * @brief sends a get message.
+ *
+ * Sends a get message for given aggregate and id. When id is NULL or empty then
+ * usually it will be interpreted as getting all. This is usually handled within
+ * the director and may not be possible everywhere.
+ *
+ * To rerieve the result please use eulabeia_crud_progress.
+ *
+ * @param[in] eulabeia_client the EulabeiaClient to send the message.
+ * @param[in] group_id a group_id to identify belonging messages
+ * @param[in] aggregate the aggregate to get.
+ * @param[in] id the identifier of a entity of the aggregate
+ *
+ * @return 0 when the message got successfully send, -1 when there was an error.
+ */
+int eulabeia_get(const struct EulabeiaClient *eulabeia_client,
+		 const char *group_id,
+		 enum eulabeia_aggregate aggregate,
+		 const char *id);
+
+/*
  * @brief set the CRUD progress into progress based on payload.
  *
  * This function should be called periodically after an create or modify to

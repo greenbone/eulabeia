@@ -59,7 +59,6 @@ start-sensor:
 	docker volume create eulabeia_feed
 	docker run -d --rm -v eulabeia_redis_socket:/run/redis --name eulabeia_redis $(REPOSITORY)/eulabeia-redis
 	$(MQTT_CONTAINER) -d -v eulabeia_feed:/var/lib/openvas/feed/plugins -v eulabeia_redis_socket:/run/redis --name eulabeia_sensor $(REPOSITORY)/eulabeia-sensor
-	docker exec eulabeia_sensor chmod 777 /var/lib/openvas/feed/plugins/plugin_feed_info.inc
 	docker exec eulabeia_sensor mkdir -p /etc/openvas
 	docker exec eulabeia_sensor bash -c 'echo "mqtt_server_uri = $(BROKER_IP):9138" >> /etc/openvas/openvas.conf'
 	docker exec eulabeia_sensor openvas -u
