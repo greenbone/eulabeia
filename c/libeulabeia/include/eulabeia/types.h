@@ -481,6 +481,12 @@ void eulabeia_status_destroy(struct EulabeiaStatus **status);
 void eulabeia_hosts_destroy(struct EulabeiaHosts **hosts);
 
 /*
+ * @brief destroys an EulabeiaPlugin
+ *
+ * @param[out] plugin, the EulabeiaPlugins to be freed. Sets *plugin to NULL.
+ */
+void eulabeia_plugin_destroy(struct EulabeiaPlugin **plugin);
+/*
  * @brief destroys an EulabeiaPlugins
  *
  * @param[out] plugins, the EulabeiaPlugins to be freed. Sets *plugins to NULL.

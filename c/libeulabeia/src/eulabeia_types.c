@@ -244,6 +244,40 @@ static void plugin_severity_destroy(struct EulabeiaPluginSeverity **severity)
 	*severity = NULL;
 }
 
+void eulabeia_plugin_destroy(struct EulabeiaPlugin **plugin)
+{
+	if (plugin == NULL || *plugin == NULL)
+		return;
+	g_free((*plugin)->oid);
+	g_free((*plugin)->affected);
+	g_free((*plugin)->category);
+	g_free((*plugin)->created);
+	g_free((*plugin)->excluded_keys);
+	g_free((*plugin)->family);
+	g_free((*plugin)->filename);
+	g_free((*plugin)->impact);
+	g_free((*plugin)->insight);
+	g_free((*plugin)->mandatory_keys);
+	g_free((*plugin)->modified);
+	g_free((*plugin)->name);
+	g_free((*plugin)->qod);
+	g_free((*plugin)->qod_type);
+	g_free((*plugin)->required_keys);
+	g_free((*plugin)->required_ports);
+	g_free((*plugin)->required_udp_ports);
+	g_free((*plugin)->solution);
+	g_free((*plugin)->solution_method);
+	g_free((*plugin)->summary);
+	g_free((*plugin)->vuldetect);
+	if ((*plugin)->references != NULL)
+		plugin_references_destroy(&(*plugin)->references);
+	if ((*plugin)->parameters != NULL)
+		plugin_parameters_destroy(&(*plugin)->parameters);
+	if ((*plugin)->dependencies != NULL)
+		plugin_dependencies_destroy(&(*plugin)->dependencies);
+	if ((*plugin)->severity != NULL)
+		plugin_severity_destroy(&(*plugin)->severity);
+}
 void eulabeia_plugins_destroy(struct EulabeiaPlugins **plugins)
 {
 	unsigned int i = 0;
@@ -255,35 +289,7 @@ void eulabeia_plugins_destroy(struct EulabeiaPlugins **plugins)
 	p_index = (*plugins)->plugins;
 	p_orig = (*plugins)->plugins;
 	for (; i < (*plugins)->len; p_index++, i++) {
-		g_free(p_index->oid);
-		g_free(p_index->affected);
-		g_free(p_index->category);
-		g_free(p_index->created);
-		g_free(p_index->excluded_keys);
-		g_free(p_index->family);
-		g_free(p_index->filename);
-		g_free(p_index->impact);
-		g_free(p_index->insight);
-		g_free(p_index->mandatory_keys);
-		g_free(p_index->modified);
-		g_free(p_index->name);
-		g_free(p_index->qod);
-		g_free(p_index->qod_type);
-		g_free(p_index->required_keys);
-		g_free(p_index->required_ports);
-		g_free(p_index->required_udp_ports);
-		g_free(p_index->solution);
-		g_free(p_index->solution_method);
-		g_free(p_index->summary);
-		g_free(p_index->vuldetect);
-		if (p_index->references != NULL)
-			plugin_references_destroy(&p_index->references);
-		if (p_index->parameters != NULL)
-			plugin_parameters_destroy(&p_index->parameters);
-		if (p_index->dependencies != NULL)
-			plugin_dependencies_destroy(&p_index->dependencies);
-		if (p_index->severity != NULL)
-			plugin_severity_destroy(&p_index->severity);
+		eulabeia_plugin_destroy(&p_index);
 	}
 	/* Free EulabeiaPlugin array */
 	g_free(p_orig);

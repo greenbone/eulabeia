@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "eulabeia/types.h"
 #include "got_vts_json.h"
 #include <cgreen/cgreen.h>
 #include <cgreen/constraint_syntax_helpers.h>
@@ -82,12 +83,29 @@ Ensure(CRUDProgress, got_plugin)
 	struct EulabeiaCRUDProgress *progress = calloc(1, sizeof(*progress));
 	rc = eulabeia_crud_progress(
 	    GOT_VT, GOT_VT_ID, EULABEIA_INFO_GOT, progress);
+
 	assert_equal(rc, 0);
 	assert_equal(progress->status, EULABEIA_CRUD_SUCCESS);
 	assert_that(progress->plugin, is_non_null);
 	assert_that(progress->plugin->oid, is_equal_to_string(GOT_VT_ID));
+	assert_that(progress->plugin->parameters, is_non_null);
+	assert_that(progress->plugin->parameters->len, is_equal_to(1));
+	assert_that(progress->plugin->parameters->parameter, is_non_null);
+	assert_that(progress->plugin->parameters->parameter->name,
+		    is_equal_to_string("example"));
+	assert_that(progress->plugin->parameters->parameter->type,
+		    is_equal_to_string("entry"));
+	assert_that(progress->plugin->parameters->parameter->defaultvalue,
+		    is_equal_to_string("a default string value"));
+	assert_that(progress->plugin->references, is_non_null);
+	assert_that(progress->plugin->references->len, is_equal_to(4));
+	assert_that(progress->plugin->references->reference[3].type,
+		    is_equal_to_string("URL"));
+	assert_that(progress->plugin->dependencies, is_non_null);
+	assert_that(progress->plugin->dependencies->dependency->filename,
+		    is_equal_to_string("keys.nasl"));
 
-	free(progress->plugin);
+	eulabeia_plugin_destroy(&progress->plugin);
 	free(progress);
 }
 Ensure(CRUDProgress, got_wrong_id)

@@ -233,6 +233,61 @@ int eulabeia_json_hosts(JsonArray *arr, struct EulabeiaHosts **hosts)
 }
 
 // TODO credentials
+static int json_plugin_dependencies(JsonArray *ja,
+				    struct EulabeiaPluginDependencies **r)
+{
+	unsigned int arr_len, i;
+	struct EulabeiaPluginDependency *ri;
+	if (ja == NULL || r == NULL)
+		return -1;
+	if (*r == NULL)
+		*r = g_malloc0(sizeof(**r));
+
+	arr_len = json_array_get_length(ja);
+	if (((*r)->dependency = calloc(arr_len, sizeof(*(*r)->dependency))) ==
+	    NULL) {
+		return -1;
+	}
+	(*r)->cap = arr_len;
+	(*r)->len = arr_len;
+	for (i = 0; i < arr_len; i++) {
+		ri = (*r)->dependency + i;
+		ri->filename = g_strdup(json_array_get_string_element(ja, i));
+	}
+
+	return 0;
+}
+
+static int json_plugin_references(JsonArray *ja,
+				  struct EulabeiaPluginReferences **r)
+{
+	unsigned int arr_len, i;
+	struct EulabeiaPluginReference *ri;
+	JsonObject *jo;
+	if (ja == NULL || r == NULL)
+		return -1;
+	if (*r == NULL)
+		*r = g_malloc0(sizeof(**r));
+
+	arr_len = json_array_get_length(ja);
+	if (((*r)->reference = calloc(arr_len, sizeof(*(*r)->reference))) ==
+	    NULL) {
+		return -1;
+	}
+	(*r)->cap = arr_len;
+	(*r)->len = arr_len;
+	for (i = 0; i < arr_len; i++) {
+		ri = (*r)->reference + i;
+		jo = json_array_get_object_element(ja, i);
+		if (json_object_has_member(jo, "id"))
+			json_object_get_and_assign_string(jo, "id", &ri->id);
+		if (json_object_has_member(jo, "type"))
+			json_object_get_and_assign_string(
+			    jo, "type", &ri->type);
+	}
+
+	return 0;
+}
 
 static int json_plugin_parameters(JsonArray *ja,
 				  struct EulabeiaPluginParameters **r)
@@ -253,7 +308,7 @@ static int json_plugin_parameters(JsonArray *ja,
 	(*r)->cap = arr_len;
 	(*r)->len = arr_len;
 	for (i = 0; i < arr_len; i++) {
-		ri = (*r)->parameter++;
+		ri = (*r)->parameter + i;
 		jo = json_array_get_object_element(ja, i);
 		if (json_object_has_member(jo, "id"))
 			json_object_get_and_assign_string(jo, "id", &ri->id);
@@ -269,9 +324,9 @@ static int json_plugin_parameters(JsonArray *ja,
 		if (json_object_has_member(jo, "description"))
 			json_object_get_and_assign_string(
 			    jo, "description", &ri->description);
-		if (json_object_has_member(jo, "defaultvalue"))
+		if (json_object_has_member(jo, "default"))
 			json_object_get_and_assign_string(
-			    jo, "defaultvalue", &ri->defaultvalue);
+			    jo, "default", &ri->defaultvalue);
 	}
 
 	return 0;
@@ -355,11 +410,23 @@ int eulabeia_json_plugin(JsonObject *jo, struct EulabeiaPlugin **p)
 		    jo, "qod_type", &(*p)->qod_type);
 	if (json_object_has_member(jo, "qod"))
 		json_object_get_and_assign_string(jo, "qod", &(*p)->qod);
-	// TODO add references, dependencies, parameters
-	if (json_object_has_member(jo, "parameters")) {
+	// TODO add references, dependencies
+	if (json_object_has_member(jo, "vt_parameters")) {
 		if (json_plugin_parameters(
-			json_object_get_array_member(jo, "parameters"),
+			json_object_get_array_member(jo, "vt_parameters"),
 			&(*p)->parameters) != 0)
+			return -2;
+	}
+	if (json_object_has_member(jo, "vt_dependencies")) {
+		if (json_plugin_dependencies(
+			json_object_get_array_member(jo, "vt_dependencies"),
+			&(*p)->dependencies) != 0)
+			return -2;
+	}
+	if (json_object_has_member(jo, "references")) {
+		if (json_plugin_references(
+			json_object_get_array_member(jo, "references"),
+			&(*p)->references) != 0)
 			return -2;
 	}
 	if (json_object_has_member(jo, "severety")) {

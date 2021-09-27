@@ -64,4 +64,4 @@ add_test(NAME got_scan
 add_test(NAME crud_got_wrong_id
 	COMMAND all_tests got_wrong_id)
 add_test(NAME crud_got_got_plugin
-	COMMAND all_tests got_got_plugin)
+	COMMAND all_tests got_plugin)

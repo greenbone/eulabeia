@@ -276,12 +276,12 @@ static void print_entry(enum eulabeia_aggregate aggregate,
 			example = eulabeia_id_message_to_json(message, id);
 			break;
 		case EULABEIA_INFO_GOT:
-			modify = 0;
 			if (aggregate == EULABEIA_SCAN) {
 				target = example_target();
 				target->id = "example.id.scan";
 			}
 		case EULABEIA_CMD_MODIFY:
+			modify = type == EULABEIA_INFO_GOT;
 			switch (aggregate) {
 			case EULABEIA_SCAN:
 				scan = example_scan(target);

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/greenbone/eulabeia/connection"
+	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/models"
 )
 
@@ -56,7 +57,7 @@ var vt = models.VT{
 			Name:         "Test1:",
 			Value:        "",
 			Type:         "entry",
-			Description:  "Description",
+			Description:  "",
 			DefaultValue: "",
 		},
 		{
@@ -64,7 +65,7 @@ var vt = models.VT{
 			Name:         "Test3:",
 			Value:        "",
 			Type:         "password",
-			Description:  "Description",
+			Description:  "",
 			DefaultValue: "",
 		},
 		{
@@ -72,7 +73,7 @@ var vt = models.VT{
 			Name:         "Test2:",
 			Value:        "",
 			Type:         "entry",
-			Description:  "Description",
+			Description:  "",
 			DefaultValue: "default",
 		},
 	},
@@ -200,8 +201,8 @@ func TestGetVT(t *testing.T) {
 		rc:      &RedisMock{},
 	}
 
-	vtTest, err := fs.GetVT("test")
-	if err != nil {
+	vtTest, f, err := fs.GetVT(cmds.NewGet("vt", "test", "", ""))
+	if err != nil || f != nil {
 		t.Fatalf("Unable to get VT: %s\n", err)
 	}
 

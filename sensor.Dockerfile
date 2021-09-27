@@ -22,7 +22,6 @@ RUN rm /etc/apt/sources.list.d/docker.list
 COPY openvas_log.conf /etc/openvas/openvas_log.conf
 COPY config.toml /usr/etc/eulabeia/config.toml
 COPY bin/eulabeia-sensor /usr/bin/eulabeia-sensor
-COPY *.nasl /var/lib/openvas/feed/plugins/
-COPY plugin_feed_info.inc /var/lib/openvas/feed/plugins/
+COPY plugins/* /var/lib/openvas/feed/plugins/
 RUN echo "mqtt_context = scanner" >> /etc/openvas/openvas.conf
 CMD [ "/usr/bin/eulabeia-sensor" ]
