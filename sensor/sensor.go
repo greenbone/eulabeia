@@ -95,12 +95,12 @@ func (sensor *Scheduler) StartScan(scanID string) error {
 		return fmt.Errorf("scan ID %s unknown", scanID)
 	}
 
-	if err := sensor.ovas.StartScan(sensor.queue.Front(), int(sensor.conf.Niceness), sensor.sudo, sensor.commander); err != nil {
+	if err := sensor.ovas.StartScan(sensor.queue.Front().(string), int(sensor.conf.Niceness), sensor.sudo, sensor.commander); err != nil {
 		return err
 	}
 	sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 		Identifier: messages.Identifier{
-			ID:      sensor.queue.Front(),
+			ID:      sensor.queue.Front().(string),
 			Message: messages.NewMessage("status.scan", "", ""),
 		},
 		Status: "init",
@@ -231,7 +231,7 @@ func (sensor *Scheduler) schedule() {
 		}
 
 		// try to run scan process
-		if err := sensor.StartScan(sensor.queue.Front()); err != nil {
+		if err := sensor.StartScan(sensor.queue.Front().(string)); err != nil {
 			log.Printf("%s: unable to start scan: %s", sensor.queue.Front(), err)
 		}
 
@@ -267,7 +267,7 @@ func (sensor *Scheduler) Close() error {
 	for item, ok := sensor.queue.Dequeue(); ok; item, ok = sensor.queue.Dequeue() {
 		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 			Identifier: messages.Identifier{
-				ID:      item,
+				ID:      item.(string),
 				Message: messages.NewMessage("status.scan", "", ""),
 			},
 			Status: "stopped",
@@ -282,7 +282,7 @@ func (sensor *Scheduler) Close() error {
 		go func(item string) {
 			defer wg.Done()
 			sensor.ovas.StopScan(item, sensor.sudo, sensor.commander)
-		}(item)
+		}(item.(string))
 	}
 	// Stopping all running processes
 	for item, ok := sensor.running.Dequeue(); ok; item, ok = sensor.running.Dequeue() {
@@ -291,7 +291,7 @@ func (sensor *Scheduler) Close() error {
 		go func(item string) {
 			defer wg.Done()
 			sensor.ovas.StopScan(item, sensor.sudo, sensor.commander)
-		}(item)
+		}(item.(string))
 	}
 	wg.Wait()
 	return nil
