@@ -254,7 +254,7 @@ struct EulabeiaScanProgress {
  * or delete messages.
  *
  * Usually it is used in combination with eulabeia_crud_progress for the purpose
- * to verify the status of a previously send command. On get cmds it  will also
+ * to verify the status of a previously send command. On get cmds it will also
  * contain the aggregate information when it is a read operation depending on
  * the aggregate.
  *
