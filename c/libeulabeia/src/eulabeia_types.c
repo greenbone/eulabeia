@@ -119,13 +119,10 @@ void eulabeia_message_destroy(struct EulabeiaMessage **msg)
 	if (*msg == NULL) {
 		return;
 	}
-	if ((*msg)->id)
-		free((*msg)->id);
-	if ((*msg)->type)
-		free((*msg)->type);
-	if ((*msg)->group_id)
-		free((*msg)->group_id);
-	free(*msg);
+	g_free((*msg)->id);
+	g_free((*msg)->type);
+	g_free((*msg)->group_id);
+	g_free(*msg);
 	*msg = NULL;
 }
 
@@ -133,10 +130,9 @@ void eulabeia_failure_destroy(struct EulabeiaFailure **failure)
 {
 	if (*failure == NULL)
 		return;
-	free((*failure)->id);
-	if ((*failure)->error)
-		free((*failure)->error);
-	free(*failure);
+	g_free((*failure)->id);
+	g_free((*failure)->error);
+	g_free(*failure);
 	*failure = NULL;
 }
 
@@ -144,10 +140,9 @@ void eulabeia_status_destroy(struct EulabeiaStatus **status)
 {
 	if (*status == NULL)
 		return;
-	free((*status)->id);
-	if ((*status)->status)
-		free((*status)->status);
-	free(*status);
+	g_free((*status)->id);
+	g_free((*status)->status);
+	g_free(*status);
 	*status = NULL;
 }
 
@@ -165,35 +160,33 @@ void eulabeia_hosts_destroy(struct EulabeiaHosts **hosts)
 	p_orig = (*hosts)->hosts;
 	/* Free addresses of EulabeiaHost structs in array */
 	for (; i < (*hosts)->len; p_index++, i++) {
-		free(p_index->address);
+		g_free(p_index->address);
 	}
 	/* Free EulabeiaHost array */
-	free(p_orig);
+	g_free(p_orig);
 	/* Free EulabeiaHosts struct */
-	free(*hosts);
+	g_free(*hosts);
 	*hosts = NULL;
 }
 
 static void
-plugin_parameters_destroy(struct EulabeiaPluginParameters **parameters)
+plugin_references_destroy(struct EulabeiaPluginReferences **references)
 {
 	unsigned int i = 0;
-	struct EulabeiaPluginParameter *pi, *po;
+	struct EulabeiaPluginReference *pi, *po;
 
-	if (parameters == NULL || *parameters == NULL)
+	if (references == NULL || *references == NULL)
 		return;
 
-	pi = (*parameters)->parameter;
-	po = (*parameters)->parameter;
-	for (; i < (*parameters)->len; pi++, i++) {
-		if (pi->id != NULL)
-			free(pi->id);
-		if (pi->type != NULL)
-			free(pi->type);
+	pi = (*references)->reference;
+	po = (*references)->reference;
+	for (; i < (*references)->len; pi++, i++) {
+		g_free(pi->id);
+		g_free(pi->type);
 	}
-	free(po);
-	free(*parameters);
-	*parameters = NULL;
+	g_free(po);
+	g_free(*references);
+	*references = NULL;
 }
 
 static void
@@ -208,57 +201,46 @@ plugin_dependencies_destroy(struct EulabeiaPluginDependencies **dependencies)
 	di = (*dependencies)->dependency;
 	deo = (*dependencies)->dependency;
 	for (; i < (*dependencies)->len; di++, i++) {
-		if (di->oid != NULL)
-			free(di->oid);
+		g_free(di->filename);
 	}
-	free(deo);
-	free(*dependencies);
+	g_free(deo);
+	g_free(*dependencies);
 	*dependencies = NULL;
 }
 
 static void
-plugin_references_destroy(struct EulabeiaPluginReferences **references)
+plugin_parameters_destroy(struct EulabeiaPluginParameters **parameters)
 {
 	unsigned int i = 0;
-	struct EulabeiaPluginReference *ri, *ro;
+	struct EulabeiaPluginParameter *ri, *ro;
 
-	if (references == NULL || *references == NULL)
+	if (parameters == NULL || *parameters == NULL)
 		return;
 
-	ri = (*references)->reference;
-	ro = (*references)->reference;
-	for (; i < (*references)->len; ri++, i++) {
-		if (ri->id != NULL)
-			free(ri->id);
-		if (ri->name != NULL)
-			free(ri->name);
-		if (ri->value != NULL)
-			free(ri->value);
-		if (ri->type != NULL)
-			free(ri->type);
-		if (ri->description != NULL)
-			free(ri->description);
-		if (ri->defaultvalue != NULL)
-			free(ri->defaultvalue);
+	ri = (*parameters)->parameter;
+	ro = (*parameters)->parameter;
+	for (; i < (*parameters)->len; ri++, i++) {
+		g_free(ri->id);
+		g_free(ri->name);
+		g_free(ri->value);
+		g_free(ri->type);
+		g_free(ri->description);
+		g_free(ri->defaultvalue);
 	}
-	free(ro);
-	free(*references);
-	*references = NULL;
+	g_free(ro);
+	g_free(*parameters);
+	*parameters = NULL;
 }
 
 static void plugin_severity_destroy(struct EulabeiaPluginSeverity **severity)
 {
 	if (severity == NULL || *severity == NULL)
 		return;
-	if ((*severity)->vector != NULL)
-		free((*severity)->vector);
-	if ((*severity)->type != NULL)
-		free((*severity)->type);
-	if ((*severity)->date != NULL)
-		free((*severity)->date);
-	if ((*severity)->origin != NULL)
-		free((*severity)->origin);
-
+	g_free((*severity)->vector);
+	g_free((*severity)->type);
+	g_free((*severity)->date);
+	g_free((*severity)->origin);
+	g_free(*severity);
 	*severity = NULL;
 }
 
@@ -273,48 +255,27 @@ void eulabeia_plugins_destroy(struct EulabeiaPlugins **plugins)
 	p_index = (*plugins)->plugins;
 	p_orig = (*plugins)->plugins;
 	for (; i < (*plugins)->len; p_index++, i++) {
-		if (p_index->oid != NULL)
-			free(p_index->oid);
-		if (p_index->affected != NULL)
-			free(p_index->affected);
-		if (p_index->category != NULL)
-			free(p_index->category);
-		if (p_index->created != NULL)
-			free(p_index->created);
-		if (p_index->excluded_keys != NULL)
-			free(p_index->excluded_keys);
-		if (p_index->family != NULL)
-			free(p_index->family);
-		if (p_index->filename != NULL)
-			free(p_index->filename);
-		if (p_index->impact != NULL)
-			free(p_index->impact);
-		if (p_index->insight != NULL)
-			free(p_index->insight);
-		if (p_index->mandatory_keys != NULL)
-			free(p_index->mandatory_keys);
-		if (p_index->modified != NULL)
-			free(p_index->modified);
-		if (p_index->name != NULL)
-			free(p_index->name);
-		if (p_index->qod != NULL)
-			free(p_index->qod);
-		if (p_index->qod_type != NULL)
-			free(p_index->qod_type);
-		if (p_index->required_keys != NULL)
-			free(p_index->required_keys);
-		if (p_index->required_ports != NULL)
-			free(p_index->required_ports);
-		if (p_index->required_udp_ports != NULL)
-			free(p_index->required_udp_ports);
-		if (p_index->solution != NULL)
-			free(p_index->solution);
-		if (p_index->solution_method != NULL)
-			free(p_index->solution_method);
-		if (p_index->summary != NULL)
-			free(p_index->summary);
-		if (p_index->vuldetect != NULL)
-			free(p_index->vuldetect);
+		g_free(p_index->oid);
+		g_free(p_index->affected);
+		g_free(p_index->category);
+		g_free(p_index->created);
+		g_free(p_index->excluded_keys);
+		g_free(p_index->family);
+		g_free(p_index->filename);
+		g_free(p_index->impact);
+		g_free(p_index->insight);
+		g_free(p_index->mandatory_keys);
+		g_free(p_index->modified);
+		g_free(p_index->name);
+		g_free(p_index->qod);
+		g_free(p_index->qod_type);
+		g_free(p_index->required_keys);
+		g_free(p_index->required_ports);
+		g_free(p_index->required_udp_ports);
+		g_free(p_index->solution);
+		g_free(p_index->solution_method);
+		g_free(p_index->summary);
+		g_free(p_index->vuldetect);
 		if (p_index->references != NULL)
 			plugin_references_destroy(&p_index->references);
 		if (p_index->parameters != NULL)
@@ -325,9 +286,9 @@ void eulabeia_plugins_destroy(struct EulabeiaPlugins **plugins)
 			plugin_severity_destroy(&p_index->severity);
 	}
 	/* Free EulabeiaPlugin array */
-	free(p_orig);
+	g_free(p_orig);
 	/* Free EulabeiaPlugins struct */
-	free(*plugins);
+	g_free(*plugins);
 
 	*plugins = NULL;
 }
@@ -344,34 +305,26 @@ void eulabeia_ports_destroy(struct EulabeiaPorts **ports)
 	p_orig = (*ports)->ports;
 	/* Free port of EulabeiaPort structs in array */
 	for (; i < (*ports)->len; p_index++, i++) {
-		free(p_index->port);
+		g_free(p_index->port);
 	}
 	/* Free EulabeiaPort array */
-	free(p_orig);
+	g_free(p_orig);
 	/* Free EulabeiaPorts struct */
-	free(*ports);
+	g_free(*ports);
 
 	*ports = NULL;
 }
 
 static void free_scan_result_data(struct EulabeiaScanResult *scan_result)
 {
-	if ((scan_result)->result_type)
-		free((scan_result)->result_type);
-	if ((scan_result)->host_ip)
-		free((scan_result)->host_ip);
-	if ((scan_result)->host_name)
-		free((scan_result)->host_name);
-	if ((scan_result)->oid)
-		free((scan_result)->oid);
-	if ((scan_result)->id)
-		free((scan_result)->id);
-	if ((scan_result)->uri)
-		free((scan_result)->uri);
-	if ((scan_result)->value)
-		free((scan_result)->value);
-	if ((scan_result)->port)
-		free((scan_result)->port);
+	g_free((scan_result)->result_type);
+	g_free((scan_result)->host_ip);
+	g_free((scan_result)->host_name);
+	g_free((scan_result)->oid);
+	g_free((scan_result)->id);
+	g_free((scan_result)->uri);
+	g_free((scan_result)->value);
+	g_free((scan_result)->port);
 }
 
 void eulabeia_scan_result_destroy(struct EulabeiaScanResult **scan_result)
@@ -381,19 +334,15 @@ void eulabeia_scan_result_destroy(struct EulabeiaScanResult **scan_result)
 
 	free_scan_result_data(*scan_result);
 
-	free(*scan_result);
+	g_free(*scan_result);
 	*scan_result = NULL;
 }
 
 static void free_host_status_data(struct EulabeiaHostStatus *status)
 {
-	if ((status)->host_ip)
-		free((status)->host_ip);
-	if ((status)->id)
-		free((status)->id);
-	;
-	if ((status)->value)
-		free((status)->value);
+	g_free((status)->host_ip);
+	g_free((status)->id);
+	g_free((status)->value);
 }
 
 void eulabeia_host_status_destroy(struct EulabeiaHostStatus **status)
@@ -403,7 +352,7 @@ void eulabeia_host_status_destroy(struct EulabeiaHostStatus **status)
 
 	free_host_status_data(*status);
 
-	free(*status);
+	g_free(*status);
 	*status = NULL;
 }
 
@@ -419,9 +368,9 @@ void eulabeia_scan_progress_destroy(struct EulabeiaScanProgress **scan_progress)
 			ptr = (*scan_progress)->results->results + i;
 			free_scan_result_data(ptr);
 		}
-		free((*scan_progress)->results->results);
+		g_free((*scan_progress)->results->results);
 	}
-	free(*scan_progress);
+	g_free(*scan_progress);
 	*scan_progress = NULL;
 }
 char *eulabeia_message_type(enum eulabeia_message_type message_type,

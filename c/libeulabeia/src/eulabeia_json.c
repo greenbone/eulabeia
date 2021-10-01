@@ -234,11 +234,11 @@ int eulabeia_json_hosts(JsonArray *arr, struct EulabeiaHosts **hosts)
 
 // TODO credentials
 
-static int json_plugin_references(JsonArray *ja,
-				  struct EulabeiaPluginReferences **r)
+static int json_plugin_parameters(JsonArray *ja,
+				  struct EulabeiaPluginParameters **r)
 {
 	unsigned int arr_len, i;
-	struct EulabeiaPluginReference *ri;
+	struct EulabeiaPluginParameter *ri;
 	JsonObject *jo;
 	if (ja == NULL || r == NULL)
 		return -1;
@@ -246,14 +246,14 @@ static int json_plugin_references(JsonArray *ja,
 		*r = g_malloc0(sizeof(**r));
 
 	arr_len = json_array_get_length(ja);
-	if (((*r)->reference = calloc(arr_len, sizeof(*(*r)->reference))) ==
+	if (((*r)->parameter = calloc(arr_len, sizeof(*(*r)->parameter))) ==
 	    NULL) {
 		return -1;
 	}
 	(*r)->cap = arr_len;
 	(*r)->len = arr_len;
 	for (i = 0; i < arr_len; i++) {
-		ri = (*r)->reference++;
+		ri = (*r)->parameter++;
 		jo = json_array_get_object_element(ja, i);
 		if (json_object_has_member(jo, "id"))
 			json_object_get_and_assign_string(jo, "id", &ri->id);
@@ -288,7 +288,7 @@ int eulabeia_json_plugin(JsonObject *jo, struct EulabeiaPlugin **p)
 	// a plugin needs at least an oid or a family; when both are null we
 	// cannot identify it.
 	if (!json_object_has_member(jo, "id") &&
-		!json_object_has_member(jo, "oid") &&
+	    !json_object_has_member(jo, "oid") &&
 	    !json_object_has_member(jo, "family"))
 		return -2;
 
@@ -299,7 +299,8 @@ int eulabeia_json_plugin(JsonObject *jo, struct EulabeiaPlugin **p)
 	if (json_object_has_member(jo, "name"))
 		json_object_get_and_assign_string(jo, "name", &(*p)->name);
 	if (json_object_has_member(jo, "filename"))
-		json_object_get_and_assign_string(jo, "filename", &(*p)->filename);
+		json_object_get_and_assign_string(
+		    jo, "filename", &(*p)->filename);
 	if (json_object_has_member(jo, "required_keys"))
 		json_object_get_and_assign_string(
 		    jo, "required_keys", &(*p)->required_keys);
@@ -316,17 +317,22 @@ int eulabeia_json_plugin(JsonObject *jo, struct EulabeiaPlugin **p)
 		json_object_get_and_assign_string(
 		    jo, "required_udp_ports", &(*p)->required_udp_ports);
 	if (json_object_has_member(jo, "category"))
-		json_object_get_and_assign_string(jo, "category", &(*p)->category);
+		json_object_get_and_assign_string(
+		    jo, "category", &(*p)->category);
 	if (json_object_has_member(jo, "family"))
 		json_object_get_and_assign_string(jo, "family", &(*p)->family);
 	if (json_object_has_member(jo, "created"))
-		json_object_get_and_assign_string(jo, "created", &(*p)->created);
+		json_object_get_and_assign_string(
+		    jo, "created", &(*p)->created);
 	if (json_object_has_member(jo, "modified"))
-		json_object_get_and_assign_string(jo, "modified", &(*p)->modified);
+		json_object_get_and_assign_string(
+		    jo, "modified", &(*p)->modified);
 	if (json_object_has_member(jo, "summary"))
-		json_object_get_and_assign_string(jo, "summary", &(*p)->summary);
+		json_object_get_and_assign_string(
+		    jo, "summary", &(*p)->summary);
 	if (json_object_has_member(jo, "solution"))
-		json_object_get_and_assign_string(jo, "solution", &(*p)->solution);
+		json_object_get_and_assign_string(
+		    jo, "solution", &(*p)->solution);
 	if (json_object_has_member(jo, "solution_method"))
 		json_object_get_and_assign_string(
 		    jo, "solution_method", &(*p)->solution_method);
@@ -336,21 +342,24 @@ int eulabeia_json_plugin(JsonObject *jo, struct EulabeiaPlugin **p)
 	if (json_object_has_member(jo, "impact"))
 		json_object_get_and_assign_string(jo, "impact", &(*p)->impact);
 	if (json_object_has_member(jo, "insight"))
-		json_object_get_and_assign_string(jo, "insight", &(*p)->insight);
+		json_object_get_and_assign_string(
+		    jo, "insight", &(*p)->insight);
 	if (json_object_has_member(jo, "affected"))
-		json_object_get_and_assign_string(jo, "affected", &(*p)->affected);
+		json_object_get_and_assign_string(
+		    jo, "affected", &(*p)->affected);
 	if (json_object_has_member(jo, "vuldetect"))
 		json_object_get_and_assign_string(
 		    jo, "vuldetect", &(*p)->vuldetect);
 	if (json_object_has_member(jo, "qod_type"))
-		json_object_get_and_assign_string(jo, "qod_type", &(*p)->qod_type);
+		json_object_get_and_assign_string(
+		    jo, "qod_type", &(*p)->qod_type);
 	if (json_object_has_member(jo, "qod"))
 		json_object_get_and_assign_string(jo, "qod", &(*p)->qod);
 	// TODO add references, dependencies, parameters
-	if (json_object_has_member(jo, "references")) {
-		if (json_plugin_references(
-			json_object_get_array_member(jo, "references"),
-			&(*p)->references) != 0)
+	if (json_object_has_member(jo, "parameters")) {
+		if (json_plugin_parameters(
+			json_object_get_array_member(jo, "parameters"),
+			&(*p)->parameters) != 0)
 			return -2;
 	}
 	if (json_object_has_member(jo, "severety")) {
@@ -358,7 +367,9 @@ int eulabeia_json_plugin(JsonObject *jo, struct EulabeiaPlugin **p)
 		(*p)->severity = g_malloc0(sizeof(*(*p)->severity));
 		if (json_object_has_member(severity, "severity_vector"))
 			json_object_get_and_assign_string(
-			    severity, "severity_vector", &(*p)->severity->vector);
+			    severity,
+			    "severity_vector",
+			    &(*p)->severity->vector);
 		if (json_object_has_member(severity, "severity_type"))
 			json_object_get_and_assign_string(
 			    severity, "severity_type", &(*p)->severity->type);
@@ -367,7 +378,9 @@ int eulabeia_json_plugin(JsonObject *jo, struct EulabeiaPlugin **p)
 			    severity, "severity_date", &(*p)->severity->date);
 		if (json_object_has_member(severity, "severity_origin"))
 			json_object_get_and_assign_string(
-			    severity, "severity_origin", &(*p)->severity->origin);
+			    severity,
+			    "severity_origin",
+			    &(*p)->severity->origin);
 	}
 
 	return 0;

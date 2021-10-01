@@ -17,13 +17,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "got_vts_json.h"
 #include <cgreen/cgreen.h>
 #include <cgreen/constraint_syntax_helpers.h>
 #include <cgreen/internal/assertions_internal.h>
 #include <cgreen/legacy.h>
 #include <cgreen/mocks.h>
 #include <cgreen/unit.h>
-#include "got_vts_json.h"
 #include <eulabeia/client.h>
 #include <stdlib.h>
 
@@ -36,21 +36,22 @@ AfterEach(CRUDProgress) {}
 	"{\"message_id\":\"fa022daa-1d78-4d02-80b5-83af3086d7d0\","            \
 	"\"message_type\":\"got.target\","                                     \
 	"\"group_id\":\"e069f31d-7047-4afb-b31a-65c821c98bad\","               \
-	"\"message_created\":0,"                                                       \
-	"\"id\":\""GOT_TARGET_ID"\"}"
+	"\"message_created\":0,"                                               \
+	"\"id\":\"" GOT_TARGET_ID "\"}"
 
 #define GOT_SCAN_ID "scan"
-#define GOT_SCAN\
+#define GOT_SCAN                                                               \
 	"{\"message_id\":\"fa022daa-1d78-4d02-80b5-83af3086d7d0\","            \
-	"\"message_type\":\"got.scan\","                                     \
+	"\"message_type\":\"got.scan\","                                       \
 	"\"group_id\":\"e069f31d-7047-4afb-b31a-65c821c98bad\","               \
-	"\"message_created\":0,"                                                       \
-	"\"id\":\""GOT_SCAN_ID"\"}"
+	"\"message_created\":0,"                                               \
+	"\"id\":\"" GOT_SCAN_ID "\"}"
 Ensure(CRUDProgress, got_target)
 {
 	int rc;
 	struct EulabeiaCRUDProgress *progress = calloc(1, sizeof(*progress));
-	rc = eulabeia_crud_progress(GOT_TARGET, GOT_TARGET_ID, EULABEIA_INFO_GOT, progress);
+	rc = eulabeia_crud_progress(
+	    GOT_TARGET, GOT_TARGET_ID, EULABEIA_INFO_GOT, progress);
 	assert_equal(rc, 0);
 	assert_equal(progress->status, EULABEIA_CRUD_SUCCESS);
 	assert_that(progress->target, is_non_null);
@@ -64,7 +65,8 @@ Ensure(CRUDProgress, got_scan)
 {
 	int rc;
 	struct EulabeiaCRUDProgress *progress = calloc(1, sizeof(*progress));
-	rc = eulabeia_crud_progress(GOT_SCAN, GOT_SCAN_ID, EULABEIA_INFO_GOT, progress);
+	rc = eulabeia_crud_progress(
+	    GOT_SCAN, GOT_SCAN_ID, EULABEIA_INFO_GOT, progress);
 	assert_equal(rc, 0);
 	assert_equal(progress->status, EULABEIA_CRUD_SUCCESS);
 	assert_that(progress->scan, is_non_null);
@@ -78,7 +80,8 @@ Ensure(CRUDProgress, got_plugin)
 {
 	int rc;
 	struct EulabeiaCRUDProgress *progress = calloc(1, sizeof(*progress));
-	rc = eulabeia_crud_progress(GOT_VT, GOT_VT_ID, EULABEIA_INFO_GOT, progress);
+	rc = eulabeia_crud_progress(
+	    GOT_VT, GOT_VT_ID, EULABEIA_INFO_GOT, progress);
 	assert_equal(rc, 0);
 	assert_equal(progress->status, EULABEIA_CRUD_SUCCESS);
 	assert_that(progress->plugin, is_non_null);
@@ -89,10 +92,11 @@ Ensure(CRUDProgress, got_plugin)
 }
 Ensure(CRUDProgress, got_wrong_id)
 {
-	
+
 	int rc;
 	struct EulabeiaCRUDProgress *progress = calloc(1, sizeof(*progress));
-	rc = eulabeia_crud_progress(GOT_SCAN, "waldbusch", EULABEIA_INFO_GOT, progress);
+	rc = eulabeia_crud_progress(
+	    GOT_SCAN, "waldbusch", EULABEIA_INFO_GOT, progress);
 	assert_that(rc, is_equal_to(1));
 	assert_that(progress->scan, is_null);
 	free(progress);

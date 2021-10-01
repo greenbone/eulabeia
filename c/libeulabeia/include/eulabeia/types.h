@@ -302,7 +302,7 @@ struct EulabeiaPorts {
 	unsigned int cap;
 };
 
-struct EulabeiaPluginReference {
+struct EulabeiaPluginParameter {
 	char *id;
 	char *name;
 	char *value;
@@ -317,7 +317,7 @@ struct EulabeiaPluginReferences {
 	unsigned int cap;
 };
 
-struct EulabeiaPluginParameter {
+struct EulabeiaPluginReference {
 	char *type;
 	char *id;
 };
@@ -329,7 +329,7 @@ struct EulabeiaPluginParameters {
 };
 
 struct EulabeiaPluginDependency {
-	char *oid;
+	char *filename;
 };
 
 struct EulabeiaPluginDependencies {
