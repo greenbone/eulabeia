@@ -43,7 +43,7 @@ test:
 	go test ./...
 
 start-broker:
-	docker run --rm -d -p 9138:9138 --name eulabeia_broker $(REPOSITORY)/mqtt-broker:latest
+	docker run --rm -d -p 9138:9138 --name eulabeia_broker $(REPOSITORY)/eulabeia-broker:latest
 
 stop-broker:
 	docker kill eulabeia_broker
@@ -56,8 +56,8 @@ stop-director:
 
 start-sensor:
 	docker volume create eulabeia_redis_socket
-	docker volume create eulabeia_feed
 	docker run -d --rm -v eulabeia_redis_socket:/run/redis --name eulabeia_redis $(REPOSITORY)/eulabeia-redis
+	docker volume create eulabeia_feed
 	$(MQTT_CONTAINER) -d -v eulabeia_feed:/var/lib/openvas/feed/plugins -v eulabeia_redis_socket:/run/redis --name eulabeia_sensor $(REPOSITORY)/eulabeia-sensor
 	docker exec eulabeia_sensor mkdir -p /etc/openvas
 	docker exec eulabeia_sensor bash -c 'echo "mqtt_server_uri = $(BROKER_IP):9138" >> /etc/openvas/openvas.conf'
@@ -94,7 +94,7 @@ build-example:
 build: build-director build-sensor build-example
 
 build-container-broker:
-	$(DOCKER_BUILD) -t $(REPOSITORY)/mqtt-broker -f broker.Dockerfile .
+	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-broker -f broker.Dockerfile .
 
 build-container-redis:
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-redis -f redis.Dockerfile .
