@@ -1,4 +1,4 @@
-package handler
+package sensor
 
 import (
 	"encoding/json"
@@ -55,43 +55,26 @@ func (ms *MockSensor) LoadVts() {
 // TestStartStop tests the functionality of the StartStop handler
 func TestStartStop(t *testing.T) {
 	ms := NewMockSensor()
-	startStopHandler := StartStop{
-		Start: ms.StartScan,
-		Stop:  ms.StopScan,
+	startStopHandler := ScanCmd{
+		Stop: ms.StopScan,
 	}
 
-	// Creating Start and Stop Scan messages
-	startMsg := cmds.Start{
-		Identifier: messages.Identifier{
-			Message: messages.NewMessage("start.scan", "", ""),
-			ID:      "foo",
-		},
-	}
-	stopMsg := cmds.Start{
+	stopMsg := cmds.Stop{
 		Identifier: messages.Identifier{
 			Message: messages.NewMessage("stop.scan", "", ""),
 			ID:      "foo",
 		},
 	}
 
-	// Transforming Messages into Bytes slice
-	startMsgJson, err := json.Marshal(startMsg)
-	if err != nil {
-		t.Fatal("Transform Start Msg into JSON failed\n")
-	}
 	stopMsgJson, err := json.Marshal(stopMsg)
 	if err != nil {
 		t.Fatal("Transform Stop Msg into JSON failed\n")
 	}
 
 	// Simulate an Event trigger
-	startStopHandler.On("", startMsgJson)
 	startStopHandler.On("", stopMsgJson)
 
 	// Check if fields are set
-	if !ms.scanStarted {
-		t.Fatal("Scan should be started\n")
-	}
 	if !ms.scanStopped {
 		t.Fatal("Scan should be stopped\n")
 	}
@@ -130,7 +113,7 @@ func TestRegistered(t *testing.T) {
 
 func TestStatus(t *testing.T) {
 	ms := NewMockSensor()
-	statusHandler := Status{
+	statusHandler := ScanInfo{
 		Run: ms.ScanRunning,
 		Fin: ms.ScanFinished,
 	}
@@ -138,14 +121,14 @@ func TestStatus(t *testing.T) {
 	// Creating running and finished messages
 	runningMsg := info.Status{
 		Identifier: messages.Identifier{
-			Message: messages.NewMessage("start.scan", "", ""),
+			Message: messages.NewMessage("status.scan", "", ""),
 			ID:      "foo",
 		},
 		Status: "running",
 	}
 	finishMsg := info.Status{
 		Identifier: messages.Identifier{
-			Message: messages.NewMessage("start.scan", "", ""),
+			Message: messages.NewMessage("status.scan", "", ""),
 			ID:      "foo",
 		},
 		Status: "finished",

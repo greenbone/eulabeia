@@ -8,6 +8,7 @@ import (
 
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection"
+	"github.com/greenbone/eulabeia/models"
 )
 
 type MockPubSub struct{}
@@ -30,6 +31,10 @@ func (mps MockPubSub) Preprocess(topic string, message []byte) ([]connection.Top
 
 func (mps MockPubSub) Subscribe(handler map[string]connection.OnMessage) error {
 	return nil
+}
+
+func MockResolveVT([]models.VTFilter) ([]string, error) {
+	return nil, nil
 }
 
 // helperShortCommander creates a Command to execute a programm with a short
@@ -65,23 +70,31 @@ func TestQueueInitRunFinishScan(t *testing.T) {
 		Niceness:            10,
 		MinFreeMemScanQueue: 0,
 	}
-	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "")
+	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "", MockResolveVT)
 	scheduler.commander = MockCommander{}
 
-	scanID := "foo"
+	scanM := models.Scan{
+		ID: "foo",
+	}
+
+	s := &scan{
+		ScanPrefs: models.ScanPrefs{
+			ID: "foo",
+		},
+	}
 
 	// Insert scan into queue
-	if err := scheduler.QueueScan(scanID); err != nil {
+	if err := scheduler.QueueScan(scanM); err != nil {
 		t.Fatalf("There should be no error but got: %s\n", err)
 	}
 
 	// Check if scan is in queue
-	if !scheduler.queue.Contains(scanID) {
+	if !scheduler.queue.Contains(s) {
 		t.Fatal("Scan foo was not added to queue\n")
 	}
 
 	// Check if I can add another scan with same ID (should fail)
-	if err := scheduler.QueueScan(scanID); err == nil {
+	if err := scheduler.QueueScan(scanM); err == nil {
 		t.Fatalf("There should be an error but got none\n")
 	}
 
@@ -91,12 +104,12 @@ func TestQueueInitRunFinishScan(t *testing.T) {
 	}
 
 	// Check if scan can be started
-	if err := scheduler.StartScan(scanID); err != nil {
+	if err := scheduler.StartScan(s); err != nil {
 		t.Fatalf("Cannot start scan: %s\n", err)
 	}
 
 	// Check if scan is in init list
-	if !scheduler.init.Contains(scanID) {
+	if !scheduler.init.Contains(s) {
 		t.Fatalf("Scan was not added to init\n")
 	}
 
@@ -105,7 +118,7 @@ func TestQueueInitRunFinishScan(t *testing.T) {
 		t.Fatalf("Queue list should be empty but is not\n")
 	}
 	// Check if the scan can be started again (should fail)
-	if err := scheduler.StartScan(scanID); err == nil {
+	if err := scheduler.StartScan(s); err == nil {
 		t.Fatalf("Should be unable to start scan again\n")
 	}
 
@@ -115,12 +128,12 @@ func TestQueueInitRunFinishScan(t *testing.T) {
 	}
 
 	// Check if the status of the scan can be switched to running
-	if err := scheduler.ScanRunning(scanID); err != nil {
+	if err := scheduler.ScanRunning(s.ID); err != nil {
 		t.Fatalf("Cannot stwitch state to running: %s\n", err)
 	}
 
 	// Check if scan is in running list
-	if !scheduler.running.Contains(scanID) {
+	if !scheduler.running.Contains(s) {
 		t.Fatalf("Scan is not in running list but should be\n")
 	}
 
@@ -130,12 +143,12 @@ func TestQueueInitRunFinishScan(t *testing.T) {
 	}
 
 	// Check if it works another time (should fail)
-	if err := scheduler.ScanRunning(scanID); err == nil {
+	if err := scheduler.ScanRunning(s.ID); err == nil {
 		t.Fatalf("Should be unable to set state to running again\n")
 	}
 
 	// Finish the scan
-	if err := scheduler.ScanFinished(scanID); err != nil {
+	if err := scheduler.ScanFinished(s.ID); err != nil {
 		t.Fatalf("Unable to set scan as finished: %s\n", err)
 	}
 
@@ -145,7 +158,7 @@ func TestQueueInitRunFinishScan(t *testing.T) {
 	}
 
 	// Check if scan can be finished again (should fail)
-	if err := scheduler.ScanFinished(scanID); err == nil {
+	if err := scheduler.ScanFinished(s.ID); err == nil {
 		t.Fatalf("Should be unable to set state to finished again\n")
 	}
 
@@ -159,19 +172,23 @@ func TestStopScan(t *testing.T) {
 		Niceness:            10,
 		MinFreeMemScanQueue: 0,
 	}
-	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "")
+	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "", MockResolveVT)
 	scheduler.commander = MockCommander{}
 
-	scanID := "foo"
+	s := &scan{
+		ScanPrefs: models.ScanPrefs{
+			ID: "foo",
+		},
+	}
 
 	// Test failcase of StopScan
-	if err := scheduler.StopScan(scanID); err == nil {
+	if err := scheduler.StopScan(s.ID); err == nil {
 		t.Fatalf("Should not be able to stop scan\n")
 	}
 
 	// Test stop scan if scan is in queue
-	scheduler.queue.Enqueue(scanID)
-	if err := scheduler.StopScan(scanID); err != nil {
+	scheduler.queue.Enqueue(s)
+	if err := scheduler.StopScan(s.ID); err != nil {
 		t.Fatalf("Unable to stop scan: %s\n", err)
 	}
 	if !scheduler.queue.IsEmpty() {
@@ -179,8 +196,8 @@ func TestStopScan(t *testing.T) {
 	}
 
 	// Test stop scan if scan is in init
-	scheduler.init.Enqueue(scanID)
-	if err := scheduler.StopScan(scanID); err.Error() != fmt.Sprintf("process for scan id %s does not exist", scanID) {
+	scheduler.init.Enqueue(s)
+	if err := scheduler.StopScan(s.ID); err.Error() != fmt.Sprintf("process for scan id %s does not exist", s.ID) {
 		t.Fatalf("Unable to stop scan: %s\n", err)
 	}
 	if !scheduler.init.IsEmpty() {
@@ -188,8 +205,8 @@ func TestStopScan(t *testing.T) {
 	}
 
 	// Test stop scan if scan is in running
-	scheduler.running.Enqueue(scanID)
-	if err := scheduler.StopScan(scanID); err.Error() != fmt.Sprintf("process for scan id %s does not exist", scanID) {
+	scheduler.running.Enqueue(s)
+	if err := scheduler.StopScan(s.ID); err.Error() != fmt.Sprintf("process for scan id %s does not exist", s.ID) {
 		t.Fatalf("Unable to stop scan: %s\n", err)
 	}
 	if !scheduler.running.IsEmpty() {
@@ -206,17 +223,17 @@ func TestClose(t *testing.T) {
 		Niceness:            10,
 		MinFreeMemScanQueue: 0,
 	}
-	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "")
+	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "", MockResolveVT)
 	scheduler.commander = MockCommander{}
 
 	for i := 0; i < 30; i++ {
 		switch {
 		case i < 10:
-			scheduler.queue.Enqueue(fmt.Sprint(i))
+			scheduler.queue.Enqueue(&scan{ScanPrefs: models.ScanPrefs{ID: fmt.Sprint(i)}})
 		case i < 20:
-			scheduler.init.Enqueue(fmt.Sprint(i))
+			scheduler.init.Enqueue(&scan{ScanPrefs: models.ScanPrefs{ID: fmt.Sprint(i)}})
 		default:
-			scheduler.running.Enqueue(fmt.Sprint(i))
+			scheduler.running.Enqueue(&scan{ScanPrefs: models.ScanPrefs{ID: fmt.Sprint(i)}})
 		}
 	}
 
@@ -239,25 +256,106 @@ func TestInterruptedScan(t *testing.T) {
 		Niceness:            10,
 		MinFreeMemScanQueue: 0,
 	}
-	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "")
+	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "", MockResolveVT)
 
-	scan1 := "foo"
-	scan2 := "bar"
-
-	if err := scheduler.interruptScan(scan1); err == nil {
-		t.Fatalf("Should be unable to interrupt unknsown scan %s", scan1)
+	scan1 := &scan{
+		ScanPrefs: models.ScanPrefs{
+			ID: "foo",
+		},
 	}
-	if err := scheduler.interruptScan(scan2); err == nil {
-		t.Fatalf("Should be unable to interrupt unknsown scan %s", scan2)
+	scan2 := &scan{
+		ScanPrefs: models.ScanPrefs{
+			ID: "bar",
+		},
+	}
+
+	if err := scheduler.interruptScan(scan1.ID); err == nil {
+		t.Fatalf("Should be unable to interrupt unknsown scan %s", scan1.ID)
+	}
+	if err := scheduler.interruptScan(scan2.ID); err == nil {
+		t.Fatalf("Should be unable to interrupt unknsown scan %s", scan2.ID)
 	}
 
 	scheduler.init.Enqueue(scan1)
 	scheduler.running.Enqueue(scan2)
 
-	if err := scheduler.interruptScan(scan1); err != nil {
-		t.Fatalf("Should be able to interrupt unknsown scan %s", scan1)
+	if err := scheduler.interruptScan(scan1.ID); err != nil {
+		t.Fatalf("Should be able to interrupt unknsown scan %s", scan1.ID)
 	}
-	if err := scheduler.interruptScan(scan2); err != nil {
-		t.Fatalf("Should be able to interrupt unknsown scan %s", scan2)
+	if err := scheduler.interruptScan(scan2.ID); err != nil {
+		t.Fatalf("Should be able to interrupt unknsown scan %s", scan2.ID)
+	}
+}
+
+func TestAddVTInfo(t *testing.T) {
+	var conf = config.ScannerPreferences{
+		ScanInfoStoreTime:   0,
+		MaxScan:             0,
+		MaxQueuedScans:      0,
+		Niceness:            10,
+		MinFreeMemScanQueue: 0,
+	}
+	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "", MockResolveVT)
+	scheduler.commander = MockCommander{}
+
+	vt := make(chan []string)
+
+	if err := scheduler.addVTInfo("foo", vt); err == nil {
+		t.Errorf("There should be an error, but there is none")
+	}
+
+	s := &scan{ScanPrefs: models.ScanPrefs{
+		ID: "foo",
+	}}
+	scheduler.init.Enqueue(s)
+	errChan := make(chan error)
+	go func() {
+		errChan <- scheduler.addVTInfo("foo", vt)
+	}()
+
+	vt <- []string{"oid1", "oid2", "oid2"}
+	if err := <-errChan; err != nil {
+		t.Fatalf("Error while Adding VT Info: %s", err)
+	}
+
+	if len(s.Plugins) != 2 {
+		t.Fatalf("Wrong number of Plugins. Expected %d, got %d", 2, len(s.Plugins))
+	}
+	if s.Plugins[0].OID != "oid1" {
+		t.Errorf("Wrong Plugin OID. Expected %s, got %s", "odi1", s.Plugins[0].OID)
+	}
+	if s.Plugins[1].OID != "oid2" {
+		t.Errorf("Wrong Plugin OID. Expected %s, got %s", "odi2", s.Plugins[1].OID)
+	}
+
+}
+
+func TestGetScan(t *testing.T) {
+	var conf = config.ScannerPreferences{
+		ScanInfoStoreTime:   0,
+		MaxScan:             0,
+		MaxQueuedScans:      0,
+		Niceness:            10,
+		MinFreeMemScanQueue: 0,
+	}
+	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "", MockResolveVT)
+	scheduler.commander = MockCommander{}
+
+	if _, err := scheduler.GetScan("foo"); err == nil {
+		t.Errorf("Expected error but got none")
+	}
+
+	s := &scan{
+		ScanPrefs: models.ScanPrefs{
+			ID: "foo",
+		},
+		Ready: true}
+	scheduler.init.Enqueue(s)
+	scan, err := scheduler.GetScan("foo")
+	if err != nil {
+		t.Fatalf("Error while getting scan: %s", err)
+	}
+	if scan.ID != s.ID {
+		t.Fatalf("Different IDs. Original %s, altered %s", s.ID, scan.ID)
 	}
 }

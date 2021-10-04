@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
@@ -20,6 +21,7 @@ type FeedHandler struct {
 }
 
 func (handler FeedHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
+	log.Printf("Got VT request: %s\n", message)
 	// determine message type
 	var msg messages.Message
 	if err := json.Unmarshal(message, &msg); err != nil {
@@ -63,8 +65,11 @@ func (handler FeedHandler) On(topic string, message []byte) (*connection.SendRes
 
 			return &connection.SendResponse{
 				MSG: models.ResolvedFilter{
-					Message: messages.NewMessage("resolved.vt", "", msg.GroupID),
-					OIDs:    oids,
+					Identifier: messages.Identifier{
+						Message: messages.NewMessage("resolved.vt", "", msg.GroupID),
+						ID:      msg.ID,
+					},
+					OIDs: oids,
 				},
 				Topic: fmt.Sprintf("%s/vt/info", handler.Context),
 			}, nil

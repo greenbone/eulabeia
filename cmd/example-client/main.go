@@ -193,7 +193,7 @@ func MegaScan(i info.IDInfo, _ []byte) *connection.SendResponse {
 					Group: []models.VTFilter{
 						{
 							Key:   "family",
-							Value: "my test family",
+							Value: "my family test",
 						},
 					},
 				},

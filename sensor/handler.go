@@ -16,24 +16,28 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Package handler contains various message handler for sensors and initializes MQTT connection
-package handler
+package sensor
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/info"
+	"github.com/greenbone/eulabeia/models"
 )
 
-type StartStop struct {
-	Start func(scanID string) error // Function to Start a scan
-	Stop  func(scanID string) error // Function to Stop a scan
+type ScanCmd struct {
+	Context string
+	Sensor  string
+	Stop    func(scanID string) error              // Function to Stop a scan
+	Get     func(string) (models.ScanPrefs, error) // Function to get scan prefs corresponding to its ID
 }
 
-func (handler StartStop) On(topic string, message []byte) (*connection.SendResponse, error) {
+func (handler ScanCmd) On(topic string, message []byte) (*connection.SendResponse, error) {
 	var msg cmds.IDCMD
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
@@ -46,12 +50,26 @@ func (handler StartStop) On(topic string, message []byte) (*connection.SendRespo
 	if mt.Aggregate == "scan" {
 		switch mt.Function {
 		case "start":
-			if err := handler.Start(msg.ID); err != nil {
-				log.Printf("Unable to start scan: %s", err)
-			}
+			return &connection.SendResponse{
+				MSG:   cmds.NewGet("scan", msg.ID, "director", msg.GroupID),
+				Topic: fmt.Sprintf("%s/%s/%s/%s", handler.Context, "scan", "cmd", "director"),
+			}, nil
+
 		case "stop":
 			if err := handler.Stop(msg.ID); err != nil {
 				log.Printf("Unable to stop scan: %s", err)
+			}
+		case "get":
+			if sp, err := handler.Get(msg.ID); err != nil {
+				return nil, err
+			} else {
+				return &connection.SendResponse{
+					Topic: fmt.Sprintf("%s/%s/%s", handler.Context, "scan", "info"),
+					MSG: models.GotScanPrefs{
+						Message:   messages.NewMessage("got.scan", "", msg.GroupID),
+						ScanPrefs: sp,
+					},
+				}, nil
 			}
 		}
 	}
@@ -79,27 +97,54 @@ func (handler Registered) On(topic string, message []byte) (*connection.SendResp
 	return nil, nil
 }
 
-type Status struct {
-	Run func(string) error // Function to mark a scan as running
-	Fin func(string) error // Function to mark a scan as finished
+type ScanInfo struct {
+	Context string
+	Sensor  string
+	Run     func(string) error      // Function to mark a scan as running
+	Fin     func(string) error      // Function to mark a scan as finished
+	Start   func(models.Scan) error // Function to Start a scan event chain
 }
 
-func (handler Status) On(topic string, message []byte) (*connection.SendResponse, error) {
+func (handler ScanInfo) On(topic string, message []byte) (*connection.SendResponse, error) {
 	var msg info.Status
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
 		return nil, err
 	}
-	switch msg.Status {
-	case "running":
-		if err := handler.Run(msg.ID); err != nil {
-			log.Printf("Unable to set status to running: %s", err)
+
+	mt, err := messages.ParseMessageType(msg.Type)
+	if err != nil {
+		return nil, err
+	}
+
+	switch mt.Function {
+	case "got":
+		var msg models.GotScan
+		if err := json.Unmarshal(message, &msg); err != nil {
+			return nil, err
 		}
-	case "finished":
-		if err := handler.Fin(msg.ID); err != nil {
-			log.Printf("Unable to set status to finished: %s", err)
+
+		go func() {
+			if err := handler.Start(msg.Scan); err != nil {
+				log.Printf("Unable to start scan: %s", err)
+			}
+		}()
+
+		return nil, nil
+
+	case "status":
+		switch msg.Status {
+		case "running":
+			if err := handler.Run(msg.ID); err != nil {
+				log.Printf("Unable to set status to running: %s", err)
+			}
+		case "finished":
+			if err := handler.Fin(msg.ID); err != nil {
+				log.Printf("Unable to set status to finished: %s", err)
+			}
 		}
 	}
+
 	return nil, nil
 }
 

@@ -121,6 +121,9 @@ func (ql *QueueList) Size() int {
 func (ql *QueueList) Front() Comparable {
 	ql.RLock()
 	defer ql.RUnlock()
+	if ql.IsEmpty() {
+		return nil
+	}
 	return ql.items[0]
 }
 

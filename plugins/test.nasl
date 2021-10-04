@@ -43,8 +43,6 @@ if(description)
 exit(0);
 }
 
-set_kb_item( name: "test", value: TRUE );
-
 sec_msg = "this is a security message";
 log_msg = "this is a log message";
 err_msg = "this is a error message";
@@ -52,5 +50,9 @@ err_msg = "this is a error message";
 security_message(data:sec_msg);
 log_message(data:log_msg);
 error_message(data:err_msg);
+
+set_kb_item( name: "test", value: TRUE );
+
+
 
 exit(0);
