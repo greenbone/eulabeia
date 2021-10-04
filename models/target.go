@@ -121,6 +121,12 @@ type VTsList struct {
 	Group  []VTFilter `json:"vt_groups"`
 }
 
+type AliveTest struct {
+	Test_alive_hosts_only bool  `json:"test_alive_hosts_only"`
+	Methods               int   `json:"methods_bitflag"`
+	Ports                 []int `json:"ports"`
+}
+
 // Target contains all information needed to start a scan
 type Target struct {
 	ID          string                       `json:"id"`            // ID of a Target
@@ -128,7 +134,7 @@ type Target struct {
 	Ports       []string                     `json:"ports"`         // Ports to scan
 	Plugins     VTsList                      `json:"plugins"`       // OID of plugins
 	Sensor      string                       `json:"sensor"`        // Sensor to use
-	Alive       bool                         `json:"alive"`         // Alive when true only alive hosts get scanned
+	AliveTest   AliveTest                    `json:"alive_test"`    // Alive test parameters
 	Parallel    bool                         `json:"parallel"`      // Parallel when true mulitple scans run in parallel
 	Exclude     []string                     `json:"exclude_hosts"` // Exclude hosts from a scan
 	Credentials map[string]map[string]string `json:"credentials"`   // Credentials to login into a target

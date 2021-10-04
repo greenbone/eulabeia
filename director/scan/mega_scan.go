@@ -61,7 +61,7 @@ func (s ScanPreprocessor) Preprocess(topic string, payload []byte) ([]connection
 		"ports":       sms.Ports,
 		"plugins":     sms.Plugins,
 		"sensor":      sms.Sensor,
-		"alive":       sms.Alive,
+		"aliveTest":   sms.AliveTest,
 		"parallel":    sms.Parallel,
 		"exclude":     sms.Exclude,
 		"credentials": sms.Credentials,

@@ -59,9 +59,13 @@ func TestStartScanPreprocessor(t *testing.T) {
 						},
 					},
 				},
-				Exclude:  []string{"exclude1"},
-				Sensor:   "sensor",
-				Alive:    true,
+				Exclude: []string{"exclude1"},
+				Sensor:  "sensor",
+				AliveTest: models.AliveTest{
+					Test_alive_hosts_only: true,
+					Methods:               2,
+					Ports:                 []int{80, 137, 587, 3128, 8081},
+				},
 				Parallel: true,
 				Credentials: map[string]map[string]string{
 					"ssh": {
@@ -125,7 +129,9 @@ func TestStartScanPreprocessor(t *testing.T) {
 						len(actual.Plugins.Single) == len(mega.Plugins.Single) &&
 						len(actual.Plugins.Group) == len(mega.Plugins.Group) &&
 						actual.Sensor == mega.Scan.Target.Sensor &&
-						actual.Alive == mega.Scan.Target.Alive &&
+						actual.AliveTest.Test_alive_hosts_only == mega.Scan.Target.AliveTest.Test_alive_hosts_only &&
+						actual.AliveTest.Methods == mega.Scan.Target.AliveTest.Methods &&
+						len(actual.AliveTest.Ports) == len(mega.Scan.Target.AliveTest.Ports) &&
 						actual.Parallel == mega.Scan.Target.Parallel &&
 						len(actual.Exclude) == len(mega.Scan.Target.Exclude) &&
 						len(actual.Credentials) == len(mega.Scan.Target.Credentials) {
