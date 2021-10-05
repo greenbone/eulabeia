@@ -266,6 +266,7 @@ void eulabeia_plugin_destroy(struct EulabeiaPlugin **plugin)
 	g_free((*plugin)->required_ports);
 	g_free((*plugin)->required_udp_ports);
 	g_free((*plugin)->solution);
+	g_free((*plugin)->solution_type);
 	g_free((*plugin)->solution_method);
 	g_free((*plugin)->summary);
 	g_free((*plugin)->vuldetect);
