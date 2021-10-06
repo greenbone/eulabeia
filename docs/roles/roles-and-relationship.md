@@ -19,7 +19,7 @@ This allows us to make internal changes (behind director) without having to chan
 
 To make the communication more transparent for either audits, special cases (like a indirect scanner) each message is send via a broker based on MQTTv5.
 
-In theory a client can directly send cmds to a specific sensor it is not supported and on its own risk.
+In theory a client can directly send cmds to a specific sensor, but it is not supported or recommended and on its own risk.
 <!---
 render with: plantuml -tsvg roles-and-relationship.md
 @startuml relationship
