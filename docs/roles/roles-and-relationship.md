@@ -15,7 +15,7 @@ The client should just communicate with the director, the director communicates 
 
 This means that the communication between an external client and director is strict while the internal communication is less so.
 
-The allows use to make internal changes (behind director) without having to force our clients to change their way of using eulabeia as well. Another reasoning is that this also allows use to introduce supportive scanner without the client knowing about it and thus allows extending results in a transparent fashion.
+This allows us to make internal changes (behind director) without having to change the logic a client communicates with eulabeia, too. Another reason is that this also allows us to introduce supportive scanners without the client knowing about these and thus allows extending results in a transparent fashion.
 
 To make the communication more transparent for either audits, special cases (like a indirect scanner) each message is send via a broker based on MQTTv5.
 
