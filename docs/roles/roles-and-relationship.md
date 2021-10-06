@@ -17,7 +17,7 @@ This means that the communication between an external client and director is str
 
 This allows us to make internal changes (behind director) without having to change the logic a client communicates with eulabeia, too. Another reason is that this also allows us to introduce supportive scanners without the client knowing about these and thus allows extending results in a transparent fashion.
 
-To make the communication more transparent for either audits, special cases (like a indirect scanner) each message is send via a broker based on MQTTv5.
+To make the communication more transparent for audits or other special cases (like an indirect scanner) each message is send via a broker based on MQTTv5.
 
 In theory a client can directly send cmds to a specific sensor, but it is not supported or recommended and on its own risk.
 <!---
