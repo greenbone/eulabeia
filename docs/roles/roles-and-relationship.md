@@ -9,6 +9,8 @@ Although one system can have multiple roles (e.g. a sensor can be a scanner) we 
 - [scanner](#scanner)
 - [client](#client)
 
+## Client
+
 There can be multiple clients, sensor and scanner within the eulabeia concept but just one director.
 
 The client should just communicate with the director, the director communicates with sensor, sensor with scanner and scanner with director or scanner depending on the implementation and context.
