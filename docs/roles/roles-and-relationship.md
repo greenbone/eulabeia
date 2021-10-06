@@ -4,10 +4,10 @@ Within eulabeia we have four different roles.
 
 Although one system can have multiple roles (e.g. a sensor can be a scanner) we differentiate based on:
 
-- [director](#director)
-- [sensor](#sensor)
-- [scanner](#scanner)
-- [client](#client)
+- [Director](#Director)
+- [Sensor](#Sensor)
+- [Scanner](#Scanner)
+- [Client](#Client)
 
 ## Client
 
