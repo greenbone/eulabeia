@@ -13,7 +13,7 @@ There can be multiple clients, sensor and scanner within the eulabeia concept bu
 
 The client should just communicate with the director, the director communicates with sensor, sensor with scanner and scanner with director or scanner depending on the implementation and context.
 
-This means that the communication between external client and director is strict while the internal communication is less so.
+This means that the communication between an external client and director is strict while the internal communication is less so.
 
 The allows use to make internal changes (behind director) without having to force our clients to change their way of using eulabeia as well. Another reasoning is that this also allows use to introduce supportive scanner without the client knowing about it and thus allows extending results in a transparent fashion.
 
