@@ -52,7 +52,7 @@ q1 <-> s2
 
 ![relationship](./relationship.svg)
 
-## director
+## Director
 
 The main responsibility of a director is to delegate requests from a client to a corresponding sensor or serve data when available.
 
