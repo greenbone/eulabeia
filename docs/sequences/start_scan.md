@@ -2,7 +2,7 @@
 
 Before a scan can be started it should be created, this has the advantage that a scan can be executed as previously defined without having to resend it.
 
-Although it is possible to create a temporary scan, to automatically delete it when a scan has been finished, it should not be seen as the default case.
+Although it is possible to create a temporary scan, that will be automatically deleted, when finished, it should not be seen as the default case.
 
 The flow is:
 1. client creates a target (either via create or directly via modify when it has directly all the data at hand)
