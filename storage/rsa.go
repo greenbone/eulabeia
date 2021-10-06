@@ -26,16 +26,46 @@ type RSA struct {
 }
 
 func (r RSA) Encrypt(b []byte) ([]byte, error) {
-	return rsa.EncryptOAEP(
-		sha256.New(),
-		rand.Reader,
-		&r.prvKey.PublicKey,
-		b,
-		nil)
+	hash := sha256.New()
+	msgLen := len(b)
+	step := r.prvKey.PublicKey.Size() - 2*hash.Size() - 2
+	var encryptedBytes []byte
+
+	for start := 0; start < msgLen; start += step {
+		finish := start + step
+		if finish > msgLen {
+			finish = msgLen
+		}
+
+		encrypedChunk, err := rsa.EncryptOAEP(hash, rand.Reader, &r.prvKey.PublicKey, b[start:finish], nil)
+		if err != nil {
+			return nil, err
+		}
+		encryptedBytes = append(encryptedBytes, encrypedChunk...)
+	}
+	return encryptedBytes, nil
 }
 
 func (r RSA) Decrypt(b []byte) ([]byte, error) {
-	return r.prvKey.Decrypt(nil, b, &rsa.OAEPOptions{Hash: crypto.SHA256})
+	msgLen := len(b)
+	step := r.prvKey.PublicKey.Size()
+	var decryptedBytes []byte
+
+	for start := 0; start < msgLen; start += step {
+		finish := start + step
+		if finish > msgLen {
+			finish = msgLen
+		}
+
+		decryptedBlockBytes, err := r.prvKey.Decrypt(nil, b[start:finish], &rsa.OAEPOptions{Hash: crypto.SHA256})
+		if err != nil {
+			return nil, err
+		}
+
+		decryptedBytes = append(decryptedBytes, decryptedBlockBytes...)
+	}
+
+	return decryptedBytes, nil
 }
 
 func exportRSAPrivateKey(privkey *rsa.PrivateKey) []byte {
