@@ -1,17 +1,19 @@
+![Greenbone Logo](https://www.greenbone.net/wp-content/uploads/gb_logo_resilience_horizontal.png)
+
 # eulabeia
 
-Is management layer with the goal to make control of multiple scanner based on multiple machines easier and more predictable by introducing a small set of commands, orchestration based on a director and usage of a broker.
+Eulabeia is a management layer with the task to control a multiple scanner on multiple machines environment easily and more predictable. Therefore it introduces a small set of commands. The orchestration is based on a single director entity and a MQTT broker is responsible for transmission of data and commands.
 
-There are four [roles](docs/roles/roles-and-relationship.md) within eulabeia:
+Eulabeia comes with four [roles](docs/roles/roles-and-relationship.md), two of which are direct eulabeia entities:
 
 - a director - manages multiple sensors and is the main communication partner of a client
-- sensor - manages (or is) a scanner
-- scanner - a program to scan for vulnerabilities
-- client - is the using party of eulabeia
+- sensor(s) - manages (or is) a scanner (currently [openvas](https://github.com/greenbone/openvas-scanner) and in future also [notus](https://github.com/greenbone/notus-scanner) and more)
+- scanner(s) - a program to scan for vulnerabilities
+- client - is the using party of eulabeia (currently [gvmd](https://github.com/greenbone/gvmd))
 
-The communication between each party is done via [normalized messages](docs/messaging.md) over a MQTTv5.
+The communication between each entity is done via [normalized messages](docs/messaging.md) over a MQTTv5.
 
-For a detailed overview about eulabeia please checkout [docs](docs/README.md).
+For a detailed overview about eulabeia please checkout the [documentation](docs/README.md).
 
 ![overview participants](./docs/roles/relationship.svg)
 
@@ -34,11 +36,11 @@ If you want to build and run eulabeia without container you need:
 - openvas-scanner (currently middleware branch)
 - redis
 
-If you want to build libeulabeia you need:
+If you want to build `libeulabeia` you need:
+
 - [gvm-libs](https://github.com/greenbone/gvm-libs)
 - [libpaho](https://www.eclipse.org/paho/files/mqttdoc/MQTTClient/html/index.html)
 - [cgreen](https://cgreen-devs.github.io/)
-
 
 installed and configured.
 
@@ -48,7 +50,7 @@ If you just want to test eulabeia without installing it on your machine you shou
 
 Please follow the [requirements](docs/requirements.md) instruction before installing eulabeia.
 
-When all requirements are met then you can build the sensor and director binaries by executing:
+When all requirements are met you can build the sensor and director binaries by executing:
 
 ```
 make build
@@ -63,7 +65,7 @@ Before you can use the director or sensor you need to [configure it based on you
 
 The next step is to start the director (`./bin/eulabeia-director`) and sensor (`./bin/eulabeia-sensor`).
 
-To test if the setup is correct you can execute the example client: `./bin/example-client`.
+To validate the correctness of the setup you can execute the example client: `./bin/example-client`.
 
 For a more detailed explanation about the requirements please refer to [requirements.md](docs/requirements.md).
 
@@ -77,9 +79,33 @@ Since eulabeia is not indented to be used as a program but is a rather a service
 - [docs/error](./docs/error-handling.md)
 - [docs/start-scan](./docs/sequences/start_scan.md)
 
+## Support
+
+For any question on the usage of Notus Scanner please use the
+[Greenbone Community Portal]. If you found a problem with the software, please
+create an issue on GitHub. If you are a Greenbone customer you may alternatively
+or additionally forward your issue to the Greenbone Support Portal.
+
+## Maintainer
+
+This project is maintained by [Greenbone Networks GmbH][Greenbone Networks]
+
 ## Contributing
 
-Your contributions are highly appreciated.
+Your contributions are highly appreciated. Please
+[create a pull request](https://github.com/greenbone/eulabeia/pulls)
+on GitHub. Bigger changes need to be discussed with the development team via the
+[issues section at GitHub](https://github.com/greenbone/eulabeia/issues)
+first.
+
+## License
+
+Copyright (C)2021 [Greenbone Networks GmbH][Greenbone Networks]
+
+Licensed under the [GNU General Public License v3.0 or later](LICENSE).
+
+[Greenbone Networks]: https://www.greenbone.net/
+[Greenbone Community Portal]: https://community.greenbone.net/
 
 <!---
 After making yourself familiar with
