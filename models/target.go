@@ -81,8 +81,8 @@ type VT struct {
 
 // GotVT is the response to GetVT. It contains all Metadata of a single VT
 type GotVT struct {
-	info.EventType
 	messages.Message
+	info.EventType
 	VT
 }
 

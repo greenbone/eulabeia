@@ -114,6 +114,28 @@ int eulabeia_json_id_message(JsonObject *obj,
 			     struct EulabeiaIDMessage **id_message);
 
 /*
+ * @brief parses already initialized JsonObject to EulabeiaTarget
+ *
+ * This function will intitialize an EulabeiaTarget when *t is not already
+ * initialized. But the caller needs to free it afterwards.
+ *
+ * @param[in] jo, the JsonObject to be parsed
+ * @param[in] t, the target to inititalize
+ */
+int eulabeia_json_target(JsonObject *jo, struct EulabeiaTarget **t);
+
+/*
+ * @brief parses already initialized JsonObject to EulabeiaScan
+ *
+ * This function will intitialize an EulabeiaScan when *t is not already
+ * initialized. But the caller needs to free it afterwards.
+ *
+ * @param[in] jo, the JsonObject to be parsed
+ * @param[in] t, the scan to inititalize
+ */
+int eulabeia_json_scan(JsonObject *jo, struct EulabeiaScan **t);
+
+/*
  * @brief parses already initialized JsonObject to EulabeiaStatus
  *
  * This function expects an already initialized JsonObject. To initialize one
@@ -151,6 +173,7 @@ int eulabeia_json_status(JsonObject *obj,
  *  -3,-4 on setting value failure
  */
 int eulabeia_json_hosts(JsonArray *arr, struct EulabeiaHosts **hosts);
+
 /*
  * @brief parses already initialized JsonObject to EulabeiaPlugins
  *
@@ -167,6 +190,24 @@ int eulabeia_json_hosts(JsonArray *arr, struct EulabeiaHosts **hosts);
  *  -3,-4 on setting value failure
  */
 int eulabeia_json_plugins(JsonArray *arr, struct EulabeiaPlugins **plugins);
+
+/*
+ * @brief parses already initialized JsonObject to EulabeiaPlugin
+ *
+ * This function expects an already initialized JsonObject. To initialize one
+ * you can call eulabeia_json_jsonobject.
+ *
+ * @param[in] jo, the JsonObject to be parsed
+ * @param[out] plugin, the EulabeiaPlugins this function will allocate the
+ * memory. The caller is responsible for cleaning.
+ *
+ * @return 0 on success,
+ *  -1 on invalid JsonObject
+ *  -2 on plugin allocation failure
+ *  -3,-4 on setting value failure
+ */
+int eulabeia_json_plugin(JsonObject *jo, struct EulabeiaPlugin **plugin);
+
 /*
  * @brief parses already initialized JsonObject to EulabeiaPorts
  *

@@ -21,6 +21,7 @@
 TestSuite *publish_tests(void);
 TestSuite *progress_tests(void);
 TestSuite *eulabeia_json_tests(void);
+TestSuite *crud_progress_tests(void);
 
 int main(int argc, char **argv)
 {
@@ -28,6 +29,7 @@ int main(int argc, char **argv)
 	add_suite(suite, publish_tests());
 	add_suite(suite, progress_tests());
 	add_suite(suite, eulabeia_json_tests());
+	add_suite(suite, crud_progress_tests());
 	if (argc > 1) {
 		return run_single_test(suite, argv[1], create_text_reporter());
 	}

@@ -124,6 +124,8 @@ enum eulabeia_message_type {
  *
  */
 #define EULABEIA_AGGREGATES                                                    \
+	X(EULABEIA_AGGREGATE_UNKNOWN, unknown)                                 \
+	X(EULABEIA_PLUGIN, vt)                                                 \
 	X(EULABEIA_SCAN, scan)                                                 \
 	X(EULABEIA_TARGET, target)
 
@@ -247,8 +249,26 @@ struct EulabeiaScanProgress {
 	struct EulabeiaScanResults *results;
 };
 
+/*
+ * @brief EulabeiaCRUDProgress contains progress data for create, read, update
+ * or delete messages.
+ *
+ * Usually it is used in combination with eulabeia_crud_progress for the purpose
+ * to verify the status of a previously send command. On get cmds it will also
+ * contain the aggregate information when it is a read operation depending on
+ * the aggregate.
+ *
+ * @var status contains the statues of a cmd
+ * @var target contains the target, it is only set on got.target
+ * @var scan contains the scan, it is only set on got.scan
+ * @var scan contains the plugin, it is only set on got.vt
+ *
+ */
 struct EulabeiaCRUDProgress {
 	enum eulabeia_crud_state status;
+	struct EulabeiaTarget *target;
+	struct EulabeiaScan *scan;
+	struct EulabeiaPlugin *plugin;
 };
 
 struct EulabeiaHost {
@@ -281,8 +301,77 @@ struct EulabeiaPorts {
 	unsigned int len;
 	unsigned int cap;
 };
+
+struct EulabeiaPluginParameter {
+	char *id;
+	char *name;
+	char *value;
+	char *type;
+	char *description;
+	char *defaultvalue;
+};
+
+struct EulabeiaPluginReferences {
+	struct EulabeiaPluginReference *reference;
+	unsigned int len;
+	unsigned int cap;
+};
+
+struct EulabeiaPluginReference {
+	char *type;
+	char *id;
+};
+
+struct EulabeiaPluginParameters {
+	struct EulabeiaPluginParameter *parameter;
+	unsigned int len;
+	unsigned int cap;
+};
+
+struct EulabeiaPluginDependency {
+	char *filename;
+};
+
+struct EulabeiaPluginDependencies {
+	struct EulabeiaPluginDependency *dependency;
+	unsigned int len;
+	unsigned int cap;
+};
+
+struct EulabeiaPluginSeverity {
+	char *vector;
+	char *type;
+	char *date;
+	char *origin;
+};
+
 struct EulabeiaPlugin {
 	char *oid;
+	char *name;
+	char *filename;
+	char *required_keys;
+	char *mandatory_keys;
+	char *excluded_keys;
+	char *required_ports;
+	char *required_udp_ports;
+	char *category;
+	char *family;
+	char *created;
+	char *modified;
+	char *summary;
+	char *solution;
+	char *solution_type;
+	char *solution_method;
+	char *impact;
+	char *insight;
+	char *affected;
+	char *vuldetect;
+	char *qod_type;
+	char *qod;
+	struct EulabeiaPluginReferences *references;
+	struct EulabeiaPluginParameters *parameters;
+	struct EulabeiaPluginDependencies *dependencies;
+	struct EulabeiaPluginSeverity *severity;
 };
 
 struct EulabeiaPlugins {
@@ -290,14 +379,15 @@ struct EulabeiaPlugins {
 	unsigned int len;
 	unsigned int cap;
 };
+
 struct EulabeiaTarget {
 	char *id;
-	struct EulabeiaHosts *hosts;
-	struct EulabeiaPlugins *plugins;
-	struct EulabeiaPorts *ports;
 	char *sensor;
 	int alive;
 	int parallel;
+	struct EulabeiaHosts *hosts;
+	struct EulabeiaPlugins *plugins;
+	struct EulabeiaPorts *ports;
 	struct EulabeiaHosts *exclude;
 	struct EulabeiaCredentials *credentials;
 };
@@ -346,6 +436,14 @@ char *eulabeia_message_type_to_str(enum eulabeia_message_type mt);
 char *eulabeia_aggregate_to_str(enum eulabeia_aggregate mt);
 
 /*
+ * @brief translates an char array to eulabeia_aggregate.
+ *
+ * @param[in] rt the eulabeia_aggregate to translate
+ * @return a eulabeia_aggregate
+ */
+enum eulabeia_aggregate eulabeia_aggregate_from_str(char *rt);
+
+/*
  * @brief returns the eulabeia_message_type of a message.
  *
  * @param[in] message; the message to get the message_type from
@@ -360,36 +458,48 @@ eulabeia_message_to_message_type(const struct EulabeiaMessage *message);
  * @param[out] msg, the EulabeiaMessage to be freed. Sets *msg to NULL.
  */
 void eulabeia_message_destroy(struct EulabeiaMessage **msg);
+
 /*
  * @brief destroys an EulabeiaFailure
  *
  * @param[out] failure, the EulabeiaFailure to be freed. Sets *failure to NULL.
  */
 void eulabeia_failure_destroy(struct EulabeiaFailure **failure);
+
 /*
  * @brief destroys an EulabeiaStatus
  *
  * @param[out] status, the EulabeiaStatus to be freed. Sets *status to NULL.
  */
 void eulabeia_status_destroy(struct EulabeiaStatus **status);
+
 /*
  * @brief destroys an EulabeiaHosts
  *
  * @param[out] hosts, the EulabeiaHosts to be freed. Sets *hosts to NULL.
  */
 void eulabeia_hosts_destroy(struct EulabeiaHosts **hosts);
+
+/*
+ * @brief destroys an EulabeiaPlugin
+ *
+ * @param[out] plugin, the EulabeiaPlugins to be freed. Sets *plugin to NULL.
+ */
+void eulabeia_plugin_destroy(struct EulabeiaPlugin **plugin);
 /*
  * @brief destroys an EulabeiaPlugins
  *
  * @param[out] plugins, the EulabeiaPlugins to be freed. Sets *plugins to NULL.
  */
 void eulabeia_plugins_destroy(struct EulabeiaPlugins **plugins);
+
 /*
  * @brief destroys an EulabeiaPorts
  *
  * @param[out] ports, the EulabeiaPorts to be freed. Sets *ports to NULL.
  */
 void eulabeia_ports_destroy(struct EulabeiaPorts **ports);
+
 /*
  * @brief destroys an EulabeiaScanResult
  *

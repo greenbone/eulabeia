@@ -2,12 +2,15 @@ package feedservice
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/feedservice/handler"
 	"github.com/greenbone/eulabeia/feedservice/redis"
+	"github.com/greenbone/eulabeia/messages/cmds"
+	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
 )
 
@@ -132,11 +135,13 @@ func (f *feed) getNvtPrefs(oid string) []models.VTParamType {
 			def = pref[3]
 		}
 		ret[i] = models.VTParamType{
-			ID:           id,
-			Name:         pref[1],
-			Value:        "",
-			Type:         pref[2],
-			Description:  "Description",
+			ID:   id,
+			Name: pref[1],
+			// value cannot be set via nasl plugin
+			Value: "",
+			Type:  pref[2],
+			// description cannot be set via nasl plugin
+			Description:  "",
 			DefaultValue: def,
 		}
 	}
@@ -145,14 +150,16 @@ func (f *feed) getNvtPrefs(oid string) []models.VTParamType {
 }
 
 // GetVt expects a single OIDs and returns all metadata of the corresponding VT.
-func (f *feed) GetVT(oid string) (models.VT, error) {
-	pref, err := f.rc.GetList(1, fmt.Sprintf("nvt:%s", oid), 0, -1)
+func (f *feed) GetVT(msg cmds.Get) (models.VT, *info.Failure, error) {
+	log.Printf("In get vt for %s", msg.ID)
+	pref, err := f.rc.GetList(1, fmt.Sprintf("nvt:%s", msg.ID), 0, -1)
 	if err != nil {
-		return models.VT{}, err
+		return models.VT{}, nil, err
 	}
 	if len(pref) == 0 {
-		return models.VT{}, fmt.Errorf("oid %s not found", oid)
+		return models.VT{}, info.GetFailureResponse(msg.Message, "vt", msg.ID), nil
 	}
+	log.Printf("Got %d vts", len(pref))
 
 	dependecies := strings.Split(pref[redis.NVT_DEPENDENCIES_POS], ", ")
 	allTags := strings.Split(pref[redis.NVT_TAGS_POS], "|")
@@ -165,7 +172,7 @@ func (f *feed) GetVT(oid string) (models.VT, error) {
 	refs := getRefs(pref[redis.NVT_CVES_POS], pref[redis.NVT_BIDS_POS], pref[redis.NVT_XREFS_POS])
 
 	vt := models.VT{
-		OID:                oid,
+		OID:                msg.ID,
 		Name:               pref[redis.NVT_NAME_POS],
 		FileName:           pref[redis.NVT_FILENAME_POS],
 		RequiredKeys:       pref[redis.NVT_REQUIRED_KEYS_POS],
@@ -188,12 +195,12 @@ func (f *feed) GetVT(oid string) (models.VT, error) {
 		QoDType:            tags["qod_type"],
 		QoDValue:           tags["qod"],
 		References:         refs,
-		VTParameters:       f.getNvtPrefs(oid),
+		VTParameters:       f.getNvtPrefs(msg.ID),
 		VTDependencies:     dependecies,
 		Severity:           getSeverity(tags),
 	}
 
-	return vt, err
+	return vt, nil, err
 }
 
 // GetVTs expects a List of VTFilter and returns a list of oids which match the given filter.

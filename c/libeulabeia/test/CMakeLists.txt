@@ -34,7 +34,7 @@ endif (NOT NUMA)
 endif()
 
 # Now simply link against gtest as needed. Eg
-add_executable(all_tests src/all.c src/eulabeia_json_tests src/start_scan.c src/scan_porgress.c)
+add_executable(all_tests src/all.c src/eulabeia_json_tests src/start_scan.c src/scan_porgress.c src/crud_progress.c)
 target_link_libraries(all_tests ${NUMA} ${CGREEN_LIBRARIES} ${TEST_LINKER_WRAP_OPTIONS} Eulabeia::eulabeia)
 
 add_test(NAME start_scan_fail
@@ -57,3 +57,11 @@ add_test(NAME json_plugins_create_success
 	COMMAND all_tests plugins_create_success)
 add_test(NAME json_ports_create_success
 	COMMAND all_tests ports_create_success)
+add_test(NAME got_target 
+	COMMAND all_tests got_target)
+add_test(NAME got_scan 
+	COMMAND all_tests got_scan)
+add_test(NAME crud_got_wrong_id
+	COMMAND all_tests got_wrong_id)
+add_test(NAME crud_got_got_plugin
+	COMMAND all_tests got_plugin)

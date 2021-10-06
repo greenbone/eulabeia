@@ -130,6 +130,7 @@ func GetVT(_ info.IDInfo, msg []byte) *connection.SendResponse {
 		log.Panicf("unable to parse result: %s", string(msg))
 	}
 	if result.OID == "" {
+		log.Printf("skipping sending get.vt due to missing oid")
 		return nil
 	}
 

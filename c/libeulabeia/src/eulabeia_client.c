@@ -37,7 +37,7 @@ default_publish(const char *topic, const char *message, void *context)
 {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-value"
-	(void *)context;
+	context;
 #pragma GCC diagnostic pop
 
 	return mqtt_publish(topic, message);
@@ -51,7 +51,7 @@ static int default_retrieve(char **topic,
 {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-value"
-	(void *)context;
+	context;
 #pragma GCC diagnostic pop
 	return mqtt_retrieve_message(topic, topic_len, payload, payload_len);
 }
@@ -308,6 +308,16 @@ static int verify_target_data(struct EulabeiaTarget *target)
 	return 0;
 }
 
+/// @brief dummy method for verification on get since NULL id are allowed.
+static int verify_get(const char *id)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-value"
+	id;
+#pragma GCC diagnostic pop
+	return 0;
+}
+
 int eulabeia_start_scan(const struct EulabeiaClient *eulabeia_client,
 			const struct EulabeiaScan *scan,
 			const char *group_id)
@@ -353,6 +363,52 @@ int eulabeia_modify_target(const struct EulabeiaClient *eulabeia_client,
 			       1);
 }
 
+static char *
+id_msg_to_json(struct EulabeiaMessage *em, const char *data, const int modify)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-value"
+	modify;
+#pragma GCC diagnostic pop
+	return eulabeia_id_message_to_json(em, data);
+}
+
+int eulabeia_get(const struct EulabeiaClient *eulabeia_client,
+		 const char *group_id,
+		 enum eulabeia_aggregate aggregate,
+		 const char *id)
+{
+	return publish_message(eulabeia_client,
+			       EULABEIA_CMD_GET,
+			       aggregate,
+			       (char *)group_id,
+			       (void *)id,
+			       EULABEIA_DIRECTOR,
+			       (verify_data *)verify_get,
+			       (to_json *)id_msg_to_json,
+			       0);
+}
+static enum eulabeia_aggregate
+eulabeia_aggregate_from_message(struct EulabeiaMessage *msg)
+{
+	enum eulabeia_message_type mt;
+	enum eulabeia_aggregate a;
+	unsigned int mtsl;
+	const char *mts;
+	if (msg == NULL)
+		return EULABEIA_AGGREGATE_UNKNOWN;
+	mt = eulabeia_message_to_message_type(msg);
+	mts = eulabeia_message_type_to_str(mt);
+	mtsl = strlen(mts) + 1;
+	if (strlen(msg->type) < mtsl) {
+		return EULABEIA_AGGREGATE_UNKNOWN;
+	}
+	msg->type = msg->type + mtsl;
+	a = eulabeia_aggregate_from_str(msg->type);
+	msg->type = msg->type - mtsl;
+	return a;
+}
+
 int eulabeia_crud_progress(const char *payload,
 			   const char *id,
 			   enum eulabeia_message_type emt,
@@ -364,7 +420,10 @@ int eulabeia_crud_progress(const char *payload,
 	struct EulabeiaFailure *failure = NULL;
 	struct EulabeiaIDMessage *idm = NULL;
 	int rc;
+	enum eulabeia_message_type aemt;
 
+	// on get id == NULL is actually valid, need to implement trying to
+	// resolve to list entities.
 	if (payload == NULL || progress == NULL || id == NULL) {
 		rc = -1;
 		goto clean_exit;
@@ -376,24 +435,54 @@ int eulabeia_crud_progress(const char *payload,
 		rc = -4;
 		goto clean_exit;
 	}
-	if (eulabeia_message_to_message_type(msg) == emt &&
+
+	aemt = eulabeia_message_to_message_type(msg);
+	if (aemt == emt &&
 	    (rc = eulabeia_json_id_message(j_obj, emt, msg, &idm)) == 0) {
 		rc = 1;
 		if (strncmp(idm->id, id, strlen(id)) == 0) {
-			rc = 0;
-			progress->status = EULABEIA_CRUD_SUCCESS;
-		} else if (eulabeia_json_failure(j_obj, msg, &failure) == 0) {
-			if (strncmp(id, failure->id, strlen(id)) == 0) {
-				rc = 0;
-				g_warning("operation (%s) failed with: %s",
-					  id,
-					  failure->error ? failure->error
-							 : "N/A");
-				progress->status = EULABEIA_CRUD_FAILED;
-			} else {
-				rc = 2;
+			if (emt == EULABEIA_INFO_GOT) {
+				switch (eulabeia_aggregate_from_message(msg)) {
+				case EULABEIA_SCAN:
+					if ((rc = eulabeia_json_scan(
+						 j_obj, &progress->scan)) ==
+					    0) {
+						rc = 1;
+					}
+					break;
+				case EULABEIA_TARGET:
+					if ((rc = eulabeia_json_target(
+						 j_obj, &progress->target)) ==
+					    0) {
+						rc = 1;
+					}
+					break;
+				case EULABEIA_PLUGIN:
+					if ((rc = eulabeia_json_plugin(
+						 j_obj, &progress->plugin)) ==
+					    0) {
+						rc = 1;
+					}
+					break;
+				case EULABEIA_AGGREGATE_UNKNOWN:
+					break;
+				}
 			}
+			// set rc to 0;
+			rc--;
+			progress->status = EULABEIA_CRUD_SUCCESS;
 		}
+	} else if (eulabeia_json_failure(j_obj, msg, &failure) == 0) {
+		if (strncmp(id, failure->id, strlen(id)) == 0) {
+			rc = 0;
+			g_warning("operation (%s) failed with: %s",
+				  id,
+				  failure->error ? failure->error : "N/A");
+			progress->status = EULABEIA_CRUD_FAILED;
+		} else {
+			rc = 2;
+		}
+
 	} else {
 		rc = 3;
 	}
