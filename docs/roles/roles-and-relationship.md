@@ -58,7 +58,7 @@ q1 <-> s2
 
 The main responsibility of a director is to delegate requests from a client to a corresponding sensor or serve data when available.
 
-A director is subscribed to:
+A director is subscribed to the following topics:
 
 - `scanner/cmd/scan/director`, see [scan](../message_example#scan)
 - `scanner/cmd/target/director`, see [target](../message_example#target)
