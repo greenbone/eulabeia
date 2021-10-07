@@ -84,7 +84,7 @@ To install and configure redis:
 sudo apt install redis
 sudo sed -i 's/\# unixsocket\([ p]\)/unixsocket\1/' /etc/redis/redis.conf
 sudo systemctl restart redis
-sudp usermod -a -G redis $USER
+sudo usermod -a -G redis $USER
 ```
 
 This should create a redis socket in `/run/redis/redis-server.sock`
@@ -92,7 +92,8 @@ This should create a redis socket in `/run/redis/redis-server.sock`
 ### gvm-libs
 
 Is used by `libeulabeia` to establish mqtt-connection and [openvas](https://github.com/greenbone/openvas-scanner).
-
+```
+sudo apt install libglib2.0-dev \
     cmake \
     lcov \
     libcgreen1-dev \
