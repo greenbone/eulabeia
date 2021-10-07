@@ -11,6 +11,8 @@ Although one system can have multiple roles (e.g. a sensor can be a scanner) we 
 
 ## Client
 
+## Client
+
 There can be multiple clients, sensor and scanner within the eulabeia concept but just one director.
 
 The client should just communicate with the director, the director communicates with sensor, sensor with scanner and scanner with director or scanner depending on the implementation and context.
@@ -65,11 +67,11 @@ A director is subscribed to the following topics:
 - `scanner/cmd/sensor/director`, see [sensor](../message_example#sensor)
 - `scanner/cmd/vt/director`, see [vt](../message_example#vt)
 
-## sensor
+## Sensor
 
 The main responsibility of a sensor is to to handle `start` events and control that the actual scan is executed.
 
-## scanner
+## Scanner
 
 A scanner is either also a sensor or is controlled by a dedicated sensor.
 

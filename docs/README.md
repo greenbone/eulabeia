@@ -8,8 +8,8 @@ Docs contain various documentation related information.
 
 # Sequences
 
-1. [Start a scan](./sequences/start_scan.md) - Explains which events/respones are needed when starting a scan
-1. [Register a sensor](./sequences/register_sensor.md) - Explains the minimal requirements of a new sensor. 
+1. [Start a scan](./sequences/start_scan.md) - Explains which events/responses are required when starting a scan
+1. [Register a sensor](./sequences/register_sensor.md) - Explains the minimal requirements to register a new sensor. 
 
 # Architecture
 

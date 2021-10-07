@@ -1,27 +1,27 @@
 # Start Scan
 
-Before a scan can be started it should be created, this has the advantage that a scan can be executed as previously defined without having to resend it.
+Before a scan can be started it should be created, this has the advantage that this scan can be executed as previously defined without having to resend it.
 
 Although it is possible to create a temporary scan, that will be automatically deleted, when finished, it should not be seen as the default case.
 
 The flow is:
-1. client creates a target (either via create or directly via modify when it has directly all the data at hand)
-1. client creates a scan with the target_id
-1. client sends start.scan with the ID of the scan
-1. director informs the corresponding sensor
-1. sensor verify if it can start the scan
-1. sensor starts the actual scan
-1. while scanning result.scan and status.scan are send back to the client
-1. sensor may inform the client about failures
+1. The client creates a target (either via `create` or directly via `modify` when it has directly all the data at hand)
+1. The client creates a scan with the `target_id`
+1. The client sends `start.scan` with the `scan_id`
+1. The director informs the corresponding sensor
+1. That sensor verifys that it can start the scan
+1. The sensor starts the actual scan
+1. While scanning `result.scan` and `status.scan` are send back to the client
+  a. The sensor may inform the client about failures
 
-Currently we only support OpenVAS which is not written as a daemon and therefore there is a differentiation between sensor and scanner which may not be the case on different scanner.
+Currently we only support [OpenVAS](https://github.com/greenbone/openvas-scanner/) which is not implemented as a daemon and therefore we introduced the differentiation between sensor and scanner. This may not be the case on other scanners introduced in the future.
 
 The difference between target and scan is that target contains of information which usually won't change that often and if changed it can affect different scan.
 
-Although the scan contains the target data directly implementation wise they are separated. 
+Although the scan contains the target data directly they are separated implementation wise.
 
 
-## Create Scan
+## Create a scan
 <!---
 render with: plantuml -tsvg start_scan_sequence.md
 @startuml create_scan
@@ -46,7 +46,7 @@ Client <-> director : [[https://github.com/greenbone/eulabeia/blob/main/docs/mes
 - [modify.scan](../message_examples.md#modifyscan)
 - [modified.scan](../message_examples.md#modifiedscan)
 
-## Start Scan
+## Start a scan
 <!---
 render with: plantuml -tsvg start_scan_sequence.md
 @startuml start_scan

@@ -41,7 +41,6 @@ If you want to build `libeulabeia` you need:
 - [gvm-libs](https://github.com/greenbone/gvm-libs)
 - [libpaho](https://www.eclipse.org/paho/files/mqttdoc/MQTTClient/html/index.html)
 - [cgreen](https://cgreen-devs.github.io/)
-
 installed and configured.
 
 ## Installation
