@@ -7,8 +7,6 @@ Eulabeia can be installed in two methods:
 - [docker](#Docker), describes how to setup docker and use the provided makefile
 - [local](#Local), describes how to setup and install the requirements without the provided images
 
-The favored usage of eulabeia is via [docker](#Docker).
-
 This document will use Debian 11 (bullseye) as a basis and is targeting developer machines with relatively lax security requirements. 
 
 For production usage please harden docker, redis and mosquitto accordingly.
