@@ -80,7 +80,7 @@ Since eulabeia is not indented to be used as a program but is a rather a service
 
 ## Support
 
-For any question on the usage of Notus Scanner please use the
+For any question on the usage of Eulabeia please use the
 [Greenbone Community Portal]. If you found a problem with the software, please
 create an issue on GitHub. If you are a Greenbone customer you may alternatively
 or additionally forward your issue to the Greenbone Support Portal.
@@ -101,7 +101,7 @@ first.
 
 Copyright (C)2021 [Greenbone Networks GmbH][Greenbone Networks]
 
-Licensed under the [GNU General Public License v3.0 or later](LICENSE).
+Licensed under the [GNU Affero General Public License v3.0 or later](LICENSE).
 
 [Greenbone Networks]: https://www.greenbone.net/
 [Greenbone Community Portal]: https://community.greenbone.net/
