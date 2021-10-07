@@ -27,7 +27,19 @@ $ su - $USER
 $ docker ps
 ```
 
-To build the images based on your changes you can use `make start-container`. Herewith you have a useable sensor, director and broker up and running.
+To start Eulabeia based on the previously build images you can use `make start-container`.
+This will start a useable sensor, director and broker.
+
+To build images based on your changes you can use:
+
+| cmd | image tag | description |
+| -- | -- | -- |
+| make build-container-broker | greenbone/eulabeia-broker:latest | builds broker  |
+| make build-container-redis | greenbone/eulabeia-redis:latest | builds redis  |
+| make build-container-director | greenbone/eulabeia-director:latest | builds the director based on local changes  |
+| make build-container-sensor | greenbone/eulabeia-sensor:latest | builds the openvas-sensor based on local changes  |
+| make build-container-example | greenbone/eulabeia-example-client:latest | builds example based on local changes |
+| make build-container | | builds each container based on local changes |
 
 If you want to verify the setup you can simply use `make run-example-client`.
 
