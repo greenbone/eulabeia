@@ -175,7 +175,6 @@ func (ovas *OpenVASScanner) GetSettings(exe Commander) (map[string]string, error
 func (ovas *OpenVASScanner) LoadVTsIntoRedis(exe Commander) error {
 	cmdString := make([]string, 0)
 
-	// Urgh refactor
 	if IsSudo(exe) {
 		cmdString = append(cmdString, "sudo", "-n")
 	}
