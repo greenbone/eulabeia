@@ -2,7 +2,7 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 589c1dd1..c049b6a6 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -228,7 +228,7 @@ add_subdirectory (doc)
+@@ -231,7 +231,7 @@ add_subdirectory (doc)
  
  ## Testing
  
@@ -10,4 +10,4 @@ index 589c1dd1..c049b6a6 100644
 +# enable_testing ()
  
  add_custom_target (tests
-                    DEPENDS pcap-test)
+                    DEPENDS pref-handler-test pcap-test)

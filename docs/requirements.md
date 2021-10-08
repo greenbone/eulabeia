@@ -130,8 +130,8 @@ sudo apt install libglib2.0-dev \
 
 git clone https://github.com/greenbone/gvm-libs.git -b middleware
 cmake -Bbuild -DREDIS_SOCKET_PATH=/run/redis/redis-server.sock
-sudo 'cmake --build build --target install'
-sudo 'ldconfig'
+sudo cmake --build build --target install
+sudo ldconfig
 ```
 
 ### libeulabeia
@@ -144,8 +144,8 @@ sudo apt install libjson-glib-dev
 
 ```
 make c-library
-sudo 'cmake --build c/libeulabeia/build -- install'
-sudo 'ldconfig'
+sudo cmake --build c/libeulabeia/build -- install
+sudo ldconfig
 ```
 
 
@@ -160,7 +160,7 @@ sudo apt install libksba-dev bison
 ```
 git clone https://github.com/greenbone/openvas-scanner.git -b middleware
 cmake -Bbuild
-sudo 'cmake --build build --target install'
+sudo cmake --build build --target install
 echo "db_address = /run/redis/redis-server.sock" | sudo tee /etc/openvas/openvas.conf
 echo "mqtt_server_uri = localhost:1883" | sudo tee -a /etc/openvas/openvas.conf
 echo "$USER ALL = NOPASSWD: /usr/local/sbin/openvas" | sudo tee /etc/sudoers.d/allow_openvas
