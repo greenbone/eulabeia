@@ -13,7 +13,7 @@ Although one system can have multiple roles (e.g. a sensor can be a scanner) we 
 
 There can be multiple clients, sensor and scanner within the eulabeia concept but just one director.
 
-The client should just communicate with the director, the director communicates with sensor, sensor with scanner and scanner with director or scanner depending on the implementation and context.
+The client should just communicate with the director, the director communicates with sensor, sensor with scanner and scanner with director or sensor depending on the implementation and context.
 
 This means that the communication between an external client and director is strict while the internal communication is less so.
 
