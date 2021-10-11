@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/models"
 )
 
@@ -199,8 +198,8 @@ func TestGetVT(t *testing.T) {
 		rc:      &RedisMock{},
 	}
 
-	vtTest, f, err := fs.GetVT(cmds.NewGet("vt", "test", "", ""))
-	if err != nil || f != nil {
+	vtTest, err := fs.GetVT("test")
+	if err != nil {
 		t.Fatalf("Unable to get VT: %s\n", err)
 	}
 
@@ -221,6 +220,37 @@ func TestGetVT(t *testing.T) {
 			vtJSON,
 		)
 	}
+}
+
+func TestGetAllVTs(t *testing.T) {
+	fs := feed{
+		context: "",
+		rc:      &RedisMock{},
+	}
+
+	vtsTest, err := fs.GetAllVTs()
+	if err != nil {
+		t.Fatalf("Unable to get all VTs: %s\n", err)
+	}
+
+	if len(vtsTest) != 2 {
+		t.Fatalf("Wrong number of VTs, expected %d got %d", 2, len(vtsTest))
+	}
+
+	vtTestJSON, err := json.Marshal(vtsTest[0])
+	if err != nil {
+		t.Fatalf("Unable to get JSON of TestVT: %s\n", err)
+	}
+
+	vtJSON, err := json.Marshal(vt)
+	if err != nil {
+		t.Fatalf("Unable to get JSON of VT: %s\n", err)
+	}
+
+	if string(vtTestJSON) != string(vtJSON) {
+		t.Fatalf("vtTestJSON != vtJSON\n\nvtTestJSON:\n %s\n\n vtJSON:\n%s\n", vtTestJSON, vtJSON)
+	}
+
 }
 
 func TestResolveFilter(t *testing.T) {

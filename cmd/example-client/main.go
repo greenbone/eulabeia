@@ -76,8 +76,8 @@ var target = models.Target{
 	},
 }
 
-func verifyGetVT(cc client.Configuration) {
-	p, err := client.From(cc, cmds.NewGet("vt", "0.0.0.0.0.0.0.0.0.1", "director", "getvts"))
+func verifyGetVT(cc client.Configuration, oid string) {
+	p, err := client.From(cc, cmds.NewGet("vt", oid, "director", "getvts"))
 	if err != nil {
 		log.Panic().Err(err).Msg("Unable to create program for get.vts")
 	}
@@ -186,5 +186,6 @@ func main() {
 	}(received)
 	cc.DownStream = received
 	_ = verifyStartScan(cc)
-	verifyGetVT(cc)
+	verifyGetVT(cc, "0.0.0.0.0.0.0.0.0.1")
+	verifyGetVT(cc, "")
 }
