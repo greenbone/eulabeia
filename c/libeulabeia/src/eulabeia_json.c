@@ -571,8 +571,11 @@ int eulabeia_json_scan(JsonObject *jo, struct EulabeiaScan **s)
 		if (eulabeia_json_hosts(arr, &scan->finished) != 0)
 			return -3;
 	}
-	scan->temporary =
-	    json_object_get_boolean_member_with_default(jo, "temporary", FALSE);
+	if (json_object_has_member(jo, "temporary"))
+		scan->temporary =
+		    json_object_get_boolean_member(jo, "temporary");
+	else
+		scan->temporary = FALSE;
 	// we ignore failure since a scan just may include a target
 	eulabeia_json_target(jo, &scan->target);
 	return 0;
