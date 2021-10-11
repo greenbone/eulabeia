@@ -42,12 +42,13 @@ jobs:
           push: true
           tags: ${{ github.repository }}-c-lib:${{ env.VERSION }}
           file: eulabeia-c-library.Dockerfile
+      - name: ${{ github.repository }}-broker:${{ env.VERSION }}
       - name: mqtt-broker:${{ env.VERSION }}
         uses: docker/build-push-action@v2.5.0
         with:
           context: .
           push: true
-          tags: mqtt-broker:${{ env.VERSION }}
+          tags: ${{ github.repository }}-broker:${{ env.VERSION }}
           file: broker.Dockerfile
       - name: ${{ github.repository }}-director:${{ env.VERSION }}
         uses: docker/build-push-action@v2.5.0

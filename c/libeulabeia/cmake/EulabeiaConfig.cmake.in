@@ -4,6 +4,9 @@ include(CMakeFindDependencyMacro)
 find_dependency(cgreen 1.1.0)
 find_dependency(PkgConfig)
 
+pkg_search_module(LIBGVM_BASE REQUIRED libgvm_base>=21.10)
+pkg_search_module(LIBGVM_UTIL REQUIRED libgvm_util>=21.10)
+
 if(NOT TARGET Eulabeia::Eulabeia)
     include("${EULABEIACLIENT_CMAKE_DIR}/EulabeiaTargets.cmake")
 endif()

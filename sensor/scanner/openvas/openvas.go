@@ -173,7 +173,18 @@ func (ovas *OpenVASScanner) GetSettings(exe Commander) (map[string]string, error
 
 // LoadVTsIntoRedis starts openvas which then loads new VTs into Redis
 func (ovas *OpenVASScanner) LoadVTsIntoRedis(exe Commander) error {
-	return exe.Command("openvas", "--update-vt-info").Run()
+	cmdString := make([]string, 0)
+
+	if IsSudo(exe) {
+		cmdString = append(cmdString, "sudo", "-n")
+	}
+
+	cmdString = append(cmdString, "openvas", "--update-vt-info")
+
+	head := cmdString[0]
+	args := cmdString[1:]
+
+	return exe.Command(head, args...).Run()
 }
 
 // IsSudo checks for sudo permissions

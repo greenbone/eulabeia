@@ -1,4 +1,3 @@
-<!-- DON'T EDIT THIS FILE; INSTEAD RUN: generate_md -->
 # Table of content
 - [scan](#scan)
   - [create](#createscan)
@@ -29,6 +28,24 @@
   - [failure.modify](#failuremodifytarget)
   - [failure.get](#failuregettarget)
   - [failure](#failuretarget)
+- [vt](#vt)
+  - [get](#getvt)
+  - [got](#gotvt)
+  - [failure.get](#failuregetvt)
+- [sensor](#sensor)
+  - [create](#createsensor)
+  - [get](#getsensor)
+  - [delete](#deletesensor)
+  - [modify](#modifysensor)
+  - [deleted](#deletedsensor)
+  - [created](#createdsensor)
+  - [modified](#modifiedsensor)
+  - [got](#gotsensor)
+  - [failure.create](#failurecreatesensor)
+  - [failure.modify](#failuremodifysensor)
+  - [failure.get](#failuregetsensor)
+  - [failure.delete](#failuredeletesensor)
+  - [failure](#failuresensor)
 
 
 # scan
@@ -496,6 +513,311 @@ Topic: scanner/target/info
   "group_id" : "4108e236-f21c-48a9-9c12-f728d0af140f",
   "message_created" : 1632752557580069703,
   "id" : "example.id.target",
+  "error" : "some error description"
+}
+```
+# vt
+
+To get type information for `got.vt` please consolidate [ vt model](../models/vt.go)
+
+As a rule of thumb: each type is as shown in the example.
+
+## get/vt
+
+Topic: scanner/vt/cmd/director
+```
+{
+  "message_id" : "23c6bba7-bb92-48ad-aa8b-346196c9da6d",
+  "message_type" : "get.vt",
+  "group_id" : "23c6bba7-bb92-48ad-aa8b-346196c9da6d",
+  "message_created" : 1632752557579807912,
+  "id" : "example.id.vt"
+}
+```
+Responses:
+
+- [got](#gotvt)
+- [failure.get](#failuregetvt)
+
+## got/vt
+
+Topic: scanner/vt/info
+```
+{
+  "message_created": 695149282,
+  "message_type": "got.vt",
+  "message_id": "127238e6-d1e5-4999-8795-01bb428d0ecb",
+  "group_id": "6d95f02f-52d9-4bac-9845-6cba3dda4903",
+  "id": "1.3.6.1.4.1.25623.1.0.90022",
+  "name": "mqtt test",
+  "filename": "test.nasl",
+  "required_keys": "test/key2",
+  "mandatory_keys": "test/key1",
+  "excluded_keys": "1, 2",
+  "required_ports": "",
+  "required_udp_ports": "",
+  "category": "0",
+  "family": "my test family",
+  "created": "1427454000",
+  "modified": "1573399828",
+  "summary": "A short description of the problem",
+  "solution": "Solution description",
+  "solution_type": "Type of solution (e.g. mitigation, vendor fix)",
+  "solution_method": "how to solve it (e.g. debian apt upgrade)",
+  "impact": "Some detailed about what is impacted",
+  "insight": "Some detailed insights of the problem",
+  "affected": "Affected programs, operation system, ...",
+  "vuldetect": "Describes what this plugin is doing to detect a vulnerability.",
+  "qod_type": "package",
+  "qod": "0",
+  "references": [
+    {
+      "type": "CVE",
+      "id": "CVE-0000-0000"
+    },
+    {
+      "type": "CVE",
+      "id": "CVE-0000-0001"
+    },
+    {
+      "type": "Example",
+      "id": "GB-Test-1"
+    },
+    {
+      "type": "URL",
+      "id": "https://www.greenbone.net"
+    }
+  ],
+  "vt_parameters": [
+    {
+      "id": 1,
+      "name": "example",
+      "value": "",
+      "type": "entry",
+      "description": "",
+      "default": "a default string value"
+    }
+  ],
+  "vt_dependencies": [
+    "keys.nasl"
+  ],
+  "severety": {
+    "severity_vector": "AV:N/AC:L/Au:N/C:N/I:N/A:N",
+    "severity_type": "cvss_base_v2",
+    "severity_date": "1427454000",
+    "severity_origin": "NVD"
+  }
+}
+```
+To get type information please consolidate [ vt model](../models/vt.go)
+
+
+## failure.get/vt
+
+Topic: scanner/vt/info
+```
+{
+  "message_id" : "b51abf24-508e-4e9c-b0cd-62957c1ba50c",
+  "message_type" : "failure.get.vt",
+  "group_id" : "b51abf24-508e-4e9c-b0cd-62957c1ba50c",
+  "message_created" : 1632752557580043434,
+  "id" : "example.id.vt",
+  "error" : "some error description"
+}
+```
+
+# sensor
+
+To get type information for e.g. `modify.sensor` or `got.sensor` please consolidate [ sensor model](../models/sensor.go)
+
+As a rule of thumb: each type is as shown in the example.
+
+## create/sensor
+
+Topic: scanner/sensor/cmd/director
+```
+{
+  "message_id" : "1fb1a03c-c1ae-4d67-bb61-5f80eb3d211b",
+  "message_type" : "create.sensor",
+  "group_id" : "1fb1a03c-c1ae-4d67-bb61-5f80eb3d211b",
+  "message_created" : 1632752557579773365
+}
+```
+Responses:
+
+- [created](#createdsensor)
+- [failure.create](#failurecreatesensor)
+## get/sensor
+
+Topic: scanner/sensor/cmd/director
+```
+{
+  "message_id" : "23c6bba7-bb92-48ad-aa8b-346196c9da6d",
+  "message_type" : "get.sensor",
+  "group_id" : "23c6bba7-bb92-48ad-aa8b-346196c9da6d",
+  "message_created" : 1632752557579807912,
+  "id" : "example.id.sensor"
+}
+```
+Responses:
+
+- [got](#gotsensor)
+- [failure.get](#failuregetsensor)
+
+## delete/sensor
+
+Topic: scanner/sensor/cmd/director
+```
+{
+  "message_id" : "23c6bba7-bb92-48ad-aa8b-346196c9da6d",
+  "message_type" : "delete.sensor",
+  "group_id" : "23c6bba7-bb92-48ad-aa8b-346196c9da6d",
+  "message_created" : 1632752557579807912,
+  "id" : "example.id.sensor"
+}
+```
+Responses:
+
+- [delted](#deletedsensor)
+- [failure.delete](#failuredeletesensor)
+
+
+## modify/sensor
+
+Topic: scanner/sensor/cmd/director
+```
+{
+  "message_id" : "604c6f86-e114-41f1-bb4d-85823c84b9b9",
+  "message_type" : "modify.sensor",
+  "group_id" : "604c6f86-e114-41f1-bb4d-85823c84b9b9",
+  "message_created" : 1632752557579855794,
+  "id" : "example.id.sensor",
+  "type" : "openvas"
+}
+```
+To get type information please consolidate [ sensor model](../models/sensor.go)
+
+
+Responses:
+
+- [modified](#modifiedsensor)
+- [failure.modify](#failuremodifysensor)
+## created/sensor
+
+Topic: scanner/sensor/info
+```
+{
+  "message_id" : "0b6111bf-f738-4da8-b16d-254ba6b5d932",
+  "message_type" : "created.sensor",
+  "group_id" : "0b6111bf-f738-4da8-b16d-254ba6b5d932",
+  "message_created" : 1632752557579914340,
+  "id" : "example.id.sensor"
+}
+```
+## deleted/sensor
+
+Topic: scanner/sensor/info
+```
+{
+  "message_id" : "f0fcd300-3e04-4d88-9437-9042e1634859",
+  "message_type" : "deleted.sensor",
+  "group_id" : "f0fcd300-3e04-4d88-9437-9042e1634859",
+  "message_created" : 1632752557579939237,
+  "id" : "example.id.sensor"
+}
+```
+## modified/sensor
+
+Topic: scanner/sensor/info
+```
+{
+  "message_id" : "f0fcd300-3e04-4d88-9437-9042e1634859",
+  "message_type" : "modified.sensor",
+  "group_id" : "f0fcd300-3e04-4d88-9437-9042e1634859",
+  "message_created" : 1632752557579939237,
+  "id" : "example.id.sensor"
+}
+```
+## got/sensor
+
+Topic: scanner/sensor/info
+```
+{
+  "message_id" : "2bca2b44-cb31-470c-afa7-05cb571109be",
+  "message_type" : "got.sensor",
+  "group_id" : "2bca2b44-cb31-470c-afa7-05cb571109be",
+  "message_created" : 1632752557579960951,
+  "id" : "example.id.sensor",
+  "type" : "openvas"
+}
+```
+To get type information please consolidate [ sensor model](../models/sensor.go)
+
+
+## failure.create/sensor
+
+Topic: scanner/sensor/info
+```
+{
+  "message_id" : "e590b272-d905-4082-bd68-f83afcec2737",
+  "message_type" : "failure.create.sensor",
+  "group_id" : "e590b272-d905-4082-bd68-f83afcec2737",
+  "message_created" : 1632752557579997367,
+  "id" : "example.id.sensor",
+  "error" : "some error description"
+}
+```
+## failure.delete/sensor
+
+Topic: scanner/sensor/info
+```
+{
+  "message_id" : "e590b272-d905-4082-bd68-f83afcec2737",
+  "message_type" : "failure.delete.sensor",
+  "group_id" : "e590b272-d905-4082-bd68-f83afcec2737",
+  "message_deleted" : 1632752557579997367,
+  "id" : "example.id.sensor",
+  "error" : "some error description"
+}
+```
+
+
+## failure.modify/sensor
+
+Topic: scanner/sensor/info
+```
+{
+  "message_id" : "f3780712-1687-4929-b1e6-2dbcf0b1b16a",
+  "message_type" : "failure.modify.sensor",
+  "group_id" : "f3780712-1687-4929-b1e6-2dbcf0b1b16a",
+  "message_created" : 1632752557580020924,
+  "id" : "example.id.sensor",
+  "error" : "some error description"
+}
+```
+## failure.get/sensor
+
+Topic: scanner/sensor/info
+```
+{
+  "message_id" : "b51abf24-508e-4e9c-b0cd-62957c1ba50c",
+  "message_type" : "failure.get.sensor",
+  "group_id" : "b51abf24-508e-4e9c-b0cd-62957c1ba50c",
+  "message_created" : 1632752557580043434,
+  "id" : "example.id.sensor",
+  "error" : "some error description"
+}
+```
+## failure/sensor
+
+Topic: scanner/sensor/info
+```
+{
+  "message_id" : "4108e236-f21c-48a9-9c12-f728d0af140f",
+  "message_type" : "failure.sensor",
+  "group_id" : "4108e236-f21c-48a9-9c12-f728d0af140f",
+  "message_created" : 1632752557580069703,
+  "id" : "example.id.sensor",
   "error" : "some error description"
 }
 ```
