@@ -178,8 +178,9 @@ sudo apt install golang
 make build-director
 mkdir -p ~/.config/eulabeia
 sed 's/server = ".*/server = "localhost:1883"/' config.toml | tee ~/.config/eulabeia/config.toml
-sed -i 's/StoragePath = ".*/StoragePath = "\/tmp\/"/' ~/.config/eulabeia/config.toml
-sed -i 's/KeyFile = ".*/KeyFile = "\/tmp\/private.key"/' ~/.config/eulabeia/config.toml
+mkdir -p ~/.local/eulabeia/storage
+sed -i 's/StoragePath = ".*/StoragePath = "~\/.local\/eulabeia\/storage"/' ~/.config/eulabeia/config.toml
+sed -i 's/KeyFile = ".*/KeyFile = "~/.config/eulabeia/private.key"/' ~/.config/eulabeia/config.toml
 ./bin/eulabeia-director
 ```
 
