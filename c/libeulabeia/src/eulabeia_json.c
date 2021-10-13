@@ -502,6 +502,27 @@ int eulabeia_json_ports(JsonArray *arr, struct EulabeiaPorts **ports)
 	return 0;
 }
 
+int eulabeia_json_alive_test(JsonObject *jo,
+			     struct EulabeiaAliveTest **alive_test)
+{
+	JsonArray *arr;
+	*alive_test = calloc(1, sizeof(struct EulabeiaAliveTest));
+
+	if (json_object_has_member(jo, "test_alive_hosts_only"))
+		(*alive_test)->test_alive_hosts_only =
+		    json_object_get_boolean_member(jo, "alive_test");
+	if (json_object_has_member(jo, "methods_bitflag"))
+		(*alive_test)->methods_bitflag =
+		    json_object_get_boolean_member(jo, "methods_bitflag");
+	if (json_object_has_member(jo, "ports")) {
+		arr = json_object_get_array_member(jo, "ports");
+		if (eulabeia_json_ports(arr, &(*alive_test)->ports) != 0)
+			return -3;
+	}
+
+	return 0;
+}
+
 int eulabeia_json_target(JsonObject *jo, struct EulabeiaTarget **t)
 {
 	struct EulabeiaTarget *target;
@@ -518,8 +539,13 @@ int eulabeia_json_target(JsonObject *jo, struct EulabeiaTarget **t)
 	if (json_object_has_member(jo, "sensor"))
 		json_object_get_and_assign_string(
 		    jo, "sensor", &target->sensor);
-	if (json_object_has_member(jo, "alive"))
-		target->alive = json_object_get_int_member(jo, "alive");
+	if (json_object_has_member(jo, "alive_test")) {
+		JsonObject *alive_test_jo;
+		alive_test_jo = json_object_get_object_member(jo, "alive_test");
+		if (eulabeia_json_alive_test(alive_test_jo,
+					     &target->alive_test) != 0)
+			return -3;
+	}
 	if (json_object_has_member(jo, "parallel"))
 		target->parallel = json_object_get_int_member(jo, "parallel");
 	if (json_object_has_member(jo, "hosts")) {
@@ -665,6 +691,24 @@ static void builder_add_status(JsonBuilder *builder,
 	json_builder_add_string_value(builder, status->status);
 }
 
+static void builder_add_alive_test(JsonBuilder *builder,
+				   const struct EulabeiaAliveTest *alive_test)
+{
+	json_builder_begin_object(builder);
+
+	json_builder_set_member_name(builder, "test_alive_hosts_only");
+	json_builder_add_boolean_value(builder,
+				       alive_test->test_alive_hosts_only);
+
+	json_builder_set_member_name(builder, "methods_bitflag");
+	json_builder_add_int_value(builder, alive_test->methods_bitflag);
+
+	json_builder_set_member_name(builder, "ports");
+	builder_add_ports(builder, alive_test->ports);
+
+	json_builder_end_object(builder);
+}
+
 // expects a builder with an open object, internal use
 static void builder_add_target(JsonBuilder *builder,
 			       const struct EulabeiaTarget *target,
@@ -683,8 +727,8 @@ static void builder_add_target(JsonBuilder *builder,
 		json_builder_add_string_value(builder, target->sensor);
 	}
 	if (target->alive) {
-		json_builder_set_member_name(builder, "alive");
-		json_builder_add_boolean_value(builder, target->alive);
+		json_builder_set_member_name(builder, "alive_test");
+		builder_add_alive_test(builder, target->alive_test);
 	}
 	if (target->parallel) {
 		json_builder_set_member_name(builder, "parallel");

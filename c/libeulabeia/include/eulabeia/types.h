@@ -292,6 +292,7 @@ struct EulabeiaCredentials {
 	unsigned int len;
 	unsigned int cap;
 };
+
 struct EulabeiaPort {
 	char *port;
 };
@@ -380,10 +381,17 @@ struct EulabeiaPlugins {
 	unsigned int cap;
 };
 
+struct EulabeiaAliveTest {
+	int test_alive_hosts_only;
+	int methods_bitflag;
+	struct EulabeiaPorts *ports;
+};
+
 struct EulabeiaTarget {
 	char *id;
 	char *sensor;
 	int alive;
+	struct EulabeiaAliveTest *alive_test;
 	int parallel;
 	struct EulabeiaHosts *hosts;
 	struct EulabeiaPlugins *plugins;

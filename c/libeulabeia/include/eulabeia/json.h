@@ -226,6 +226,22 @@ int eulabeia_json_plugin(JsonObject *jo, struct EulabeiaPlugin **plugin);
 int eulabeia_json_ports(JsonArray *arr, struct EulabeiaPorts **ports);
 
 /*
+ * @brief parses already initialized JsonObject to EulabeiaAliveTest
+ *
+ * This function expects an already initialized JsonObject. To initialize one
+ * you can call eulabeia_json_jsonobject.
+ *
+ * @param[in] obj, the JsonObject to be parsed
+ * @param[out] alive_test, the EulabeiaAliveTest this function will allocate
+ * the memory. The caller is responsible for cleaning.
+ *
+ * @return 0 on success,
+ *  -3 on setting value failure
+ */
+int eulabeia_json_alive_test(JsonObject *jo,
+			     struct EulabeiaAliveTest **alive_test);
+
+/*
  * @brief transform a message which only contains an ID to json.
  *
  * Transforms
