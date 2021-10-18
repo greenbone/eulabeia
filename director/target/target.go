@@ -87,10 +87,18 @@ func (t targetAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, e
 			if cv, ok := v.(string); ok {
 				target.Sensor = cv
 			}
-		case "Alive":
-			if cv, ok := v.(bool); ok {
-				target.Alive = cv
+		case "AliveTest":
+			jsonbody, err := json.Marshal(v)
+			if err != nil {
+				log.Printf("%s: Given AliveTest for target not valid\n", m.ID)
+				continue
 			}
+			alivetest := models.AliveTest{}
+			if err := json.Unmarshal(jsonbody, &alivetest); err != nil {
+				log.Printf("%s: Given AliveTest for target not valid\n", m.ID)
+				continue
+			}
+			target.AliveTest = alivetest
 		case "Parallel":
 			if cv, ok := v.(bool); ok {
 				target.Parallel = cv

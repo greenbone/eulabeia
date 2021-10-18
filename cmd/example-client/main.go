@@ -197,9 +197,13 @@ func MegaScan(i info.IDInfo, _ []byte) *connection.SendResponse {
 						},
 					},
 				},
-				Exclude:  []string{"exclude1"},
-				Sensor:   "localhorst",
-				Alive:    true,
+				Exclude: []string{"exclude1"},
+				Sensor:  "localhorst",
+				AliveTest: models.AliveTest{
+					Test_alive_hosts_only: true,
+					Methods:               2,
+					Ports:                 []int{80, 137, 587, 3128, 8081},
+				},
 				Parallel: true,
 				Credentials: map[string]map[string]string{
 					"ssh": {
