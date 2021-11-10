@@ -286,9 +286,11 @@ func main() {
 			CREATED_TARGET:  ModifyTarget,
 			MODIFIED_TARGET: CreateScan,
 			MODIFIED_SCAN:   MegaScan,
-			RESULT_SCAN:     GetVT,
-			GOT_VT:          VerifyVT,
-			STATUS_SCAN:     VerifyForScanStatus,
+			// after boreas integration result scan and get vt aren't working
+			// as before. They will be disabled for now and handled in a follow up task
+			//			RESULT_SCAN:     GetVT,
+			//			GOT_VT:          VerifyVT,
+			STATUS_SCAN: VerifyForScanStatus,
 		},
 		exit: ic,
 	}
