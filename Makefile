@@ -1,5 +1,9 @@
+ifndef NO_CACHE
+	CACHE := "--no-cache"
+endif
+
 GO_BUILD = CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
-DOCKER_BUILD = docker build --no-cache --force-rm=true --compress=true
+DOCKER_BUILD = DOCKER_BUILDKIT=1 docker build $(CACHE) --force-rm=true --compress=true
 BROKER_IP = $(or $(shell docker container inspect -f '{{ .NetworkSettings.IPAddress }}' eulabeia_broker), $(echo ""))
 MQTT_CONTAINER = docker run -e "MQTT_SERVER=$(call BROKER_IP):9138" --rm
 GO_MINOR_VERSION = $(shell go version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f2)
@@ -114,11 +118,7 @@ build-container-sensor: build-container-clib build-sensor
 build-container-example: build-example
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-example-client -f example-client.Dockerfile .
 
-build-container-build-helper:
-	docker pull debian:stable-slim
-	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-build-helper -f .docker/build-helper.Dockerfile .docker/
-
-build-container: build-container-build-helper build-container-redis build-container-broker build-container-director build-container-sensor build-container-example
+build-container: build-container-redis build-container-broker build-container-director build-container-sensor build-container-example
 
 update:
 	go get -u all

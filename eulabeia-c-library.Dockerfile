@@ -1,23 +1,23 @@
-ARG VERSION=middleware
+ARG VERSION=unstable
 
-from greenbone/eulabeia-build-helper as lib-gvm
-arg VERSION
-copy .docker/descriptions/gvm-libs /usr/local/src/gvm-libs
-run /usr/local/bin/clone.sh gvm-libs $VERSION
-run /usr/local/bin/build.sh gvm-libs $VERSION
+FROM greenbone/gvm-libs:$VERSION as build
+RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
+    build-essential \
+    cmake \
+    pkg-config \
+    libglib2.0-dev \
+    libpaho-mqtt-dev \
+    libjson-glib-dev \
+    libcgreen1-dev \
+    libgnutls28-dev \
+    && rm -rf /var/lib/apt/lists/*
+COPY c/libeulabeia /source
+RUN cmake -DCMAKE_BUILD_TYPE=Release -B/build /source
+RUN DESTDIR=/install cmake --build /build -- install test
 
-from greenbone/eulabeia-build-helper as lib-eulabeia
-copy --from=lib-gvm /usr/local/src/docker.list /etc/apt/sources.list.d/docker.list
-copy --from=lib-gvm /usr/local/src/packages /usr/local/src/packages
-run mkdir /usr/local/src/libeulabeia
-copy c/debian /usr/local/src/libeulabeia/debian
-copy c/libeulabeia /usr/local/src/libeulabeia/libeulabeia
-run /usr/local/bin/build.sh libeulabeia $VERSION "1.0.0"
-
-from debian:stable-slim as openvas
-arg VERSION
-copy .docker/descriptions/openvas /usr/local/src/openvas-scanner
-copy --from=lib-eulabeia /usr/local/src/docker.list /etc/apt/sources.list.d/docker.list
-copy --from=lib-eulabeia /usr/local/src/packages /usr/local/src/packages
-RUN apt-get update
-RUN apt-get install --no-install-recommends -y libeulabeia-dev
+FROM greenbone/gvm-libs:$VERSION
+COPY --from=build /install/ / 
+RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
+    libjson-glib-1.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+RUN ldconfig
