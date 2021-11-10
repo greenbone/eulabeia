@@ -53,7 +53,8 @@ static int default_retrieve(char **topic,
 #pragma GCC diagnostic ignored "-Wunused-value"
 	context;
 #pragma GCC diagnostic pop
-	return mqtt_retrieve_message(topic, topic_len, payload, payload_len, 1000);
+	return mqtt_retrieve_message(
+	    topic, topic_len, payload, payload_len, 1000);
 }
 
 struct EulabeiaClient *eulabeia_initialize(const char *broker_address,
