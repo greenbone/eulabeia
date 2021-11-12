@@ -18,12 +18,14 @@
 package handler
 
 import (
-	"log"
+	"github.com/greenbone/eulabeia/logging"
 
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/info"
 )
+
+var log = logging.Logger()
 
 // Container contains interfaces needed for OnMessage
 //

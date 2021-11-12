@@ -22,13 +22,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 
 	"github.com/eclipse/paho.golang/packets"
 	"github.com/eclipse/paho.golang/paho"
 	"github.com/greenbone/eulabeia/connection"
+	"github.com/greenbone/eulabeia/logging"
 )
+
+var log = logging.Logger()
 
 type MQTT struct {
 	client            *paho.Client

@@ -2,7 +2,7 @@ package feedservice
 
 import (
 	"fmt"
-	"log"
+	"github.com/greenbone/eulabeia/logging"
 	"strconv"
 	"strings"
 
@@ -13,6 +13,8 @@ import (
 	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
 )
+
+var log = logging.Logger()
 
 type DBConnecion interface {
 	Close() error

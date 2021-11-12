@@ -24,7 +24,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"log"
+	"github.com/greenbone/eulabeia/logging"
 	"os"
 	"os/signal"
 	"sync"
@@ -42,6 +42,8 @@ import (
 	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
 )
+
+var log = logging.Logger()
 
 const MEGA_ID = "mega_scan_123"
 const context = "scanner"
@@ -81,7 +83,7 @@ func (e *ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse,
 	log.Printf("Got message: %s", mt)
 	var infoMSG info.IDInfo
 	if err := json.Unmarshal(msg, &infoMSG); err != nil {
-		log.Panicf("Unable to parse %s to info.IDInfo (%s)", msg, err)
+		log.Fatal().Msgf("Unable to parse %s to info.IDInfo (%s)", msg, err)
 	}
 	f, ok := e.do[infoMSG.ID]
 	if !ok {
@@ -127,7 +129,7 @@ func GetVT(_ info.IDInfo, msg []byte) *connection.SendResponse {
 	var result models.Result
 	err := json.Unmarshal(msg, &result)
 	if err != nil {
-		log.Panicf("unable to parse result: %s", string(msg))
+		log.Fatal().Msgf("unable to parse result: %s", string(msg))
 	}
 	if result.OID == "" {
 		log.Printf("skipping sending get.vt due to missing oid")
@@ -142,7 +144,7 @@ func VerifyVT(i info.IDInfo, b []byte) *connection.SendResponse {
 	if i.Type == "got.vt" {
 		var vt models.GotVT
 		if json.Unmarshal(b, &vt) != nil {
-			log.Panicf("unable to parse vt: %s", string(b))
+			log.Fatal().Msgf("unable to parse vt: %s", string(b))
 		}
 		return nil
 	}
@@ -221,7 +223,7 @@ func VerifyForScanStatus(i info.IDInfo, b []byte) *connection.SendResponse {
 	if i.Type == "status.scan" {
 		var status info.Status
 		if json.Unmarshal(b, &status) != nil {
-			log.Panicf("Unable to parse: %s", string(b))
+			log.Fatal().Msgf("Unable to parse: %s", string(b))
 		}
 		if status.Status == "finished" {
 			return &connection.SendResponse{
@@ -251,13 +253,15 @@ func Verify(eh *ExampleHandler) {
 		}
 	}
 	if len(difference) > 0 {
-		log.Fatalf("FAILURE: %s were not handled.", difference)
+		log.Fatal().Msgf("FAILURE: %s were not handled.", difference)
 	} else {
-		log.Println("SUCCESS")
+		log.Info().Msg("SUCCESS")
+
 	}
 }
 
 func main() {
+	log.Info().Msg("Starting example client")
 	clientid := flag.String("clientid", "", "A clientid for the connection")
 	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
 	flag.Parse()
@@ -268,15 +272,15 @@ func main() {
 	config.OverrideViaENV(configuration)
 	server := configuration.Connection.Server
 
-	log.Println("Starting example client")
+	log.Info().Msg("Starting example client")
 	c, err := mqtt.New(server, *clientid+uuid.NewString(), "", "", nil, nil)
 	if err != nil {
-		log.Panicf("Failed to create MQTT: %s", err)
+		log.Fatal().Msgf("Failed to create MQTT: %s", err)
 	}
 	defer c.Close()
 	err = c.Connect()
 	if err != nil {
-		log.Panicf("Failed to connect: %s", err)
+		log.Fatal().Msgf("Failed to connect: %s", err)
 	}
 	ic := make(chan os.Signal, 1)
 	defer close(ic)
@@ -304,7 +308,7 @@ func main() {
 	for i := 0; i < 10 && !firstContact; i++ {
 		err = c.Publish("scanner/sensor/cmd/director", cmds.NewGet("sensor", "localhorst", "director", "0"))
 		if err != nil {
-			log.Panicf("Failed to publish: %s", err)
+			log.Fatal().Msgf("Failed to publish: %s", err)
 		}
 		if !firstContact {
 			time.Sleep(1 * time.Second)

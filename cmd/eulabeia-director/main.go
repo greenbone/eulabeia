@@ -20,7 +20,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+	"github.com/greenbone/eulabeia/logging"
 
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection"
@@ -33,6 +33,8 @@ import (
 	"github.com/greenbone/eulabeia/process"
 	"github.com/greenbone/eulabeia/storage"
 )
+
+var log = logging.Logger()
 
 func main() {
 	clientid := flag.String("clientid", "eulabeia-director", "A clientid for the connection")
@@ -48,23 +50,23 @@ func main() {
 	prepare_topic := func(aggregate_name string) string {
 		return fmt.Sprintf("%s/%s/cmd/director", configuration.Context, aggregate_name)
 	}
-	log.Printf("Starting director with context %s\n", configuration.Context)
+	log.Info().Msgf("Starting director with context %s", configuration.Context)
 	client, err := mqtt.New(server, *clientid, "", "", nil, []connection.Preprocessor{
 		scan.ScanPreprocessor{Context: configuration.Context}})
 	if err != nil {
-		log.Panicf("Failed to create MQTT: %s", err)
+		log.Fatal().Err(err).Msg("Failed to create MQTT client.")
 	}
 	err = client.Connect()
 	if err != nil {
-		log.Panicf("Failed to connect: %s", err)
+		log.Fatal().Err(err).Msg("Failed to connect to MQTT.")
 	}
 	crypt, err := storage.NewRSACrypt(*configuration)
 	if err != nil {
-		log.Panicf("Failed create RSA: %s", err)
+		log.Fatal().Err(err).Msg("Failed to create RSA-Key.")
 	}
 	device, err := storage.New(configuration.Director.StoragePath, crypt)
 	if err != nil {
-		log.Panicf("Failed to create storage: %s", err)
+		log.Fatal().Err(err).Msg("Failed to create storage.")
 	}
 	err = client.Subscribe(map[string]connection.OnMessage{
 		prepare_topic("sensor"): handler.New(configuration.Context, sensor.New(device)),
@@ -73,7 +75,7 @@ func main() {
 		prepare_topic("vt"):     vt.New(device, configuration.Context, configuration.Director.VTSensor),
 	})
 	if err != nil {
-		log.Panicf("Subscribing failed: %s", err)
+		log.Fatal().Err(err).Msg("Failed to subscribe.")
 	}
 
 	process.Block(client)
