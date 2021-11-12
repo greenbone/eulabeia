@@ -20,7 +20,6 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"encoding/json"
 

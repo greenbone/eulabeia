@@ -20,13 +20,15 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
+	"github.com/greenbone/eulabeia/logging"
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/info"
 )
+
+var log = logging.Logger()
 
 type StartStop struct {
 	Start func(scanID string) error // Function to Start a scan

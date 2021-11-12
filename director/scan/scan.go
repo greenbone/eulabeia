@@ -20,7 +20,7 @@ package scan
 
 import (
 	"fmt"
-	"log"
+	"github.com/greenbone/eulabeia/logging"
 
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/director/target"
@@ -31,6 +31,8 @@ import (
 	"github.com/greenbone/eulabeia/models"
 	"github.com/greenbone/eulabeia/storage"
 )
+
+var log = logging.Logger()
 
 type scanAggregate struct {
 	storage Storage

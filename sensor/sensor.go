@@ -20,7 +20,7 @@ package sensor
 
 import (
 	"fmt"
-	"log"
+	"github.com/greenbone/eulabeia/logging"
 	"sync"
 	"time"
 
@@ -35,6 +35,8 @@ import (
 
 	"github.com/greenbone/eulabeia/util"
 )
+
+var log = logging.Logger()
 
 // Scheduler is a struct containing functionality to control a sensor
 type Scheduler struct {
@@ -63,7 +65,7 @@ func (sensor *Scheduler) loadVTs() {
 	log.Printf("Loading VTs into Redis DB...\n")
 	err := sensor.ovas.LoadVTsIntoRedis(sensor.commander)
 	if err != nil {
-		log.Panicf("Unable to load VTs into redis: %s", err)
+		log.Fatal().Err(err).Msgf("Unable to load VTs into redis: %s", err)
 	}
 	log.Printf("Loading VTs into Redis DB finished\n")
 }
@@ -222,7 +224,7 @@ func (sensor *Scheduler) schedule() {
 			m, err := util.GetAvailableMemory(util.StdMemoryManager{})
 			memoryNeeded := m.Bytes + uint64(sensor.init.Size())*sensor.conf.MinFreeMemScanQueue
 			if err != nil {
-				log.Panicf("Unable to get memory stats: %s\n", err)
+				log.Fatal().Err(err).Msg("Unable to get memory stats")
 			}
 			if m.Bytes < memoryNeeded {
 				log.Printf("Unable to start scan, not enough memory.\n")
@@ -332,7 +334,7 @@ func (sensor *Scheduler) Start() {
 
 	err := sensor.mqtt.Subscribe(subMap)
 	if err != nil {
-		log.Panicf("Sensor cannot subscribe to topics: %s", err)
+		log.Fatal().Err(err).Msg("Sensor cannot subscribe to topics")
 	}
 
 	sensor.stopped = false

@@ -22,18 +22,20 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/greenbone/eulabeia/logging"
 	"io"
-	"log"
 )
+
+var log = logging.Logger()
 
 func Block(c ...io.Closer) {
 	BlockUntil(func() {
-		log.Println("Exiting")
+		log.Info().Msg("Exiting")
 		for _, cl := range c {
 			if cl != nil {
 				err := cl.Close()
 				if err != nil {
-					log.Fatalf("failed to send Disconnect: %s", err)
+					log.Error().Msgf("failed to send Disconnect: %s", err)
 				}
 			}
 		}

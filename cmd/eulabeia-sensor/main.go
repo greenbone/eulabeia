@@ -19,7 +19,7 @@ package main
 
 import (
 	"flag"
-	"log"
+	"github.com/greenbone/eulabeia/logging"
 	"os"
 
 	"github.com/greenbone/eulabeia/config"
@@ -30,6 +30,8 @@ import (
 	"github.com/greenbone/eulabeia/process"
 	"github.com/greenbone/eulabeia/sensor"
 )
+
+var log = logging.Logger()
 
 func main() {
 	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
@@ -49,7 +51,7 @@ func main() {
 		configuration.Sensor.Id = sensor_id
 	}
 
-	log.Printf("Starting sensor (%s) on context (%s)\n", configuration.Sensor.Id, configuration.Context)
+	log.Info().Msgf("Starting sensor (%s) on context (%s)\n", configuration.Sensor.Id, configuration.Context)
 	client, err := mqtt.New(server, configuration.Sensor.Id, "", "",
 		&mqtt.LastWillMessage{
 			Topic: "scanner/sensor/cmd/director",
@@ -61,11 +63,11 @@ func main() {
 			}},
 		nil)
 	if err != nil {
-		log.Panicf("Failed to create MQTT: %s", err)
+		log.Fatal().Err(err).Msg("Failed to create MQTT")
 	}
 	err = client.Connect()
 	if err != nil {
-		log.Panicf("Failed to connect: %s", err)
+		log.Fatal().Err(err).Msg("Failed to connect")
 	}
 	feed := feedservice.NewFeed(client, configuration.Context, configuration.Sensor.Id, configuration.Feedservice.RedisDbAddress)
 	log.Printf("Starting Feed Service\n")

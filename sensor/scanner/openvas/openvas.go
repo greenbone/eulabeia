@@ -21,12 +21,14 @@ package openvas
 import (
 	"errors"
 	"fmt"
-	"log"
+	"github.com/greenbone/eulabeia/logging"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
 )
+
+var log = logging.Logger()
 
 // OpenVASScanner is the eulabeia scanner implementation of openvas. It is
 // responsible for handling processes of openvas. It also is able to start and
