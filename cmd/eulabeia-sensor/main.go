@@ -70,7 +70,7 @@ func main() {
 	feed := feedservice.NewFeed(client, configuration.Context, configuration.Sensor.Id, configuration.Feedservice.RedisDbAddress)
 	log.Printf("Starting Feed Service\n")
 	feed.Start()
-	sens := sensor.NewScheduler(client, configuration.Sensor.Id, configuration.ScannerPreferences, configuration.Context)
+	sens := sensor.NewScheduler(client, configuration.Sensor.Id, configuration.ScannerPreferences, configuration.Context, feed.ResolveFilter)
 	log.Printf("Starting Scheduler\n")
 	sens.Start()
 	process.Block(client, sens, feed)

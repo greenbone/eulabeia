@@ -50,3 +50,22 @@ type GotMemory struct {
 	Cached string `json:"cached"` //Cached memory in bytes
 	Free   string `json:"free"`   // Free memory in bytes
 }
+
+// ScanPrefs represents the Preferences a scan needs to start a scan.
+type ScanPrefs struct {
+	ID          string                       `json:"id"`
+	Hosts       []string                     `json:"hosts"`
+	Ports       []string                     `json:"ports"`
+	Plugins     []SingleVT                   `json:"plugins"`
+	AliveTest   AliveTest                    `json:"alive_test"`
+	Parallel    bool                         `json:"parallel"`
+	Exclude     []string                     `json:"exclude_hosts"`
+	Finished    []string                     `json:"finished"`
+	Credentials map[string]map[string]string `json:"credentials"`
+}
+
+type GotScanPrefs struct {
+	messages.Message
+	info.EventType
+	ScanPrefs
+}

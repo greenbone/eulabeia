@@ -81,7 +81,6 @@ func (m MQTT) register(topic string, handler connection.OnMessage) error {
 				}
 			}
 		}
-
 	})
 
 	_, err := m.client.Subscribe(context.Background(), &paho.Subscribe{

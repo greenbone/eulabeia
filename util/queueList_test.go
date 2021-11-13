@@ -5,6 +5,15 @@ import (
 	"testing"
 )
 
+type item string
+
+func (i item) Compare(c Comparable) bool {
+	if it, ok := c.(item); ok {
+		return i == item(it)
+	}
+	return false
+}
+
 func TestQueueList(t *testing.T) {
 	// Create new QueueList
 	ql := NewQueueList()
@@ -19,7 +28,7 @@ func TestQueueList(t *testing.T) {
 
 	// Fill with 50 values, ordered
 	for i := 0; i < 50; i++ {
-		ql.Enqueue(fmt.Sprint(i))
+		ql.Enqueue(item(fmt.Sprint(i)))
 	}
 
 	// Check for elements containing
@@ -31,16 +40,16 @@ func TestQueueList(t *testing.T) {
 	}
 
 	// Check for values
-	if ql.Contains("foo") {
+	if ql.Contains(item("foo")) {
 		t.Fatal("Queue list should not contain foo\n")
 	}
-	if !ql.Contains("23") {
+	if !ql.Contains(item("23")) {
 		t.Fatal("Queue list should contain 23\n")
 	}
 
 	// Remove items and save them for later
-	remove1 := "15"
-	remove2 := "37"
+	remove1 := item("15")
+	remove2 := item("37")
 	if !ql.RemoveListItem(remove1) {
 		t.Fatalf("Unable to remove %s\n", remove1)
 	}
@@ -50,28 +59,28 @@ func TestQueueList(t *testing.T) {
 	}
 
 	// Check for failing RemoveListItem
-	if ql.RemoveListItem("foo") {
+	if ql.RemoveListItem(item("foo")) {
 		t.Fatal("Should be unable to remove foo\n")
 	}
 
 	// Check for first Elements
-	if ql.Front() != "0" {
+	if ql.Front() != item("0") {
 		t.Fatal("0 should be the first item\n")
 	}
-	if item, ok := ql.Dequeue(); item != "0" || !ok {
+	if i := ql.Dequeue().(item); i != "0" {
 		t.Fatal("First item should be 0 and dequeue should have worked\n")
 	}
-	if item, ok := ql.Dequeue(); item != "1" || !ok {
+	if i := ql.Dequeue().(item); i != "1" {
 		t.Fatal("First item should be 1 and dequeue should have worked\n")
 	}
 
 	// Remove rest of the Elements and check correct order
 	for i := 2; i < 50; i++ {
-		if fmt.Sprint(i) == remove1 || fmt.Sprint(i) == remove2 {
+		if item(fmt.Sprint(i)) == remove1 || item(fmt.Sprint(i)) == remove2 {
 			continue
 		}
-		if item, ok := ql.Dequeue(); item != fmt.Sprint(i) || !ok {
-			t.Fatalf("Expected: %s, Got %s\n", fmt.Sprint(i), item)
+		if i := ql.Dequeue().(item); i != item(fmt.Sprint(i)) {
+			t.Fatalf("Expected: %s, Got %s\n", fmt.Sprint(i), i)
 		}
 	}
 

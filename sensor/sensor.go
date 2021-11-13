@@ -28,9 +28,9 @@ import (
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/info"
+	"github.com/greenbone/eulabeia/models"
 
 	"github.com/greenbone/eulabeia/connection"
-	"github.com/greenbone/eulabeia/sensor/handler"
 	"github.com/greenbone/eulabeia/sensor/scanner/openvas"
 
 	"github.com/greenbone/eulabeia/util"
@@ -54,6 +54,37 @@ type Scheduler struct {
 	mqtt connection.PubSub         // mqtt connection
 	id   string                    // ID of the sensor
 	conf config.ScannerPreferences // config file
+
+	resolveFilter func([]models.VTFilter) ([]string, error)
+}
+
+type scan struct {
+	models.ScanPrefs
+	Ready bool
+}
+
+func (s *scan) Compare(sc util.Comparable) bool {
+	if v, ok := sc.(*scan); ok {
+		return s.ID == v.ID
+	}
+	return false
+}
+
+func scanModelToScan(sm models.Scan) scan {
+	return scan{
+		ScanPrefs: models.ScanPrefs{
+			ID:          sm.ID,
+			Hosts:       sm.Hosts,
+			Ports:       sm.Ports,
+			Plugins:     sm.Plugins.Single,
+			AliveTest:   sm.AliveTest,
+			Parallel:    sm.Parallel,
+			Exclude:     sm.Exclude,
+			Finished:    sm.Finished,
+			Credentials: sm.Credentials,
+		},
+		Ready: false,
+	}
 }
 
 // loadVTs commands openvas to load VTs into redis
@@ -69,63 +100,162 @@ func (sensor *Scheduler) loadVTs() {
 }
 
 // QueueScan queues a scan
-func (sensor *Scheduler) QueueScan(scanID string) error {
+func (sensor *Scheduler) QueueScan(s models.Scan) error {
 	sensor.Lock()
 	defer sensor.Unlock()
-	if sensor.queue.Contains(scanID) || sensor.init.Contains(scanID) || sensor.running.Contains(scanID) {
-		return fmt.Errorf("there is already a running scan with the ID %s", scanID)
+
+	scan := scanModelToScan(s)
+
+	if sensor.queue.Contains(&scan) || sensor.init.Contains(&scan) || sensor.running.Contains(&scan) {
+		return fmt.Errorf("there is already a running scan with the ID %s", scan.ID)
 	}
-	sensor.queue.Enqueue(scanID)
+	sensor.queue.Enqueue(&scan)
 	sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 		Identifier: messages.Identifier{
-			ID:      scanID,
+			ID:      scan.ID,
 			Message: messages.NewMessage("status.scan", "", ""),
 		},
 		Status: "queued",
 	})
+
+	vtChan := make(chan []string)
+
+	go func() {
+		vts, err := sensor.resolveFilter(s.Plugins.Group)
+		if err != nil {
+			log.Printf("Error while resolving VTs for scan %s: %s", s.ID, err)
+		}
+		vtChan <- vts
+	}()
+	go sensor.addVTInfo(s.ID, vtChan)
 	return nil
 }
 
-// StartScan starts a scan process
-func (sensor *Scheduler) StartScan(scanID string) error {
+// addVTInfo is adding VTs to a scan which it gets through a channel
+func (sensor *Scheduler) addVTInfo(scanID string, vtChan chan []string) error {
 	sensor.Lock()
 	defer sensor.Unlock()
 
-	if !sensor.queue.Contains(scanID) {
-		return fmt.Errorf("scan ID %s unknown", scanID)
+	s, ok := sensor.getScanByID(sensor.queue, scanID)
+	if !ok {
+		s, ok = sensor.getScanByID(sensor.init, scanID)
 	}
 
-	if err := sensor.ovas.StartScan(sensor.queue.Front(), int(sensor.conf.Niceness), sensor.sudo, sensor.commander); err != nil {
+	if ok {
+		sensor.Unlock()
+		log.Println("Waiting for resolved VTs")
+		vts := <-vtChan
+		log.Println("VTs resolved")
+		vtsSingle := make([]models.SingleVT, len(vts))
+		for i, v := range vts {
+			vtsSingle[i] = models.SingleVT{
+				OID: v,
+			}
+		}
+		sensor.Lock()
+		s.Plugins = append(s.Plugins, vtsSingle...)
+		s.Plugins = removeDuplicateVT(s.Plugins)
+		s.Ready = true
+		return nil
+	}
+
+	return fmt.Errorf("scan with id %s not found", scanID)
+}
+
+func removeDuplicateVT(vts []models.SingleVT) []models.SingleVT {
+	vtTest := make(map[string]struct{})
+	ret := make([]models.SingleVT, 0)
+	for _, v := range vts {
+		if _, v2 := vtTest[v.OID]; !v2 {
+			vtTest[v.OID] = struct{}{}
+			ret = append(ret, v)
+		}
+	}
+	return ret
+}
+
+func (sensor *Scheduler) getScanByID(ql *util.QueueList, scanID string) (*scan, bool) {
+	// Create dummy to get real scan
+	sd := scan{
+		ScanPrefs: models.ScanPrefs{
+			ID: scanID,
+		},
+	}
+
+	// Check if scan is in queue
+	if item, ok := ql.Get(&sd); ok {
+		return item.(*scan), true
+	}
+	return nil, false
+}
+
+// StartScan starts a scan process
+func (sensor *Scheduler) StartScan(s *scan) error {
+	sensor.Lock()
+	defer sensor.Unlock()
+
+	if s == nil {
+		return fmt.Errorf("scan is nil")
+	}
+	if !sensor.queue.Contains(s) {
+		return fmt.Errorf("scan with id %s not in queue", s.ID)
+	}
+
+	if err := sensor.ovas.StartScan(s.ID, int(sensor.conf.Niceness), sensor.sudo, sensor.commander); err != nil {
 		return err
 	}
+	// Update scan status
 	sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 		Identifier: messages.Identifier{
-			ID:      sensor.queue.Front(),
+			ID:      s.ID,
 			Message: messages.NewMessage("status.scan", "", ""),
 		},
 		Status: "init",
 	})
-
-	sensor.queue.RemoveListItem(scanID)
-	sensor.init.Enqueue(scanID)
+	// Put scan from queue to init
+	sensor.queue.RemoveListItem(s)
+	sensor.init.Enqueue(s)
 	return nil
+}
+
+// GetScan searches the init list for the given scan id and returns it as soon
+// as the vt information is given
+func (sensor *Scheduler) GetScan(scanID string) (models.ScanPrefs, error) {
+	sensor.Lock()
+	defer sensor.Unlock()
+	if s, ok := sensor.getScanByID(sensor.init, scanID); ok {
+		for i := 0; !s.Ready; i++ {
+			sensor.Unlock()
+			time.Sleep(time.Second)
+			sensor.Lock()
+			if i >= 300 || sensor.stopped {
+				return models.ScanPrefs{}, fmt.Errorf("timeout for scan with id %s while waiting for vt information", scanID)
+			}
+		}
+		return models.ScanPrefs(s.ScanPrefs), nil
+
+	}
+	return models.ScanPrefs{}, fmt.Errorf("scan with id %s not in init", scanID)
+
 }
 
 // ScanRunning moves a scan from the init to the running state
 func (sensor *Scheduler) ScanRunning(scanID string) error {
 	sensor.Lock()
 	defer sensor.Unlock()
-	if !sensor.init.RemoveListItem(scanID) {
+	s, _ := sensor.getScanByID(sensor.init, scanID)
+	if !sensor.init.RemoveListItem(s) {
 		return fmt.Errorf("scan ID %s unknown", scanID)
 	}
-	sensor.running.Enqueue(scanID)
+	sensor.running.Enqueue(s)
 	return nil
 }
 
 func (sensor *Scheduler) ScanFinished(scanID string) error {
 	sensor.Lock()
 	defer sensor.Unlock()
-	if !sensor.running.RemoveListItem(scanID) {
+	s, _ := sensor.getScanByID(sensor.running, scanID)
+	if !sensor.running.RemoveListItem(s) {
 		return fmt.Errorf("scan ID %s unknown", scanID)
 	}
 	sensor.ovas.ScanFinished(scanID)
@@ -136,10 +266,15 @@ func (sensor *Scheduler) ScanFinished(scanID string) error {
 func (sensor *Scheduler) StopScan(scanID string) error {
 	sensor.Lock()
 	defer sensor.Unlock()
-	if sensor.queue.RemoveListItem(scanID) {
+	s := scan{
+		ScanPrefs: models.ScanPrefs{
+			ID: scanID,
+		},
+	}
+	if sensor.queue.RemoveListItem(&s) {
 		return nil
 	}
-	if sensor.init.RemoveListItem(scanID) || sensor.running.RemoveListItem(scanID) {
+	if sensor.init.RemoveListItem(&s) || sensor.running.RemoveListItem(&s) {
 		err := sensor.ovas.StopScan(scanID, sensor.sudo, sensor.commander)
 		if err == nil {
 			sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
@@ -149,6 +284,7 @@ func (sensor *Scheduler) StopScan(scanID string) error {
 				},
 				Status: "stopped",
 			})
+			return nil
 		} else {
 			return err
 		}
@@ -177,7 +313,12 @@ func (sensor *Scheduler) interruptScan(scanID string) error {
 	sensor.Lock()
 	defer sensor.Unlock()
 
-	if sensor.init.RemoveListItem(scanID) || sensor.running.RemoveListItem(scanID) {
+	s := scan{
+		ScanPrefs: models.ScanPrefs{
+			ID: scanID,
+		},
+	}
+	if sensor.init.RemoveListItem(&s) || sensor.running.RemoveListItem(&s) {
 		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 			Identifier: messages.Identifier{
 				ID:      scanID,
@@ -231,7 +372,7 @@ func (sensor *Scheduler) schedule() {
 		}
 
 		// try to run scan process
-		if err := sensor.StartScan(sensor.queue.Front()); err != nil {
+		if err := sensor.StartScan(sensor.queue.Front().(*scan)); err != nil {
 			log.Printf("%s: unable to start scan: %s", sensor.queue.Front(), err)
 		}
 
@@ -264,10 +405,10 @@ func (sensor *Scheduler) Close() error {
 	sensor.stopped = true
 	log.Print("Cleaning all OpenVAS Processes...\n")
 	// Remove all queued scans
-	for item, ok := sensor.queue.Dequeue(); ok; item, ok = sensor.queue.Dequeue() {
+	for item := sensor.queue.Dequeue(); item != nil; item = sensor.queue.Dequeue() {
 		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
 			Identifier: messages.Identifier{
-				ID:      item,
+				ID:      item.(*scan).ID,
 				Message: messages.NewMessage("status.scan", "", ""),
 			},
 			Status: "stopped",
@@ -276,22 +417,22 @@ func (sensor *Scheduler) Close() error {
 
 	var wg sync.WaitGroup
 	// Stopping all init processes
-	for item, ok := sensor.init.Dequeue(); ok; item, ok = sensor.init.Dequeue() {
-		log.Printf("Stopping %s\n", item)
+	for item := sensor.init.Dequeue(); item != nil; item = sensor.init.Dequeue() {
+		log.Printf("Stopping %s\n", item.(*scan).ID)
 		wg.Add(1)
 		go func(item string) {
 			defer wg.Done()
 			sensor.ovas.StopScan(item, sensor.sudo, sensor.commander)
-		}(item)
+		}(item.(*scan).ID)
 	}
 	// Stopping all running processes
-	for item, ok := sensor.running.Dequeue(); ok; item, ok = sensor.running.Dequeue() {
-		log.Printf("Stopping %s\n", item)
+	for item := sensor.running.Dequeue(); item != nil; item = sensor.running.Dequeue() {
+		log.Printf("Stopping %s\n", item.(*scan).ID)
 		wg.Add(1)
 		go func(item string) {
 			defer wg.Done()
 			sensor.ovas.StopScan(item, sensor.sudo, sensor.commander)
-		}(item)
+		}(item.(*scan).ID)
 	}
 	wg.Wait()
 	return nil
@@ -301,7 +442,7 @@ func (sensor *Scheduler) Close() error {
 func (sensor *Scheduler) Start() {
 	// Subscribe on Topic to get confirmation about registration
 	sensor.mqtt.Subscribe(map[string]connection.OnMessage{
-		fmt.Sprintf("%s/sensor/info", sensor.context): handler.Registered{
+		fmt.Sprintf("%s/sensor/info", sensor.context): Registered{
 			Register: sensor.regChan,
 			ID:       sensor.id,
 		},
@@ -309,24 +450,28 @@ func (sensor *Scheduler) Start() {
 	// Register Sensor
 	sensor.register()
 	// MQTT OnMessage Types
-	var startStopHandler = handler.StartStop{
-		Start: sensor.QueueScan,
-		Stop:  sensor.StopScan,
+	var startStopHandler = ScanCmd{
+		Context: sensor.context,
+		Stop:    sensor.StopScan,
+		Get:     sensor.GetScan,
 	}
 
-	var statusHandler = handler.Status{
-		Run: sensor.ScanRunning,
-		Fin: sensor.ScanFinished,
+	var scanInfoHandler = ScanInfo{
+		Context: sensor.context,
+		Sensor:  sensor.id,
+		Run:     sensor.ScanRunning,
+		Fin:     sensor.ScanFinished,
+		Start:   sensor.QueueScan,
 	}
 
-	var vtsHandler = handler.LoadVTs{
+	var vtsHandler = LoadVTs{
 		VtsLoad: sensor.loadVTs,
 	}
 
 	// MQTT Subscription Map
 	var subMap = map[string]connection.OnMessage{
 		fmt.Sprintf("%s/scan/cmd/%s", sensor.context, sensor.id): startStopHandler,
-		fmt.Sprintf("%s/scan/info", sensor.context):              statusHandler,
+		fmt.Sprintf("%s/scan/info", sensor.context):              scanInfoHandler,
 		fmt.Sprintf("%s/sensor/cmd", sensor.context):             vtsHandler,
 	}
 
@@ -340,7 +485,7 @@ func (sensor *Scheduler) Start() {
 }
 
 // NewScheduler creates a new scheduler
-func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferences, context string) *Scheduler {
+func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferences, context string, rf func([]models.VTFilter) ([]string, error)) *Scheduler {
 	interruptChan := make(chan string)
 	return &Scheduler{
 		queue:         util.NewQueueList(),
@@ -357,5 +502,7 @@ func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferen
 		mqtt: mqtt,
 		id:   id,
 		conf: conf,
+
+		resolveFilter: rf,
 	}
 }

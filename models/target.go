@@ -89,7 +89,7 @@ type GotVT struct {
 // ResolveFilter is a request to get all OIDs matching the given Filter
 type ResolveFilter struct {
 	cmds.EventType
-	messages.Message
+	messages.Identifier
 	Filter []VTFilter `json:"filter"`
 }
 
@@ -97,7 +97,7 @@ type ResolveFilter struct {
 // match the given filter.
 type ResolvedFilter struct {
 	info.EventType
-	messages.Message
+	messages.Identifier
 	OIDs []string `json:"oids"`
 }
 
@@ -132,7 +132,7 @@ type Target struct {
 	ID          string                       `json:"id"`            // ID of a Target
 	Hosts       []string                     `json:"hosts"`         // Hosts to scan
 	Ports       []string                     `json:"ports"`         // Ports to scan
-	Plugins     VTsList                      `json:"plugins"`       // OID of plugins
+	Plugins     VTsList                      `json:"plugins"`       // List of OIDs, families and preferences
 	Sensor      string                       `json:"sensor"`        // Sensor to use
 	AliveTest   AliveTest                    `json:"alive_test"`    // Alive test parameters
 	Parallel    bool                         `json:"parallel"`      // Parallel when true mulitple scans run in parallel
