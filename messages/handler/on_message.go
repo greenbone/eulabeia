@@ -22,11 +22,11 @@ import (
 	"fmt"
 
 	"encoding/json"
-
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
+	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 )
 

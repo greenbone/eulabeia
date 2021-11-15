@@ -24,7 +24,8 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"github.com/greenbone/eulabeia/logging"
+	_ "github.com/greenbone/eulabeia/logging/configuration"
+	"github.com/rs/zerolog/log"
 	"os"
 	"os/signal"
 	"sync"
@@ -42,8 +43,6 @@ import (
 	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
 )
-
-var log = logging.Logger()
 
 const MEGA_ID = "mega_scan_123"
 const context = "scanner"

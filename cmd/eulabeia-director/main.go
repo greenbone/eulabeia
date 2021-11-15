@@ -20,7 +20,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/greenbone/eulabeia/logging"
+	_ "github.com/greenbone/eulabeia/logging/configuration"
+	"github.com/rs/zerolog/log"
 
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection"
@@ -33,8 +34,6 @@ import (
 	"github.com/greenbone/eulabeia/process"
 	"github.com/greenbone/eulabeia/storage"
 )
-
-var log = logging.Logger()
 
 func main() {
 	clientid := flag.String("clientid", "eulabeia-director", "A clientid for the connection")

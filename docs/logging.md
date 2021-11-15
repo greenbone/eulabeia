@@ -1,13 +1,21 @@
 # Logging
 
-In eulabeia we introduced a logging framework which can be initiated by:
+In eulabeia we introduced a logging framework which needs be initiated once in the main cmd:
 
 ```
 import (
-	"github.com/greenbone/eulabeia/logging"
+	_ "github.com/greenbone/eulabeia/logging/configuration"
+	"github.com/rs/zerolog/log"
 )
+```
 
-var log = logging.Logger()
+and can be used afterwards by simply importing zerolog:
+
+
+```
+import (
+	"github.com/rs/zerolog/log"
+)
 ```
 
 It does support multiple LogLevels which are interpreted as follows.
