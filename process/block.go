@@ -22,11 +22,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/greenbone/eulabeia/logging"
+	"github.com/rs/zerolog/log"
 	"io"
 )
-
-var log = logging.Logger()
 
 func Block(c ...io.Closer) {
 	BlockUntil(func() {

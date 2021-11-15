@@ -19,7 +19,8 @@ package main
 
 import (
 	"flag"
-	"github.com/greenbone/eulabeia/logging"
+	_ "github.com/greenbone/eulabeia/logging/configuration"
+	"github.com/rs/zerolog/log"
 	"os"
 
 	"github.com/greenbone/eulabeia/config"
@@ -30,8 +31,6 @@ import (
 	"github.com/greenbone/eulabeia/process"
 	"github.com/greenbone/eulabeia/sensor"
 )
-
-var log = logging.Logger()
 
 func main() {
 	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")

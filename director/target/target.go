@@ -20,7 +20,7 @@ package target
 
 import (
 	"encoding/json"
-	"github.com/greenbone/eulabeia/logging"
+	"github.com/rs/zerolog/log"
 	"strings"
 
 	"github.com/google/uuid"
@@ -31,8 +31,6 @@ import (
 	"github.com/greenbone/eulabeia/models"
 	"github.com/greenbone/eulabeia/storage"
 )
-
-var log = logging.Logger()
 
 type targetAggregate struct {
 	storage Storage

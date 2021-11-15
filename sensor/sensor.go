@@ -20,7 +20,7 @@ package sensor
 
 import (
 	"fmt"
-	"github.com/greenbone/eulabeia/logging"
+	"github.com/rs/zerolog/log"
 	"sync"
 	"time"
 
@@ -35,8 +35,6 @@ import (
 
 	"github.com/greenbone/eulabeia/util"
 )
-
-var log = logging.Logger()
 
 // Scheduler is a struct containing functionality to control a sensor
 type Scheduler struct {

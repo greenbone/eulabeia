@@ -19,7 +19,7 @@
 package sensor
 
 import (
-	"github.com/greenbone/eulabeia/logging"
+	"github.com/rs/zerolog/log"
 
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/messages"
@@ -29,8 +29,6 @@ import (
 	"github.com/greenbone/eulabeia/models"
 	"github.com/greenbone/eulabeia/storage"
 )
-
-var log = logging.Logger()
 
 type sensorAggregate struct {
 	storage Storage
