@@ -298,10 +298,13 @@ func main() {
 		exit: ic,
 	}
 	defer Verify(&mh)
-	err = c.Subscribe(map[string]connection.OnMessage{topic: &mh})
+	handler := map[string]connection.OnMessage{topic: &mh}
+	err = c.Subscribe(handler)
 	if err != nil {
 		panic(err)
 	}
+	mhm := connection.NewDefaultMessageHandler(handler, c)
+	mhm.Start()
 
 	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
 	for i := 0; i < 10 && !firstContact; i++ {

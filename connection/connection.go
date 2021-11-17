@@ -20,12 +20,15 @@ package connection
 
 import (
 	"io"
+	"sync"
+
+	"github.com/rs/zerolog/log"
 )
 
 // Send Response is used to indicate that a response message should be send
 type SendResponse struct {
-	MSG   interface{}
-	Topic string
+	MSG   interface{} // The actual messages, will be transformed to json
+	Topic string      // The topic to send the message to
 }
 
 // OnMessage is the interface that wraps the basic On method.
@@ -71,9 +74,10 @@ type Preprocessor interface {
 // Subscriber the interface that wraps the basic Subscribe method.
 //
 // Subscribe iterates through each handler and registers each OnMessage to a
-// topic.
+// topic and will send each incoming data to the in channel
 type Subscriber interface {
 	Subscribe(handler map[string]OnMessage) error
+	In() <-chan *TopicData
 }
 
 // Connecter is the interface that wraps the basic Connect method.
@@ -94,6 +98,179 @@ type PubSub interface {
 	io.Closer
 	Connecter
 	Publisher
-	Preprocessor
 	Subscriber
+}
+
+// CombineHandler is a method to combine multiple topic handler
+func CombineHandler(mh ...map[string]OnMessage) map[string]OnMessage {
+	result := map[string]OnMessage{}
+	for _, h := range mh {
+		for k, v := range h {
+			result[k] = v
+		}
+	}
+	return result
+}
+
+// ClosureOnMessage is struct for simple OnMesage implementation that don't require a own struct
+type ClosureOnMessage struct {
+	Closure func(td TopicData) (*SendResponse, error)
+}
+
+func (a ClosureOnMessage) On(topic string, message []byte) (*SendResponse, error) {
+	return a.Closure(TopicData{topic, message})
+}
+
+// ClosurePublisher is struct for simple Publish implementation that don't require a own struct
+type ClosurePublisher struct {
+	Closure func(string, interface{}) error
+}
+
+func (s ClosurePublisher) Publish(topic string, message interface{}) error {
+	return s.Closure(topic, message)
+}
+
+// ClosurePublisher is struct for a simple preprocess implementation that don't require a own struct
+type ClosurePreprocessor struct {
+	Closure func(TopicData) ([]TopicData, bool)
+}
+
+func (s ClosurePreprocessor) Preprocess(topic string, message []byte) ([]TopicData, bool) {
+	return s.Closure(TopicData{topic, message})
+}
+
+type MessageHandler struct {
+	handler      map[string]OnMessage
+	preprocessor []Preprocessor
+	publisher    []Publisher
+	out          <-chan *SendResponse
+	in           <-chan *TopicData
+}
+
+var NoOpPreprocessor = []Preprocessor{}
+
+// Defaulting to three in flight messages
+var DefaultOut = make(chan *SendResponse, 3)
+
+func mergePubSubIn(ps []PubSub) <-chan *TopicData {
+	out := make(chan *TopicData, 3)
+	var wg sync.WaitGroup
+	wg.Add(len(ps))
+	for _, p := range ps {
+		go func(c <-chan *TopicData) {
+			defer wg.Done()
+			for in := range c {
+				out <- in
+			}
+		}(p.In())
+	}
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+	return out
+
+}
+
+// NewSingleMessageHandler creates a MessageHandler with DefaultOut based on PubSub
+func NewDefaultMessageHandler(
+	handler map[string]OnMessage,
+	pubsub ...PubSub,
+) MessageHandler {
+	pubs := make([]Publisher, len(pubsub))
+	for i, p := range pubsub {
+		pubs[i] = p
+		p.Subscribe(handler)
+	}
+
+	return NewMessageHandler(handler, NoOpPreprocessor, pubs, mergePubSubIn(pubsub), DefaultOut)
+}
+
+// NewMessageHandlerr creates a message handler
+//
+// A MessageHandler will use the given handler to execute based on the incoming TopicData and may use
+// given Publisher to publish outgoing SendResponses.
+func NewMessageHandler(handler map[string]OnMessage,
+	preprocessor []Preprocessor,
+	publisher []Publisher,
+	in <-chan *TopicData,
+	out <-chan *SendResponse) MessageHandler {
+	return MessageHandler{
+		handler,
+		preprocessor,
+		publisher,
+		out,
+		in,
+	}
+
+}
+
+func (s *MessageHandler) preprocess(topic string, message []byte) ([]TopicData, bool) {
+	var td []TopicData
+	handled := false
+	for _, p := range s.preprocessor {
+		if r, ok := p.Preprocess(topic, message); ok {
+			handled = true
+			td = append(td, r...)
+		}
+	}
+	return td, handled
+}
+
+func (s *MessageHandler) send(resp *SendResponse) {
+	for i, p := range s.publisher {
+		if err := p.Publish(resp.Topic, resp.MSG); err != nil {
+			log.Error().Err(err).Msgf("Error occured while publishing data on topic %s on publisher %d", resp.Topic, i)
+		}
+	}
+
+}
+func (s *MessageHandler) Check() bool {
+	var in_open bool = true
+	var out_open bool = true
+	log.Trace().Msg("checking")
+
+	select {
+	case in, open := <-s.in:
+		if in != nil {
+			log.Trace().Msgf("Received msg (%s) on %s", in.Message, in.Topic)
+			var tds []TopicData
+			if t, ok := s.preprocess(in.Topic, in.Message); ok {
+				tds = t
+			} else {
+				tds = []TopicData{*in}
+			}
+			for _, t := range tds {
+				if h, ok := s.handler[t.Topic]; ok {
+					resp, err := h.On(t.Topic, t.Message)
+					if err != nil {
+						log.Error().Err(err).Msgf("Error occured while processing message for %s", t.Topic)
+					} else if resp != nil {
+						log.Debug().Msgf("Sending resp to %s", resp.Topic)
+						s.send(resp)
+					}
+				} else {
+					log.Debug().Msgf("No handler for topic (%s) found.", t.Topic)
+				}
+			}
+		}
+		in_open = open
+
+	case out, open := <-s.out:
+		if out != nil {
+			log.Trace().Msgf("Sending message (%v) to %s", out.MSG, out.Topic)
+			s.send(out)
+		}
+		out_open = open
+	}
+
+	return in_open && out_open
+}
+
+func (s *MessageHandler) Start() {
+	go func() {
+		for s.Check() {
+		}
+		log.Debug().Msg("MessageHander stopped")
+	}()
 }

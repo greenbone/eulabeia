@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/models"
 )
@@ -87,28 +86,6 @@ var vt = models.VT{
 		Date:    "0",
 		Origin:  "",
 	},
-}
-
-type MockPubSub struct{}
-
-func (mps MockPubSub) Close() error {
-	return nil
-}
-
-func (mps MockPubSub) Connect() error {
-	return nil
-}
-
-func (mps MockPubSub) Publish(topic string, message interface{}) error {
-	return nil
-}
-
-func (mps MockPubSub) Preprocess(topic string, message []byte) ([]connection.TopicData, bool) {
-	return nil, false
-}
-
-func (mps MockPubSub) Subscribe(handler map[string]connection.OnMessage) error {
-	return nil
 }
 
 type RedisMock struct {
@@ -196,7 +173,6 @@ func (rm RedisMock) GetKeys(db int, filter string) ([]string, error) {
 
 func TestGetVT(t *testing.T) {
 	fs := feed{
-		mqtt:    MockPubSub{},
 		context: "",
 		rc:      &RedisMock{},
 	}
@@ -223,7 +199,6 @@ func TestGetVT(t *testing.T) {
 
 func TestResolveFilter(t *testing.T) {
 	fs := feed{
-		mqtt:    MockPubSub{},
 		context: "",
 		rc:      &RedisMock{},
 	}

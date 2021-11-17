@@ -20,6 +20,7 @@ package handler
 
 import (
 	"encoding/json"
+
 	"github.com/rs/zerolog/log"
 
 	"github.com/greenbone/eulabeia/connection"
@@ -74,8 +75,10 @@ func (handler Registered) On(topic string, message []byte) (*connection.SendResp
 		return nil, err
 	}
 	if msg.ID == handler.ID && mt.Function == "modified" && mt.Aggregate == "sensor" {
+		log.Debug().Msgf("Modified sensor (%s); registered", msg.ID)
 		handler.Register <- struct{}{}
 	}
+	// TODO refactor to send register cmd here again
 	return nil, nil
 }
 

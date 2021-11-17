@@ -23,18 +23,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"strings"
 
-	"github.com/eclipse/paho.golang/packets"
 	"github.com/eclipse/paho.golang/paho"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/rs/zerolog/log"
 )
 
+// MQTT is connection type for
 type MQTT struct {
 	client            *paho.Client
 	connectProperties *paho.Connect
 	qos               byte
 	preprocessor      []connection.Preprocessor
+	in                chan *connection.TopicData // Is used to send respons messages of a handler downwards
+}
+
+func (m MQTT) In() <-chan *connection.TopicData {
+	return m.in
 }
 
 func (m MQTT) Close() error {
@@ -56,31 +62,13 @@ func (m MQTT) Preprocess(topic string, message []byte) ([]connection.TopicData, 
 func (m MQTT) register(topic string, handler connection.OnMessage) error {
 
 	m.client.Router.RegisterHandler(topic, func(p *paho.Publish) {
-		log.Printf("[%s] retrieved message: %s", topic, string(p.Payload))
-		if msgs, ok := m.Preprocess(topic, p.Payload); ok {
-			for _, t := range msgs {
-				m.client.Router.Route(&packets.Publish{
-					Payload:    t.Message,
-					Topic:      t.Topic,
-					Properties: p.Packet().Properties,
-					PacketID:   p.PacketID,
-					QoS:        p.QoS,
-					Duplicate:  p.Packet().Duplicate,
-					Retain:     p.Retain,
-				})
-			}
-		} else {
-			message, err := handler.On(topic, p.Payload)
-			if err != nil {
-				panic(err)
-			}
-			if message != nil {
-				err = m.Publish(message.Topic, message.MSG)
-				if err != nil {
-					panic(err)
-				}
-			}
+		// verif that it's not sent by this client; this can happen although NoLocal is on when
+		// tunneling
+		if m.client.ClientID != "" && strings.HasPrefix(p.Properties.User.Get("sender"), m.client.ClientID) {
+			log.Printf("ignoring message on %s due to same clientID (%s)", p.Topic, m.client.ClientID)
+			return
 		}
+		m.in <- &connection.TopicData{Topic: topic, Message: p.Payload}
 
 	})
 
@@ -109,7 +97,6 @@ func (m MQTT) Publish(topic string, message interface{}) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("[%s] Publishing message: %s", topic, string(b))
 	props := &paho.PublishProperties{}
 	pb := &paho.Publish{
 		Topic:      topic,
@@ -181,10 +168,12 @@ func New(server string,
 	if password != "" {
 		cp.PasswordFlag = true
 	}
+
 	return &MQTT{
 		client:            c,
 		connectProperties: cp,
 		qos:               1,
 		preprocessor:      preprocessor,
+		in:                make(chan *connection.TopicData, 3),
 	}, nil
 }

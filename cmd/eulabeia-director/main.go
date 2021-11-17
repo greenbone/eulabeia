@@ -20,6 +20,7 @@ package main
 import (
 	"flag"
 	"fmt"
+
 	_ "github.com/greenbone/eulabeia/logging/configuration"
 	"github.com/rs/zerolog/log"
 
@@ -50,8 +51,7 @@ func main() {
 		return fmt.Sprintf("%s/%s/cmd/director", configuration.Context, aggregate_name)
 	}
 	log.Info().Msgf("Starting director with context %s", configuration.Context)
-	client, err := mqtt.New(server, *clientid, "", "", nil, []connection.Preprocessor{
-		scan.ScanPreprocessor{Context: configuration.Context}})
+	client, err := mqtt.New(server, *clientid, "", "", nil, nil)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create MQTT client.")
 	}
@@ -67,15 +67,28 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create storage.")
 	}
-	err = client.Subscribe(map[string]connection.OnMessage{
+	handler := map[string]connection.OnMessage{
 		prepare_topic("sensor"): handler.New(configuration.Context, sensor.New(device)),
 		prepare_topic("target"): handler.New(configuration.Context, target.New(device)),
 		prepare_topic("scan"):   handler.New(configuration.Context, scan.New(device)),
 		prepare_topic("vt"):     vt.New(device, configuration.Context, configuration.Director.VTSensor),
-	})
+	}
+	err = client.Subscribe(handler)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to subscribe.")
 	}
+	preoprocessor := []connection.Preprocessor{
+		scan.ScanPreprocessor{Context: configuration.Context},
+	}
+
+	mhm := connection.NewMessageHandler(
+		handler,
+		preoprocessor,
+		[]connection.Publisher{client},
+		client.In(),
+		connection.DefaultOut,
+	)
+	mhm.Start()
 
 	process.Block(client)
 }

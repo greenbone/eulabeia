@@ -68,10 +68,10 @@ start-sensor:
 	docker exec eulabeia_sensor openvas -u
 
 stop-sensor:
-	docker stop eulabeia_sensor
-	docker volume rm eulabeia_feed
-	docker kill eulabeia_redis
-	docker volume rm eulabeia_redis_socket
+	- docker stop eulabeia_sensor
+	- docker volume rm eulabeia_feed
+	- docker kill eulabeia_redis
+	- docker volume rm eulabeia_redis_socket
 
 run-example-client:
 	until test `docker inspect eulabeia_sensor --format='{{.State.Running}}'` = "true"; do echo "waiting for sensor"; sleep 1; done

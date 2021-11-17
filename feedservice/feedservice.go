@@ -2,9 +2,10 @@ package feedservice
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"strconv"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/feedservice/handler"
@@ -22,7 +23,6 @@ type DBConnecion interface {
 
 // feed is the struct representing the feedservice
 type feed struct {
-	mqtt    connection.PubSub
 	context string
 	rc      DBConnecion
 	id      string
@@ -252,17 +252,14 @@ func (f *feed) ResolveFilter(filter []models.VTFilter) ([]string, error) {
 
 }
 
-// Start starts the feed service
-func (f *feed) Start() {
-	fmt.Printf("%s/vt/cmd/%s\n", f.context, f.id)
-	// MQTT Subscription Map
-	f.mqtt.Subscribe(map[string]connection.OnMessage{
-		fmt.Sprintf("%s/vt/cmd/%s", f.context, f.id): handler.FeedHandler{
-			GetVT:         f.GetVT,
-			ResolveFilter: f.ResolveFilter,
-			Context:       f.context,
-		},
-	})
+func (f *feed) Handler() map[string]connection.OnMessage {
+	t := fmt.Sprintf("%s/vt/cmd/%s", f.context, f.id)
+	h := handler.FeedHandler{
+		GetVT:         f.GetVT,
+		ResolveFilter: f.ResolveFilter,
+		Context:       f.context,
+	}
+	return map[string]connection.OnMessage{t: h}
 }
 
 // Close ends the feed service
@@ -271,9 +268,8 @@ func (f *feed) Close() error {
 }
 
 // NewScheduler creates a new scheduler
-func NewFeed(mqtt connection.PubSub, context string, id string, redisPath string) *feed {
+func NewFeed(context string, id string, redisPath string) *feed {
 	return &feed{
-		mqtt:    mqtt,
 		context: context,
 		rc:      redis.NewRedisConnection("unix", redisPath),
 		id:      id,

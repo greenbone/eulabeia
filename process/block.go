@@ -22,8 +22,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/rs/zerolog/log"
 	"io"
+
+	"github.com/rs/zerolog/log"
 )
 
 func Block(c ...io.Closer) {
@@ -33,7 +34,7 @@ func Block(c ...io.Closer) {
 			if cl != nil {
 				err := cl.Close()
 				if err != nil {
-					log.Error().Msgf("failed to send Disconnect: %s", err)
+					log.Error().Err(err).Msg("Failed to close")
 				}
 			}
 		}

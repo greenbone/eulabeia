@@ -19,9 +19,11 @@ package main
 
 import (
 	"flag"
+	"os"
+
+	"github.com/greenbone/eulabeia/connection"
 	_ "github.com/greenbone/eulabeia/logging/configuration"
 	"github.com/rs/zerolog/log"
-	"os"
 
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection/mqtt"
@@ -55,10 +57,8 @@ func main() {
 		&mqtt.LastWillMessage{
 			Topic: "scanner/sensor/cmd/director",
 			MSG: cmds.Delete{
-				Identifier: messages.Identifier{
-					Message: messages.NewMessage("delete.sensor", "", ""),
-					ID:      configuration.Sensor.Id,
-				},
+				EventType:  cmds.EventType{},
+				Identifier: messages.Identifier{Message: messages.NewMessage("delete.sensor", "", ""), ID: configuration.Sensor.Id},
 			}},
 		nil)
 	if err != nil {
@@ -68,11 +68,15 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to connect")
 	}
-	feed := feedservice.NewFeed(client, configuration.Context, configuration.Sensor.Id, configuration.Feedservice.RedisDbAddress)
-	log.Printf("Starting Feed Service\n")
-	feed.Start()
-	sens := sensor.NewScheduler(client, configuration.Sensor.Id, configuration.ScannerPreferences, configuration.Context)
-	log.Printf("Starting Scheduler\n")
-	sens.Start()
+	feed := feedservice.NewFeed(configuration.Context, configuration.Sensor.Id, configuration.Feedservice.RedisDbAddress)
+	sens := sensor.NewScheduler(connection.DefaultOut, configuration.Sensor.Id, configuration.ScannerPreferences, configuration.Context)
+	handler := connection.CombineHandler(
+		feed.Handler(),
+		sens.Handler(),
+	)
+	mhm := connection.NewDefaultMessageHandler(handler, client)
+	sens.Start(mhm)
+	log.Debug().Msg("Starting MessageListener")
+	mhm.Start()
 	process.Block(client, sens, feed)
 }
