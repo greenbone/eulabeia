@@ -45,13 +45,19 @@ func (t targetAggregate) Create(c cmds.Create) (*info.Created, error) {
 	}
 	return &info.Created{
 		Identifier: messages.Identifier{
-			Message: messages.NewMessage("created.target", c.MessageID, c.GroupID),
-			ID:      target.ID,
+			Message: messages.NewMessage(
+				"created.target",
+				c.MessageID,
+				c.GroupID,
+			),
+			ID: target.ID,
 		},
 	}, nil
 }
 
-func (t targetAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, error) {
+func (t targetAggregate) Modify(
+	m cmds.Modify,
+) (*info.Modified, *info.Failure, error) {
 	var target *models.Target
 	target, err := t.storage.Get(m.ID)
 	if err != nil {
@@ -130,13 +136,20 @@ func (t targetAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, e
 
 	return &info.Modified{
 		Identifier: messages.Identifier{
-			Message: messages.NewMessage("modified.target", m.MessageID, m.GroupID),
-			ID:      m.ID,
+			Message: messages.NewMessage(
+				"modified.target",
+				m.MessageID,
+				m.GroupID,
+			),
+			ID: m.ID,
 		},
 	}, nil, nil
 
 }
-func (t targetAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) {
+
+func (t targetAggregate) Get(
+	g cmds.Get,
+) (messages.Event, *info.Failure, error) {
 	if target, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if target == nil {
@@ -149,19 +162,28 @@ func (t targetAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) 
 	}
 }
 
-func (t targetAggregate) Delete(d cmds.Delete) (*info.Deleted, *info.Failure, error) {
+func (t targetAggregate) Delete(
+	d cmds.Delete,
+) (*info.Deleted, *info.Failure, error) {
 	if err := t.storage.Delete(d.ID); err != nil {
 		return nil, info.DeleteFailureResponse(d.Message, "target", d.ID), nil
 	}
 	return &info.Deleted{
 		Identifier: messages.Identifier{
-			Message: messages.NewMessage("deleted.target", d.MessageID, d.GroupID),
-			ID:      d.ID,
+			Message: messages.NewMessage(
+				"deleted.target",
+				d.MessageID,
+				d.GroupID,
+			),
+			ID: d.ID,
 		},
 	}, nil, nil
 }
 
 // New creates a target aggregate as a handler.Container
 func New(storage storage.Json) handler.Container {
-	return handler.FromAggregate("target", targetAggregate{storage: NewStorage(storage)})
+	return handler.FromAggregate(
+		"target",
+		targetAggregate{storage: NewStorage(storage)},
+	)
 }

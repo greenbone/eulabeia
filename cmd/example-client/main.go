@@ -60,7 +60,8 @@ const (
 	STATUS_SCAN     = "status.scan"
 )
 
-// ExampleHandler parses the message and calls corresponding function of MessageType within do map.
+// ExampleHandler parses the message and calls corresponding function of
+// MessageType within do map.
 type ExampleHandler struct {
 	sync.RWMutex
 	do      map[string]func(info.IDInfo, []byte) *connection.SendResponse
@@ -68,14 +69,19 @@ type ExampleHandler struct {
 	exit    chan os.Signal
 }
 
-func (e *ExampleHandler) On(topic string, msg []byte) (*connection.SendResponse, error) {
+func (e *ExampleHandler) On(
+	topic string,
+	msg []byte,
+) (*connection.SendResponse, error) {
 	e.Lock()
 	defer e.Unlock()
 	mt, err := handler.ParseMessageType(msg)
 	if err != nil {
-		// In this example we end the program on a unexpected message so that we can
+		// In this example we end the program on a unexpected message so that we
+		// can
 		// reuse it as a smoke test.
-		// However in a production environment you want to either log and ignore or
+		// However in a production environment you want to either log and ignore
+		// or
 		// just ignore unparseable messages.
 		panic(err)
 	}
@@ -151,7 +157,8 @@ func VerifyVT(i info.IDInfo, b []byte) *connection.SendResponse {
 }
 
 func CreateScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
-	// We use the principle modify over create to directly create a scan with a target ID.
+	// We use the principle modify over create to directly create a scan with a
+	// target ID.
 	// Otherwise we need to store the target ID and reuse it on created.scan.
 	if msg.ID == MEGA_ID {
 		return &connection.SendResponse{}
@@ -262,7 +269,11 @@ func Verify(eh *ExampleHandler) {
 func main() {
 	log.Info().Msg("Starting example client")
 	clientid := flag.String("clientid", "", "A clientid for the connection")
-	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
+	configPath := flag.String(
+		"config",
+		"",
+		"Path to config file, default: search for config file in TODO",
+	)
 	flag.Parse()
 	configuration, err := config.New(*configPath, "eulabeia")
 	if err != nil {
@@ -290,7 +301,8 @@ func main() {
 			MODIFIED_TARGET: CreateScan,
 			MODIFIED_SCAN:   MegaScan,
 			// after boreas integration result scan and get vt aren't working
-			// as before. They will be disabled for now and handled in a follow up task
+			// as before. They will be disabled for now and handled in a follow
+			// up task
 			//			RESULT_SCAN:     GetVT,
 			//			GOT_VT:          VerifyVT,
 			STATUS_SCAN: VerifyForScanStatus,
@@ -308,7 +320,10 @@ func main() {
 
 	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
 	for i := 0; i < 10 && !firstContact; i++ {
-		err = c.Publish("scanner/sensor/cmd/director", cmds.NewGet("sensor", "localhorst", "director", "0"))
+		err = c.Publish(
+			"scanner/sensor/cmd/director",
+			cmds.NewGet("sensor", "localhorst", "director", "0"),
+		)
 		if err != nil {
 			log.Fatal().Msgf("Failed to publish: %s", err)
 		}

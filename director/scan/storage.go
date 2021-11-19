@@ -25,7 +25,9 @@ import (
 
 // Storage is for putting and getting a models.Scan
 type Storage interface {
-	Put(models.Scan) error            // Overrides existing or creates a models.Scan
+	Put(
+		models.Scan,
+	) error // Overrides existing or creates a models.Scan
 	Get(string) (*models.Scan, error) // Gets a models.Scan via ID
 	Delete(string) error
 }

@@ -47,7 +47,10 @@ func (m MQTT) Close() error {
 	return m.client.Disconnect(&paho.Disconnect{ReasonCode: 0})
 }
 
-func (m MQTT) Preprocess(topic string, message []byte) ([]connection.TopicData, bool) {
+func (m MQTT) Preprocess(
+	topic string,
+	message []byte,
+) ([]connection.TopicData, bool) {
 	var td []connection.TopicData
 	handled := false
 	for _, p := range m.preprocessor {
@@ -62,10 +65,19 @@ func (m MQTT) Preprocess(topic string, message []byte) ([]connection.TopicData, 
 func (m MQTT) register(topic string, handler connection.OnMessage) error {
 
 	m.client.Router.RegisterHandler(topic, func(p *paho.Publish) {
-		// verif that it's not sent by this client; this can happen although NoLocal is on when
+		// verif that it's not sent by this client; this can happen although
+		// NoLocal is on when
 		// tunneling
-		if m.client.ClientID != "" && strings.HasPrefix(p.Properties.User.Get("sender"), m.client.ClientID) {
-			log.Printf("ignoring message on %s due to same clientID (%s)", p.Topic, m.client.ClientID)
+		if m.client.ClientID != "" &&
+			strings.HasPrefix(
+				p.Properties.User.Get("sender"),
+				m.client.ClientID,
+			) {
+			log.Printf(
+				"ignoring message on %s due to same clientID (%s)",
+				p.Topic,
+				m.client.ClientID,
+			)
 			return
 		}
 		m.in <- &connection.TopicData{Topic: topic, Message: p.Payload}
@@ -114,7 +126,12 @@ func (m MQTT) Connect() error {
 		return err
 	}
 	if ca.ReasonCode != 0 {
-		return fmt.Errorf("failed to connect to %s : %d - %s", m.client.Conn.RemoteAddr().String(), ca.ReasonCode, ca.Properties.ReasonString)
+		return fmt.Errorf(
+			"failed to connect to %s : %d - %s",
+			m.client.Conn.RemoteAddr().String(),
+			ca.ReasonCode,
+			ca.Properties.ReasonString,
+		)
 	}
 	return nil
 }

@@ -161,7 +161,10 @@ func TestStopScan(t *testing.T) {
 
 	// Test stop scan if scan is in init
 	scheduler.init.Enqueue(scanID)
-	if err := scheduler.StopScan(scanID); err.Error() != fmt.Sprintf("process for scan id %s does not exist", scanID) {
+	if err := scheduler.StopScan(scanID); err.Error() != fmt.Sprintf(
+		"process for scan id %s does not exist",
+		scanID,
+	) {
 		t.Fatalf("Unable to stop scan: %s\n", err)
 	}
 	if !scheduler.init.IsEmpty() {
@@ -170,7 +173,10 @@ func TestStopScan(t *testing.T) {
 
 	// Test stop scan if scan is in running
 	scheduler.running.Enqueue(scanID)
-	if err := scheduler.StopScan(scanID); err.Error() != fmt.Sprintf("process for scan id %s does not exist", scanID) {
+	if err := scheduler.StopScan(scanID); err.Error() != fmt.Sprintf(
+		"process for scan id %s does not exist",
+		scanID,
+	) {
 		t.Fatalf("Unable to stop scan: %s\n", err)
 	}
 	if !scheduler.running.IsEmpty() {
@@ -201,13 +207,15 @@ func TestClose(t *testing.T) {
 		}
 	}
 
-	if scheduler.queue.IsEmpty() || scheduler.init.IsEmpty() || scheduler.running.IsEmpty() {
+	if scheduler.queue.IsEmpty() || scheduler.init.IsEmpty() ||
+		scheduler.running.IsEmpty() {
 		t.Fatalf("None of the queueLists should be empty\n")
 	}
 
 	scheduler.Close()
 
-	if !scheduler.queue.IsEmpty() || !scheduler.init.IsEmpty() || !scheduler.running.IsEmpty() {
+	if !scheduler.queue.IsEmpty() || !scheduler.init.IsEmpty() ||
+		!scheduler.running.IsEmpty() {
 		t.Fatalf("All of the queueLists should be empty\n")
 	}
 }

@@ -45,7 +45,8 @@ func TestCreateScan(t *testing.T) {
 				},
 			},
 			Handler: h,
-			// although InMemoryStorage for target doesn't have sensor it should just
+			// although InMemoryStorage for target doesn't have sensor it should
+			// just
 			// empty string and extend it that way
 			ExpectedMessage: messages.NewMessage("start.scan.", "1", "1"),
 		},
@@ -75,8 +76,12 @@ func TestCreateScan(t *testing.T) {
 					"target_id": 1,
 				},
 			},
-			Handler:         h,
-			ExpectedMessage: messages.NewMessage("failure.modify.scan", "1", "2"),
+			Handler: h,
+			ExpectedMessage: messages.NewMessage(
+				"failure.modify.scan",
+				"1",
+				"2",
+			),
 		},
 		{
 			Input: cmds.Get{

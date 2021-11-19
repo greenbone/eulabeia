@@ -112,16 +112,21 @@ func CombineHandler(mh ...map[string]OnMessage) map[string]OnMessage {
 	return result
 }
 
-// ClosureOnMessage is struct for simple OnMesage implementation that don't require a own struct
+// ClosureOnMessage is struct for simple OnMesage implementation that don't
+// require a own struct
 type ClosureOnMessage struct {
 	Closure func(td TopicData) (*SendResponse, error)
 }
 
-func (a ClosureOnMessage) On(topic string, message []byte) (*SendResponse, error) {
+func (a ClosureOnMessage) On(
+	topic string,
+	message []byte,
+) (*SendResponse, error) {
 	return a.Closure(TopicData{topic, message})
 }
 
-// ClosurePublisher is struct for simple Publish implementation that don't require a own struct
+// ClosurePublisher is struct for simple Publish implementation that don't
+// require a own struct
 type ClosurePublisher struct {
 	Closure func(string, interface{}) error
 }
@@ -130,12 +135,16 @@ func (s ClosurePublisher) Publish(topic string, message interface{}) error {
 	return s.Closure(topic, message)
 }
 
-// ClosurePublisher is struct for a simple preprocess implementation that don't require a own struct
+// ClosurePublisher is struct for a simple preprocess implementation that don't
+// require a own struct
 type ClosurePreprocessor struct {
 	Closure func(TopicData) ([]TopicData, bool)
 }
 
-func (s ClosurePreprocessor) Preprocess(topic string, message []byte) ([]TopicData, bool) {
+func (s ClosurePreprocessor) Preprocess(
+	topic string,
+	message []byte,
+) ([]TopicData, bool) {
 	return s.Closure(TopicData{topic, message})
 }
 
@@ -172,7 +181,8 @@ func mergePubSubIn(ps []PubSub) <-chan *TopicData {
 
 }
 
-// NewSingleMessageHandler creates a MessageHandler with DefaultOut based on PubSub
+// NewSingleMessageHandler creates a MessageHandler with DefaultOut based on
+// PubSub
 func NewDefaultMessageHandler(
 	handler map[string]OnMessage,
 	pubsub ...PubSub,
@@ -183,12 +193,19 @@ func NewDefaultMessageHandler(
 		p.Subscribe(handler)
 	}
 
-	return NewMessageHandler(handler, NoOpPreprocessor, pubs, mergePubSubIn(pubsub), DefaultOut)
+	return NewMessageHandler(
+		handler,
+		NoOpPreprocessor,
+		pubs,
+		mergePubSubIn(pubsub),
+		DefaultOut,
+	)
 }
 
 // NewMessageHandlerr creates a message handler
 //
-// A MessageHandler will use the given handler to execute based on the incoming TopicData and may use
+// A MessageHandler will use the given handler to execute based on the incoming
+// TopicData and may use
 // given Publisher to publish outgoing SendResponses.
 func NewMessageHandler(handler map[string]OnMessage,
 	preprocessor []Preprocessor,
@@ -205,7 +222,10 @@ func NewMessageHandler(handler map[string]OnMessage,
 
 }
 
-func (s *MessageHandler) preprocess(topic string, message []byte) ([]TopicData, bool) {
+func (s *MessageHandler) preprocess(
+	topic string,
+	message []byte,
+) ([]TopicData, bool) {
 	var td []TopicData
 	handled := false
 	for _, p := range s.preprocessor {
@@ -220,7 +240,9 @@ func (s *MessageHandler) preprocess(topic string, message []byte) ([]TopicData, 
 func (s *MessageHandler) send(resp *SendResponse) {
 	for i, p := range s.publisher {
 		if err := p.Publish(resp.Topic, resp.MSG); err != nil {
-			log.Error().Err(err).Msgf("Error occured while publishing data on topic %s on publisher %d", resp.Topic, i)
+			log.Error().
+				Err(err).
+				Msgf("Error occured while publishing data on topic %s on publisher %d", resp.Topic, i)
 		}
 	}
 
@@ -244,7 +266,9 @@ func (s *MessageHandler) Check() bool {
 				if h, ok := s.handler[t.Topic]; ok {
 					resp, err := h.On(t.Topic, t.Message)
 					if err != nil {
-						log.Error().Err(err).Msgf("Error occured while processing message for %s", t.Topic)
+						log.Error().
+							Err(err).
+							Msgf("Error occured while processing message for %s", t.Topic)
 					} else if resp != nil {
 						log.Debug().Msgf("Sending resp to %s", resp.Topic)
 						s.send(resp)

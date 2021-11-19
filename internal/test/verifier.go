@@ -51,10 +51,19 @@ var VerifyMessageOfResult = func(d *connection.SendResponse, h HandleTests, t *t
 		t.Fatalf("Unable to get message from %v: %T", d, d)
 	}
 	if rm.GroupID != h.ExpectedMessage.GroupID {
-		t.Errorf("Expected GroupID to be: %s but was %s", h.ExpectedMessage.GroupID, rm.GroupID)
+		t.Errorf(
+			"Expected GroupID to be: %s but was %s",
+			h.ExpectedMessage.GroupID,
+			rm.GroupID,
+		)
 	}
 	if rm.Type != h.ExpectedMessage.Type {
-		t.Errorf("Expected MessageType to be: %s but was %s (%v)", h.ExpectedMessage.Type, rm.Type, d.MSG)
+		t.Errorf(
+			"Expected MessageType to be: %s but was %s (%v)",
+			h.ExpectedMessage.Type,
+			rm.Type,
+			d.MSG,
+		)
 	}
 }
 

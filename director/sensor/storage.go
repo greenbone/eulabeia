@@ -25,7 +25,9 @@ import (
 
 // Storage is for putting and getting a models.Sensor
 type Storage interface {
-	Put(models.Sensor) error            // Overrides existing or creates a models.Sensor
+	Put(
+		models.Sensor,
+	) error // Overrides existing or creates a models.Sensor
 	Get(string) (*models.Sensor, error) // Gets a models.Sensor via ID
 	Delete(string) error
 }

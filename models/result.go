@@ -22,7 +22,8 @@ import (
 	"github.com/greenbone/eulabeia/messages/info"
 )
 
-// Got* structures in this file do not respond to any event. Results and host/scan status messages are published in the way they are generated.
+// Got* structures in this file do not respond to any event. Results and
+// host/scan status messages are published in the way they are generated.
 
 // ResultType is used to identify a result
 type ResultType string

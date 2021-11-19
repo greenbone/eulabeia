@@ -119,28 +119,43 @@ func TestStartScanPreprocessor(t *testing.T) {
 			if len(topicData) != 3 {
 				t.Fatalf("Expected 3 new events but got %d", len(topicData))
 			}
-			dataVerifier(targetHandler.Modifier,
+			dataVerifier(
+				targetHandler.Modifier,
 				topicData[0].Message,
 				func(i interface{}) interface{} {
 					actual := i.(*models.Target)
 					if actual.ID == mega.Scan.Target.ID &&
 						len(actual.Ports) == len(mega.Scan.Target.Ports) &&
 						len(actual.Hosts) == len(mega.Scan.Target.Hosts) &&
-						len(actual.Plugins.Single) == len(mega.Plugins.Single) &&
+						len(
+							actual.Plugins.Single,
+						) == len(
+							mega.Plugins.Single,
+						) &&
 						len(actual.Plugins.Group) == len(mega.Plugins.Group) &&
 						actual.Sensor == mega.Scan.Target.Sensor &&
 						actual.AliveTest.Test_alive_hosts_only == mega.Scan.Target.AliveTest.Test_alive_hosts_only &&
 						actual.AliveTest.Methods == mega.Scan.Target.AliveTest.Methods &&
-						len(actual.AliveTest.Ports) == len(mega.Scan.Target.AliveTest.Ports) &&
+						len(
+							actual.AliveTest.Ports,
+						) == len(
+							mega.Scan.Target.AliveTest.Ports,
+						) &&
 						actual.Parallel == mega.Scan.Target.Parallel &&
 						len(actual.Exclude) == len(mega.Scan.Target.Exclude) &&
-						len(actual.Credentials) == len(mega.Scan.Target.Credentials) {
+						len(
+							actual.Credentials,
+						) == len(
+							mega.Scan.Target.Credentials,
+						) {
 						return nil
 					}
 					return mega.Scan.Target
 				},
-				func() (interface{}, error) { return target.NewStorage(device).Get(mega.ID) })
-			dataVerifier(scanHandler.Modifier,
+				func() (interface{}, error) { return target.NewStorage(device).Get(mega.ID) },
+			)
+			dataVerifier(
+				scanHandler.Modifier,
 				topicData[1].Message,
 				func(i interface{}) interface{} {
 					actual := i.(*models.Scan)
@@ -150,7 +165,8 @@ func TestStartScanPreprocessor(t *testing.T) {
 					}
 					return mega.Scan
 				},
-				func() (interface{}, error) { return NewStorage(device).Get(mega.ID) })
+				func() (interface{}, error) { return NewStorage(device).Get(mega.ID) },
+			)
 			var startScan cmds.Start
 			if json.Unmarshal(topicData[2].Message, &startScan) != nil {
 				t.Fatal("Expected no error while unmarshalling start.scan")
@@ -159,7 +175,10 @@ func TestStartScanPreprocessor(t *testing.T) {
 				t.Fatalf("Expected %s to be %s", startScan.ID, mega.ID)
 			}
 			if startScan.Type != "start.scan.director" {
-				t.Fatalf("Expected %s to be start.scan.director", startScan.MessageID)
+				t.Fatalf(
+					"Expected %s to be start.scan.director",
+					startScan.MessageID,
+				)
 
 			}
 

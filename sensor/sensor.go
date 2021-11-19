@@ -15,7 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// Scheduler component of the sensor. This module is responsible for handling request from the director.
+// Scheduler component of the sensor. This module is responsible for handling
+// request from the director.
 package sensor
 
 import (
@@ -72,8 +73,12 @@ func (sensor *Scheduler) loadVTs() {
 func (sensor *Scheduler) QueueScan(scanID string) error {
 	sensor.Lock()
 	defer sensor.Unlock()
-	if sensor.queue.Contains(scanID) || sensor.init.Contains(scanID) || sensor.running.Contains(scanID) {
-		return fmt.Errorf("there is already a running scan with the ID %s", scanID)
+	if sensor.queue.Contains(scanID) || sensor.init.Contains(scanID) ||
+		sensor.running.Contains(scanID) {
+		return fmt.Errorf(
+			"there is already a running scan with the ID %s",
+			scanID,
+		)
 	}
 	sensor.queue.Enqueue(scanID)
 	sensor.out <- messages.EventToResponse(sensor.context, info.Status{
@@ -132,14 +137,16 @@ func (sensor *Scheduler) ScanFinished(scanID string) error {
 	return nil
 }
 
-// StopScan will remove the scan from the queue or invoke a stop scan command to scanner
+// StopScan will remove the scan from the queue or invoke a stop scan command to
+// scanner
 func (sensor *Scheduler) StopScan(scanID string) error {
 	sensor.Lock()
 	defer sensor.Unlock()
 	if sensor.queue.RemoveListItem(scanID) {
 		return nil
 	}
-	if sensor.init.RemoveListItem(scanID) || sensor.running.RemoveListItem(scanID) {
+	if sensor.init.RemoveListItem(scanID) ||
+		sensor.running.RemoveListItem(scanID) {
 		err := sensor.ovas.StopScan(scanID, sensor.sudo, sensor.commander)
 		if err == nil {
 			sensor.out <- messages.EventToResponse(sensor.context, info.Status{
@@ -177,7 +184,8 @@ func (sensor *Scheduler) interruptScan(scanID string) error {
 	sensor.Lock()
 	defer sensor.Unlock()
 
-	if sensor.init.RemoveListItem(scanID) || sensor.running.RemoveListItem(scanID) {
+	if sensor.init.RemoveListItem(scanID) ||
+		sensor.running.RemoveListItem(scanID) {
 		sensor.out <- messages.EventToResponse(sensor.context, info.Status{
 			Identifier: messages.Identifier{
 				ID:      scanID,
@@ -212,15 +220,22 @@ func (sensor *Scheduler) schedule() {
 		}
 
 		// Check for free scanner slot
-		if sensor.conf.MaxScan > 0 && sensor.init.Size()+sensor.running.Size() == int(sensor.conf.MaxScan) {
-			log.Printf("Unable to start a scan from queue, Max number of scans reached.\n")
+		if sensor.conf.MaxScan > 0 &&
+			sensor.init.Size()+sensor.running.Size() == int(
+				sensor.conf.MaxScan,
+			) {
+			log.Printf(
+				"Unable to start a scan from queue, Max number of scans reached.\n",
+			)
 			continue
 		}
 
 		// get memory stats and check for memory
 		if sensor.conf.MinFreeMemScanQueue > 0 {
 			m, err := util.GetAvailableMemory(util.StdMemoryManager{})
-			memoryNeeded := m.Bytes + uint64(sensor.init.Size())*sensor.conf.MinFreeMemScanQueue
+			memoryNeeded := m.Bytes + uint64(
+				sensor.init.Size(),
+			)*sensor.conf.MinFreeMemScanQueue
 			if err != nil {
 				log.Fatal().Err(err).Msg("Unable to get memory stats")
 			}
@@ -232,7 +247,11 @@ func (sensor *Scheduler) schedule() {
 
 		// try to run scan process
 		if err := sensor.StartScan(sensor.queue.Front()); err != nil {
-			log.Printf("%s: unable to start scan: %s", sensor.queue.Front(), err)
+			log.Printf(
+				"%s: unable to start scan: %s",
+				sensor.queue.Front(),
+				err,
+			)
 		}
 
 	}
@@ -336,7 +355,12 @@ func (sensor *Scheduler) Start(m connection.MessageHandler) {
 }
 
 // NewScheduler creates a new scheduler
-func NewScheduler(out chan<- *connection.SendResponse, id string, conf config.ScannerPreferences, context string) *Scheduler {
+func NewScheduler(
+	out chan<- *connection.SendResponse,
+	id string,
+	conf config.ScannerPreferences,
+	context string,
+) *Scheduler {
 	interruptChan := make(chan string)
 	return &Scheduler{
 		queue:         util.NewQueueList(),

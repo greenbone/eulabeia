@@ -37,7 +37,9 @@ type scanAggregate struct {
 	target  target.Storage
 }
 
-func (t scanAggregate) Start(s cmds.Start) (messages.Event, *info.Failure, error) {
+func (t scanAggregate) Start(
+	s cmds.Start,
+) (messages.Event, *info.Failure, error) {
 	scan, err := t.storage.Get(s.ID)
 	if err != nil {
 		return nil, nil, err
@@ -49,8 +51,12 @@ func (t scanAggregate) Start(s cmds.Start) (messages.Event, *info.Failure, error
 	log.Printf("Starting scan (%s) on sensor (%s)", s.ID, scan.Sensor)
 	return &cmds.Start{
 		Identifier: messages.Identifier{
-			Message: messages.NewMessage(fmt.Sprintf("start.scan.%s", scan.Sensor), s.MessageID, s.GroupID),
-			ID:      s.ID,
+			Message: messages.NewMessage(
+				fmt.Sprintf("start.scan.%s", scan.Sensor),
+				s.MessageID,
+				s.GroupID,
+			),
+			ID: s.ID,
 		},
 	}, nil, nil
 }
@@ -64,13 +70,19 @@ func (t scanAggregate) Create(c cmds.Create) (*info.Created, error) {
 	}
 	return &info.Created{
 		Identifier: messages.Identifier{
-			Message: messages.NewMessage("created.scan", c.MessageID, c.GroupID),
-			ID:      scan.ID,
+			Message: messages.NewMessage(
+				"created.scan",
+				c.MessageID,
+				c.GroupID,
+			),
+			ID: scan.ID,
 		},
 	}, nil
 }
 
-func (t scanAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, error) {
+func (t scanAggregate) Modify(
+	m cmds.Modify,
+) (*info.Modified, *info.Failure, error) {
 	var scan *models.Scan
 	scan, err := t.storage.Get(m.ID)
 	if err != nil {
@@ -87,7 +99,11 @@ func (t scanAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, err
 			if str, ok := v.(string); ok {
 				target, err := t.target.Get(str)
 				if err != nil {
-					return nil, info.GetFailureResponse(m.Message, "target", str), nil
+					return nil, info.GetFailureResponse(
+						m.Message,
+						"target",
+						str,
+					), nil
 				}
 				scan.Target = *target
 			} else {
@@ -108,21 +124,31 @@ func (t scanAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, err
 
 	return &info.Modified{
 		Identifier: messages.Identifier{
-			Message: messages.NewMessage("modified.scan", m.MessageID, m.GroupID),
-			ID:      m.ID,
+			Message: messages.NewMessage(
+				"modified.scan",
+				m.MessageID,
+				m.GroupID,
+			),
+			ID: m.ID,
 		},
 	}, nil, nil
 
 }
 
-func (t scanAggregate) Delete(d cmds.Delete) (*info.Deleted, *info.Failure, error) {
+func (t scanAggregate) Delete(
+	d cmds.Delete,
+) (*info.Deleted, *info.Failure, error) {
 	if err := t.storage.Delete(d.ID); err != nil {
 		return nil, info.DeleteFailureResponse(d.Message, "target", d.ID), nil
 	}
 	return &info.Deleted{
 		Identifier: messages.Identifier{
-			Message: messages.NewMessage("deleted.target", d.MessageID, d.GroupID),
-			ID:      d.ID,
+			Message: messages.NewMessage(
+				"deleted.target",
+				d.MessageID,
+				d.GroupID,
+			),
+			ID: d.ID,
 		},
 	}, nil, nil
 }

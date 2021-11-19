@@ -27,7 +27,8 @@ import (
 
 // Container contains interfaces needed for OnMessage
 //
-// It is a convencience struct for handler so that it can be registered and chosen transparently.
+// It is a convencience struct for handler so that it can be registered and
+// chosen transparently.
 type Container struct {
 	Topic    string
 	Creater  Creater
@@ -37,7 +38,8 @@ type Container struct {
 	Starter  Starter
 }
 
-// FromAggregate is a convencience method to create specialized lookup maps for connection.OnMessage
+// FromAggregate is a convencience method to create specialized lookup maps for
+// connection.OnMessage
 func FromAggregate(topic string, a Aggregate) Container {
 	return Container{
 		Topic:    topic,
@@ -48,7 +50,8 @@ func FromAggregate(topic string, a Aggregate) Container {
 	}
 }
 
-// FromGetter is a convencience method to create specialized lookup maps for connection.OnMessage
+// FromGetter is a convencience method to create specialized lookup maps for
+// connection.OnMessage
 func FromGetter(topic string, a Getter) Container {
 	return Container{
 		Topic:  topic,
@@ -56,9 +59,13 @@ func FromGetter(topic string, a Getter) Container {
 	}
 }
 
-// containerClosure returns a pointer of a struct to unmarshall the json into as well as a closure to call the
+// containerClosure returns a pointer of a struct to unmarshall the json into as
+// well as a closure to call the
 // actual downstream handler.
-func containerClosure(h Container, method string) (messages.Event, func() (messages.Event, *info.Failure, error)) {
+func containerClosure(
+	h Container,
+	method string,
+) (messages.Event, func() (messages.Event, *info.Failure, error)) {
 	var del cmds.Delete
 	var create cmds.Create
 	var modify cmds.Modify

@@ -41,7 +41,16 @@ func (t exampleAggregate) ErrorOnKeyword(m messages.Message) error {
 }
 func (t exampleAggregate) FailureOnKeyword(m messages.Message) *info.Failure {
 	if strings.HasSuffix(m.MessageID, "failure") {
-		return &info.Failure{Identifier: messages.Identifier{Message: messages.NewMessage("failure.target", m.MessageID, m.GroupID)}, Error: "some failure"}
+		return &info.Failure{
+			Identifier: messages.Identifier{
+				Message: messages.NewMessage(
+					"failure.target",
+					m.MessageID,
+					m.GroupID,
+				),
+			},
+			Error: "some failure",
+		}
 	}
 	return nil
 }
@@ -53,13 +62,19 @@ func (t exampleAggregate) Create(c cmds.Create) (*info.Created, error) {
 	}
 	return &info.Created{
 		Identifier: messages.Identifier{
-			Message: messages.NewMessage("created.target", c.MessageID, c.GroupID),
-			ID:      "fakeid",
+			Message: messages.NewMessage(
+				"created.target",
+				c.MessageID,
+				c.GroupID,
+			),
+			ID: "fakeid",
 		},
 	}, nil
 }
 
-func (t exampleAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, error) {
+func (t exampleAggregate) Modify(
+	m cmds.Modify,
+) (*info.Modified, *info.Failure, error) {
 	if err := t.ErrorOnKeyword(m.Message); err != nil {
 		return nil, nil, err
 	}
@@ -69,13 +84,20 @@ func (t exampleAggregate) Modify(m cmds.Modify) (*info.Modified, *info.Failure, 
 
 	return &info.Modified{
 		Identifier: messages.Identifier{
-			Message: messages.NewMessage("modified.target", m.MessageID, m.GroupID),
-			ID:      m.ID,
+			Message: messages.NewMessage(
+				"modified.target",
+				m.MessageID,
+				m.GroupID,
+			),
+			ID: m.ID,
 		},
 	}, nil, nil
 
 }
-func (t exampleAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) {
+
+func (t exampleAggregate) Get(
+	g cmds.Get,
+) (messages.Event, *info.Failure, error) {
 	if err := t.ErrorOnKeyword(g.Message); err != nil {
 		return nil, nil, err
 	}
@@ -87,7 +109,10 @@ func (t exampleAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error)
 		Message: g.Message,
 	}, nil, nil
 }
-func (t exampleAggregate) Delete(g cmds.Delete) (*info.Deleted, *info.Failure, error) {
+
+func (t exampleAggregate) Delete(
+	g cmds.Delete,
+) (*info.Deleted, *info.Failure, error) {
 	if err := t.ErrorOnKeyword(g.Message); err != nil {
 		return nil, nil, err
 	}
@@ -171,31 +196,61 @@ func TestAggragteHandler(t *testing.T) {
 				switch k {
 				case "delete":
 					if _, ok := r.MSG.(*info.Deleted); !ok {
-						t.Errorf("[%s][%s] expected models.GotTarget but got %T", k, j, r)
+						t.Errorf(
+							"[%s][%s] expected models.GotTarget but got %T",
+							k,
+							j,
+							r,
+						)
 					}
 				case "get":
 					if _, ok := r.MSG.(*models.GotTarget); !ok {
-						t.Errorf("[%s][%s] expected models.GotTarget but got %T", k, j, r)
+						t.Errorf(
+							"[%s][%s] expected models.GotTarget but got %T",
+							k,
+							j,
+							r,
+						)
 					}
 				case "create":
 					if _, ok := r.MSG.(*info.Created); !ok {
-						t.Errorf("[%s][%s] expected info.Created but got %T", k, j, r)
+						t.Errorf(
+							"[%s][%s] expected info.Created but got %T",
+							k,
+							j,
+							r,
+						)
 					}
 				case "modify":
 					if _, ok := r.MSG.(*info.Modified); !ok {
-						t.Errorf("[%s][%s] expected info.Modified but got %T", k, j, r)
+						t.Errorf(
+							"[%s][%s] expected info.Modified but got %T",
+							k,
+							j,
+							r,
+						)
 					}
 
 				}
 			case FAILURE:
 				if k != "create" {
 					if _, ok := r.MSG.(*info.Failure); !ok {
-						t.Errorf("[%s][%s] expected info.Failure but got %T", k, j, r)
+						t.Errorf(
+							"[%s][%s] expected info.Failure but got %T",
+							k,
+							j,
+							r,
+						)
 					}
 				}
 			case ERROR:
 				if err == nil {
-					t.Errorf("[%s][%s] expected error but is nil; got msg %T instead", k, j, r)
+					t.Errorf(
+						"[%s][%s] expected error but is nil; got msg %T instead",
+						k,
+						j,
+						r,
+					)
 				}
 
 			}

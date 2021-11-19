@@ -30,9 +30,11 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// InterfaceArrayToStringArray is a conenvience function to transform []interface{} to []string
+// InterfaceArrayToStringArray is a conenvience function to transform
+// []interface{} to []string
 //
-// It is usually used on modify due to the map[string]interface{} within a modify message
+// It is usually used on modify due to the map[string]interface{} within a
+// modify message
 func InterfaceArrayToStringArray(v interface{}) []string {
 	if cv, ok := v.([]interface{}); ok {
 		strings := make([]string, len(cv), cap(cv))
@@ -50,7 +52,8 @@ func InterfaceToPlugins(v interface{}) models.VTsList {
 	return models.VTsList{}
 }
 
-// ParseMessageType tries to parse the messages.MessageType based on a []byte message
+// ParseMessageType tries to parse the messages.MessageType based on a []byte
+// message
 func ParseMessageType(message []byte) (*messages.MessageType, error) {
 	messageType := gjson.GetBytes(message, "message_type")
 	if messageType.Type == gjson.Null {
@@ -58,7 +61,10 @@ func ParseMessageType(message []byte) (*messages.MessageType, error) {
 	}
 	mt, err := messages.ParseMessageType(messageType.String())
 	if err != nil {
-		return nil, fmt.Errorf("incorrect message_type %s", messageType.String())
+		return nil, fmt.Errorf(
+			"incorrect message_type %s",
+			messageType.String(),
+		)
 	}
 	return mt, nil
 }
@@ -74,20 +80,27 @@ type onMessage struct {
 	context string
 }
 
-func (om onMessage) On(topic string, message []byte) (*connection.SendResponse, error) {
+func (om onMessage) On(
+	topic string,
+	message []byte,
+) (*connection.SendResponse, error) {
 	mt, err := ParseMessageType(message)
 	if err != nil {
 		return messages.EventToResponse(om.context, info.Failure{
-			Identifier: messages.Identifier{Message: messages.NewMessage("failure", "", "")},
-			Error:      fmt.Sprintf("%s", err),
+			Identifier: messages.Identifier{
+				Message: messages.NewMessage("failure", "", ""),
+			},
+			Error: fmt.Sprintf("%s", err),
 		}), nil
 	}
 	if h, ok := om.lookup[mt.Aggregate]; ok {
 		use, fuse := containerClosure(h, mt.Function)
 		if e := json.Unmarshal(message, use); e != nil {
 			return messages.EventToResponse(om.context, info.Failure{
-				Identifier: messages.Identifier{Message: messages.NewMessage("failure", "", "")},
-				Error:      fmt.Sprintf("unable to parse %s: %s", mt, e),
+				Identifier: messages.Identifier{
+					Message: messages.NewMessage("failure", "", ""),
+				},
+				Error: fmt.Sprintf("unable to parse %s: %s", mt, e),
 			}), nil
 		}
 		r, f, e := fuse()

@@ -31,12 +31,21 @@ func init() {
 	}
 	if s, ok := os.LookupEnv("LOG_LEVEL"); ok {
 		if l, err := zerolog.ParseLevel(s); err != nil {
-			warning = fmt.Sprintf("Unable to identify log level (%s) fallback to TraceLevel", s)
+			warning = fmt.Sprintf(
+				"Unable to identify log level (%s) fallback to TraceLevel",
+				s,
+			)
 		} else {
 			level = l
 		}
 	}
-	log.Logger = zerolog.New(out).With().Str("service", service).Caller().Timestamp().Logger().Level(level)
+	log.Logger = zerolog.New(out).
+		With().
+		Str("service", service).
+		Caller().
+		Timestamp().
+		Logger().
+		Level(level)
 	if warning != "" {
 		log.Warn().Msg(warning)
 	}

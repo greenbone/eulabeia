@@ -157,7 +157,11 @@ func (f *feed) GetVT(msg cmds.Get) (models.VT, *info.Failure, error) {
 		return models.VT{}, nil, err
 	}
 	if len(pref) == 0 {
-		return models.VT{}, info.GetFailureResponse(msg.Message, "vt", msg.ID), nil
+		return models.VT{}, info.GetFailureResponse(
+			msg.Message,
+			"vt",
+			msg.ID,
+		), nil
 	}
 	log.Printf("Got %d vts", len(pref))
 
@@ -169,7 +173,11 @@ func (f *feed) GetVT(msg cmds.Get) (models.VT, *info.Failure, error) {
 		tag := strings.SplitN(v, "=", 2)
 		tags[tag[0]] = tag[1]
 	}
-	refs := getRefs(pref[redis.NVT_CVES_POS], pref[redis.NVT_BIDS_POS], pref[redis.NVT_XREFS_POS])
+	refs := getRefs(
+		pref[redis.NVT_CVES_POS],
+		pref[redis.NVT_BIDS_POS],
+		pref[redis.NVT_XREFS_POS],
+	)
 
 	vt := models.VT{
 		OID:                msg.ID,
@@ -203,7 +211,8 @@ func (f *feed) GetVT(msg cmds.Get) (models.VT, *info.Failure, error) {
 	return vt, nil, err
 }
 
-// GetVTs expects a List of VTFilter and returns a list of oids which match the given filter.
+// GetVTs expects a List of VTFilter and returns a list of oids which match the
+// given filter.
 func (f *feed) ResolveFilter(filter []models.VTFilter) ([]string, error) {
 	ret := make([]string, 0)
 
@@ -219,7 +228,12 @@ func (f *feed) ResolveFilter(filter []models.VTFilter) ([]string, error) {
 	var contains bool
 	for _, nvtOID := range vtOIDs {
 		oid := strings.TrimPrefix(nvtOID, "nvt:")
-		vt, err := f.rc.GetList(1, nvtOID, redis.NVT_FILENAME_POS, redis.NVT_NAME_POS)
+		vt, err := f.rc.GetList(
+			1,
+			nvtOID,
+			redis.NVT_FILENAME_POS,
+			redis.NVT_NAME_POS,
+		)
 		if err != nil {
 			continue
 		}

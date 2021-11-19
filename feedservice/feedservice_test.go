@@ -95,7 +95,12 @@ func (rm RedisMock) Close() error {
 	return nil
 }
 
-func (rm RedisMock) GetList(db int, key string, start int, end int) ([]string, error) {
+func (rm RedisMock) GetList(
+	db int,
+	key string,
+	start int,
+	end int,
+) ([]string, error) {
 	switch key {
 	case "oid:test:prefs":
 		return []string{
@@ -193,7 +198,11 @@ func TestGetVT(t *testing.T) {
 	}
 
 	if string(vtTestJSON) != string(vtJSON) {
-		t.Fatalf("vtTestJSON != vtJSON\n\nvtTestJSON:\n %s\n\n vtJSON:\n%s\n", vtTestJSON, vtJSON)
+		t.Fatalf(
+			"vtTestJSON != vtJSON\n\nvtTestJSON:\n %s\n\n vtJSON:\n%s\n",
+			vtTestJSON,
+			vtJSON,
+		)
 	}
 }
 

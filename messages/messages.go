@@ -72,7 +72,8 @@ func (m Message) MessageType() MessageType {
 	return *result
 }
 
-// Identifier is an ID based cmd it contains an ID for messages.Message.MessageType
+// Identifier is an ID based cmd it contains an ID for
+// messages.Message.MessageType
 type Identifier struct {
 	ID string `json:"id"`
 	Message
@@ -109,7 +110,8 @@ func ParseMessageType(typ string) (*MessageType, error) {
 	return &result, nil
 }
 
-// NewMessage creates a new message; if messageID oder groupID are empty a new uuid will be used instead.
+// NewMessage creates a new message; if messageID oder groupID are empty a new
+// uuid will be used instead.
 func NewMessage(messageType string, messageID string, groupID string) Message {
 	if messageID == "" {
 		messageID = uuid.NewString()

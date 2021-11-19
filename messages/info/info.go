@@ -74,25 +74,42 @@ type Version struct {
 	Version string `json:"version"`
 }
 
-// DeleteFailureResponse is a conenvience method to return a Failure as Unable to delete
-func DeleteFailureResponse(basedOn messages.Message, prefix string, id string) *Failure {
+// DeleteFailureResponse is a conenvience method to return a Failure as Unable
+// to delete
+func DeleteFailureResponse(
+	basedOn messages.Message,
+	prefix string,
+	id string,
+) *Failure {
 	return &Failure{
 		Error: fmt.Sprintf("Unable to delete %s %s.", prefix, id),
 		Identifier: messages.Identifier{
-			Message: messages.NewMessage(fmt.Sprintf("failure.%s", basedOn.Type), "", basedOn.GroupID),
-			ID:      id,
+			Message: messages.NewMessage(
+				fmt.Sprintf("failure.%s", basedOn.Type),
+				"",
+				basedOn.GroupID,
+			),
+			ID: id,
 		},
 	}
 }
 
 // GetFailureResponse is a conenvience method to return a Failure as NotFound
-func GetFailureResponse(basedOn messages.Message, prefix string, id string) *Failure {
+func GetFailureResponse(
+	basedOn messages.Message,
+	prefix string,
+	id string,
+) *Failure {
 	return &Failure{
 		Error: fmt.Sprintf("%s %s not found.", prefix, id),
 		Identifier: messages.Identifier{
 
-			Message: messages.NewMessage(fmt.Sprintf("failure.%s", basedOn.Type), "", basedOn.GroupID),
-			ID:      id,
+			Message: messages.NewMessage(
+				fmt.Sprintf("failure.%s", basedOn.Type),
+				"",
+				basedOn.GroupID,
+			),
+			ID: id,
 		},
 	}
 }

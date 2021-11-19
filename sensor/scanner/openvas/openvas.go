@@ -15,7 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// OpenVAS component of the sensor. This module is responsible fot everything regarding OpenVAS
+// OpenVAS component of the sensor. This module is responsible fot everything
+// regarding OpenVAS
 package openvas
 
 import (
@@ -85,7 +86,12 @@ func (ovas *OpenVASScanner) removeProcess(scan string) error {
 
 // StartScan starts scan with given scan-ID and process priority (-20 to 19,
 // lower is more prioritized)
-func (ovas *OpenVASScanner) StartScan(scan string, niceness int, sudo bool, exe Commander) error {
+func (ovas *OpenVASScanner) StartScan(
+	scan string,
+	niceness int,
+	sudo bool,
+	exe Commander,
+) error {
 	cmdString := make([]string, 0)
 
 	cmdString = append(cmdString, "nice", "-n", fmt.Sprintf("%v", niceness))
@@ -111,7 +117,11 @@ func (ovas *OpenVASScanner) StartScan(scan string, niceness int, sudo bool, exe 
 }
 
 // StopScan stops a scan with given scan-ID
-func (ovas *OpenVASScanner) StopScan(scan string, sudo bool, exe Commander) error {
+func (ovas *OpenVASScanner) StopScan(
+	scan string,
+	sudo bool,
+	exe Commander,
+) error {
 	err := ovas.removeProcess(scan)
 	if err != nil {
 		return err
@@ -154,7 +164,9 @@ func (ovas *OpenVASScanner) GetVersion(exe Commander) (string, error) {
 }
 
 // GetSettings returns the Settings of OpenVAS as a map
-func (ovas *OpenVASScanner) GetSettings(exe Commander) (map[string]string, error) {
+func (ovas *OpenVASScanner) GetSettings(
+	exe Commander,
+) (map[string]string, error) {
 	out, err := exe.Command("openvas", "-s").CombinedOutput()
 	if err != nil {
 		return nil, err
@@ -166,7 +178,9 @@ func (ovas *OpenVASScanner) GetSettings(exe Commander) (map[string]string, error
 		if len(settingSplit) != 2 {
 			continue
 		}
-		settingsMap[strings.TrimSpace(settingSplit[0])] = strings.TrimSpace(settingSplit[1])
+		settingsMap[strings.TrimSpace(settingSplit[0])] = strings.TrimSpace(
+			settingSplit[1],
+		)
 	}
 	return settingsMap, nil
 }
@@ -200,9 +214,17 @@ func (ovas *OpenVASScanner) waitForProcessToEnd(p *os.Process, scan string) {
 	p.Wait()
 	err := ovas.removeProcess(scan)
 	if err == nil {
-		log.Printf("%s: Scan process with PID %d got unexpectedly stopped or killed.\n", scan, p.Pid)
+		log.Printf(
+			"%s: Scan process with PID %d got unexpectedly stopped or killed.\n",
+			scan,
+			p.Pid,
+		)
 		ovas.interruptChan <- scan
 		return
 	}
-	log.Printf("%s: Scan process with PID %d terminated correctly.\n", scan, p.Pid)
+	log.Printf(
+		"%s: Scan process with PID %d terminated correctly.\n",
+		scan,
+		p.Pid,
+	)
 }

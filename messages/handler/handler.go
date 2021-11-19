@@ -59,7 +59,8 @@ type Getter interface {
 
 // Deleter is the interface that wraps the basic Delete method.
 //
-// Delets a entity of a given type found via messages.Message,MessageType and ID.
+// Delets a entity of a given type found via messages.Message,MessageType and
+// ID.
 // It responds with info.Deleted on successful removal
 type Deleter interface {
 	Delete(cmds.Delete) (*info.Deleted, *info.Failure, error)

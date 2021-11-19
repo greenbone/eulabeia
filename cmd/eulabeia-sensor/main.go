@@ -35,7 +35,11 @@ import (
 )
 
 func main() {
-	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
+	configPath := flag.String(
+		"config",
+		"",
+		"Path to config file, default: search for config file in TODO",
+	)
 	flag.Parse()
 	configuration, err := config.New(*configPath, "eulabeia")
 	if err != nil {
@@ -52,13 +56,17 @@ func main() {
 		configuration.Sensor.Id = sensor_id
 	}
 
-	log.Info().Msgf("Starting sensor (%s) on context (%s)\n", configuration.Sensor.Id, configuration.Context)
+	log.Info().
+		Msgf("Starting sensor (%s) on context (%s)\n", configuration.Sensor.Id, configuration.Context)
 	client, err := mqtt.New(server, configuration.Sensor.Id, "", "",
 		&mqtt.LastWillMessage{
 			Topic: "scanner/sensor/cmd/director",
 			MSG: cmds.Delete{
-				EventType:  cmds.EventType{},
-				Identifier: messages.Identifier{Message: messages.NewMessage("delete.sensor", "", ""), ID: configuration.Sensor.Id},
+				EventType: cmds.EventType{},
+				Identifier: messages.Identifier{
+					Message: messages.NewMessage("delete.sensor", "", ""),
+					ID:      configuration.Sensor.Id,
+				},
 			}},
 		nil)
 	if err != nil {
@@ -68,8 +76,17 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to connect")
 	}
-	feed := feedservice.NewFeed(configuration.Context, configuration.Sensor.Id, configuration.Feedservice.RedisDbAddress)
-	sens := sensor.NewScheduler(connection.DefaultOut, configuration.Sensor.Id, configuration.ScannerPreferences, configuration.Context)
+	feed := feedservice.NewFeed(
+		configuration.Context,
+		configuration.Sensor.Id,
+		configuration.Feedservice.RedisDbAddress,
+	)
+	sens := sensor.NewScheduler(
+		connection.DefaultOut,
+		configuration.Sensor.Id,
+		configuration.ScannerPreferences,
+		configuration.Context,
+	)
 	handler := connection.CombineHandler(
 		feed.Handler(),
 		sens.Handler(),
