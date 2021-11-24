@@ -19,11 +19,13 @@ package test
 
 import (
 	"encoding/json"
-	"github.com/greenbone/eulabeia/connection"
-	"github.com/greenbone/eulabeia/messages"
-	"github.com/greenbone/eulabeia/models"
 	"reflect"
 	"testing"
+
+	"github.com/greenbone/eulabeia/connection"
+	"github.com/greenbone/eulabeia/messages"
+	"github.com/greenbone/eulabeia/messages/handler"
+	"github.com/greenbone/eulabeia/models"
 )
 
 var VerifyNilError = func(e error, _ HandleTests, t *testing.T) {
@@ -68,8 +70,8 @@ var VerifyMessageOfResult = func(d *connection.SendResponse, h HandleTests, t *t
 }
 
 type HandleTests struct {
-	Input           interface{}
-	Handler         connection.OnMessage
+	Input           messages.Event
+	Handler         handler.Container
 	ExpectedMessage messages.Message
 	VerifyError     func(error, HandleTests, *testing.T)
 	VerifyResult    func(*connection.SendResponse, HandleTests, *testing.T)
@@ -80,10 +82,18 @@ func (h *HandleTests) Verify(t *testing.T) {
 	if err != nil {
 		t.Errorf("marshalling [%v] to json failed", h.Input)
 	}
-	if h.Handler == nil {
-		t.Fatalf("Handler is not set")
+
+	use, fuse := handler.ContainerMethod(h.Handler, h.Input.MessageType().Function)
+	json.Unmarshal(b, use)
+
+	s, f, err := fuse()
+
+	var r *connection.SendResponse
+	if f != nil {
+		r = messages.EventToResponse("eulabeia", f)
+	} else if s != nil {
+		r = messages.EventToResponse("eulabeia", s)
 	}
-	r, err := h.Handler.On("some", b)
 	if h.VerifyError != nil {
 		h.VerifyError(err, *h, t)
 	} else {

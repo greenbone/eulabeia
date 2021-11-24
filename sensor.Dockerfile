@@ -38,4 +38,4 @@ COPY bin/eulabeia-sensor /usr/bin/eulabeia-sensor
 COPY plugins/* /var/lib/openvas/plugins/
 RUN echo "mqtt_context = scanner" >> /etc/openvas/openvas.conf
 RUN ldconfig
-CMD /usr/bin/eulabeia-sensor
+CMD /usr/bin/eulabeia-sensor -clientid localhorst

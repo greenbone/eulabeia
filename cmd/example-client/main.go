@@ -117,6 +117,7 @@ func (e *ExampleHandler) On(
 
 func CreateTarget(_ info.IDInfo, _ []byte) *connection.SendResponse {
 	firstContact = true
+	log.Trace().Msg("creating target")
 	create := cmds.NewCreate("target", "director", "")
 	return messages.EventToResponse(context, create)
 }
@@ -282,9 +283,7 @@ func main() {
 		panic(err)
 	}
 	config.OverrideViaENV(configuration)
-	server := configuration.Connection.Server
-
-	c, err := mqtt.New(server, *clientid+uuid.NewString(), "", "", nil)
+	c, err := mqtt.FromConfiguration(*clientid, nil, &configuration.Connection)
 	if err != nil {
 		log.Fatal().Msgf("Failed to create MQTT: %s", err)
 	}
@@ -311,12 +310,12 @@ func main() {
 		exit: ic,
 	}
 	defer Verify(&mh)
-	handler := map[string]connection.OnMessage{topic: &mh}
-	err = c.Subscribe(handler)
+	h := map[string]connection.OnMessage{topic: &mh}
+	err = c.Subscribe([]string{topic})
 	if err != nil {
 		panic(err)
 	}
-	mhm := connection.NewDefaultMessageHandler(handler, c)
+	mhm := handler.NewDefaultMessageHandler(configuration.Context, nil, h, c)
 	mhm.Start()
 
 	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
