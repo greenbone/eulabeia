@@ -282,7 +282,6 @@ func main() {
 	config.OverrideViaENV(configuration)
 	server := configuration.Connection.Server
 
-	log.Info().Msg("Starting example client")
 	c, err := mqtt.New(server, *clientid+uuid.NewString(), "", "", nil, nil)
 	if err != nil {
 		log.Fatal().Msgf("Failed to create MQTT: %s", err)

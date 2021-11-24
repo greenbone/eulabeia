@@ -248,10 +248,6 @@ func (s *MessageHandler) send(resp *SendResponse) {
 
 }
 func (s *MessageHandler) Check() bool {
-	var in_open bool = true
-	var out_open bool = true
-	log.Trace().Msg("checking")
-
 	select {
 	case in, open := <-s.in:
 		if in != nil {
@@ -262,8 +258,10 @@ func (s *MessageHandler) Check() bool {
 			} else {
 				tds = []TopicData{*in}
 			}
+			log.Trace().Msgf("Calling %d handler", len(tds))
 			for _, t := range tds {
 				if h, ok := s.handler[t.Topic]; ok {
+					log.Trace().Msgf("Calling %s handler", t.Topic)
 					resp, err := h.On(t.Topic, t.Message)
 					if err != nil {
 						log.Error().
@@ -273,27 +271,28 @@ func (s *MessageHandler) Check() bool {
 						log.Debug().Msgf("Sending resp to %s", resp.Topic)
 						s.send(resp)
 					}
+					log.Trace().Msgf("Finished %s handler", t.Topic)
 				} else {
 					log.Debug().Msgf("No handler for topic (%s) found.", t.Topic)
 				}
 			}
 		}
-		in_open = open
+		return open
 
 	case out, open := <-s.out:
 		if out != nil {
 			log.Trace().Msgf("Sending message (%v) to %s", out.MSG, out.Topic)
 			s.send(out)
 		}
-		out_open = open
+		return open
 	}
 
-	return in_open && out_open
 }
 
 func (s *MessageHandler) Start() {
 	go func() {
 		for s.Check() {
+			log.Trace().Msg("checking")
 		}
 		log.Debug().Msg("MessageHander stopped")
 	}()

@@ -266,6 +266,7 @@ func (sensor *Scheduler) register(m connection.MessageHandler) {
 		}
 		select {
 		case <-sensor.regChan:
+			log.Printf("%s registered", sensor.id)
 			return
 		// Send new registration mqtt message each second
 		case <-time.After(time.Second):

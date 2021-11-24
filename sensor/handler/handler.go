@@ -83,10 +83,13 @@ func (handler Registered) On(
 	}
 	if msg.ID == handler.ID && mt.Function == "modified" &&
 		mt.Aggregate == "sensor" {
-		log.Debug().Msgf("Modified sensor (%s); registered", msg.ID)
-		handler.Register <- struct{}{}
+		select {
+		case handler.Register <- struct{}{}:
+		default:
+			log.Trace().Msgf("Ignoring modified sensor (%s); it is already registered", msg.ID)
+		}
+
 	}
-	// TODO refactor to send register cmd here again
 	return nil, nil
 }
 
