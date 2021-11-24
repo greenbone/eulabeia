@@ -49,6 +49,7 @@ const context = "scanner"
 const topic = context + "/+/info"
 
 var firstContact = false
+var megaScanStarted = false
 
 const (
 	GOT_SENSOR      = "got.sensor"
@@ -173,9 +174,10 @@ func CreateScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
 }
 
 func MegaScan(i info.IDInfo, _ []byte) *connection.SendResponse {
-	if i.ID == MEGA_ID {
+	if i.ID == MEGA_ID || megaScanStarted {
 		return &connection.SendResponse{}
 	}
+	megaScanStarted = true
 	mega := scan.StartMegaScan{
 		Message: messages.NewMessage("start.scan.director", "", ""),
 		Scan: models.Scan{

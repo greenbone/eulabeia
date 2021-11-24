@@ -313,8 +313,8 @@ func (sensor *Scheduler) Close() error {
 		}(item)
 	}
 	wg.Wait()
-    close(sensor.interruptChan);
-    close(sensor.regChan);
+	close(sensor.interruptChan)
+	close(sensor.regChan)
 	return nil
 }
 
