@@ -68,7 +68,7 @@ func main() {
 					ID:      configuration.Sensor.Id,
 				},
 			}},
-		nil)
+		)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create MQTT")
 	}
