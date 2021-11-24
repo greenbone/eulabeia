@@ -63,7 +63,7 @@ func main() {
 		)
 	}
 	log.Info().Msgf("Starting director with context %s", configuration.Context)
-	client, err := mqtt.New(server, *clientid, "", "", nil, nil)
+	client, err := mqtt.New(server, *clientid, "", "", nil)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create MQTT client.")
 	}

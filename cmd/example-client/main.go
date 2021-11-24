@@ -284,7 +284,7 @@ func main() {
 	config.OverrideViaENV(configuration)
 	server := configuration.Connection.Server
 
-	c, err := mqtt.New(server, *clientid+uuid.NewString(), "", "", nil, nil)
+	c, err := mqtt.New(server, *clientid+uuid.NewString(), "", "", nil)
 	if err != nil {
 		log.Fatal().Msgf("Failed to create MQTT: %s", err)
 	}

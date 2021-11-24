@@ -35,7 +35,6 @@ type MQTT struct {
 	client            *paho.Client
 	connectProperties *paho.Connect
 	qos               byte
-	preprocessor      []connection.Preprocessor
 	in                chan *connection.TopicData // Is used to send respons messages of a handler downwards
 }
 
@@ -47,20 +46,6 @@ func (m MQTT) Close() error {
 	return m.client.Disconnect(&paho.Disconnect{ReasonCode: 0})
 }
 
-func (m MQTT) Preprocess(
-	topic string,
-	message []byte,
-) ([]connection.TopicData, bool) {
-	var td []connection.TopicData
-	handled := false
-	for _, p := range m.preprocessor {
-		if r, ok := p.Preprocess(topic, message); ok {
-			handled = true
-			td = append(td, r...)
-		}
-	}
-	return td, handled
-}
 
 func (m MQTT) register(topic string, handler connection.OnMessage) error {
 
@@ -145,12 +130,17 @@ func (lwm LastWillMessage) asBytes() ([]byte, error) {
 	return json.Marshal(lwm.MSG)
 }
 
+type Configuration struct {
+    ClientID string
+
+}
+
 func New(server string,
 	clientid string,
 	username string,
 	password string,
 	lwm *LastWillMessage,
-	preprocessor []connection.Preprocessor) (connection.PubSub, error) {
+	) (connection.PubSub, error) {
 
 	conn, err := net.Dial("tcp", server)
 	if err != nil {
@@ -190,7 +180,6 @@ func New(server string,
 		client:            c,
 		connectProperties: cp,
 		qos:               1,
-		preprocessor:      preprocessor,
 		in:                make(chan *connection.TopicData, 3),
 	}, nil
 }
