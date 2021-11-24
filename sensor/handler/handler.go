@@ -15,11 +15,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// Package handler contains various message handler for sensors and initializes MQTT connection
+// Package handler contains various message handler for sensors and initializes
+// MQTT connection
 package handler
 
 import (
 	"encoding/json"
+
 	"github.com/rs/zerolog/log"
 
 	"github.com/greenbone/eulabeia/connection"
@@ -33,7 +35,10 @@ type StartStop struct {
 	Stop  func(scanID string) error // Function to Stop a scan
 }
 
-func (handler StartStop) On(topic string, message []byte) (*connection.SendResponse, error) {
+func (handler StartStop) On(
+	topic string,
+	message []byte,
+) (*connection.SendResponse, error) {
 	var msg cmds.IDCMD
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
@@ -63,7 +68,10 @@ type Registered struct {
 	ID       string        // SensorID to compare registered ID with own
 }
 
-func (handler Registered) On(topic string, message []byte) (*connection.SendResponse, error) {
+func (handler Registered) On(
+	topic string,
+	message []byte,
+) (*connection.SendResponse, error) {
 	var msg info.Created
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
@@ -73,8 +81,14 @@ func (handler Registered) On(topic string, message []byte) (*connection.SendResp
 	if err != nil {
 		return nil, err
 	}
-	if msg.ID == handler.ID && mt.Function == "modified" && mt.Aggregate == "sensor" {
-		handler.Register <- struct{}{}
+	if msg.ID == handler.ID && mt.Function == "modified" &&
+		mt.Aggregate == "sensor" {
+		select {
+		case handler.Register <- struct{}{}:
+		default:
+			log.Trace().Msgf("Ignoring modified sensor (%s); it is already registered", msg.ID)
+		}
+
 	}
 	return nil, nil
 }
@@ -84,7 +98,10 @@ type Status struct {
 	Fin func(string) error // Function to mark a scan as finished
 }
 
-func (handler Status) On(topic string, message []byte) (*connection.SendResponse, error) {
+func (handler Status) On(
+	topic string,
+	message []byte,
+) (*connection.SendResponse, error) {
 	var msg info.Status
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
@@ -107,7 +124,10 @@ type LoadVTs struct {
 	VtsLoad func() // Function to start LoadingVTs (into redis by openvas)
 }
 
-func (handler LoadVTs) On(topic string, message []byte) (*connection.SendResponse, error) {
+func (handler LoadVTs) On(
+	topic string,
+	message []byte,
+) (*connection.SendResponse, error) {
 	handler.VtsLoad()
 	return nil, nil
 }

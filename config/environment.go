@@ -30,15 +30,18 @@ func directorStoragePath(p string, c *Configuration) {
 	c.Director.StoragePath = p
 }
 
-// lookup table that binds an environment variable to a function that overrides the configuration variable in the config file struct
+// lookup table that binds an environment variable to a function that overrides
+// the configuration variable in the config file struct
 var lookup = map[string]func(string, *Configuration){
 	"MQTT_SERVER":           server,
 	"DIRECTOR_STORAGE_PATH": directorStoragePath,
 }
 
-// OverrideViaENV overrides configuration settings with environment variables, if they are set.
+// OverrideViaENV overrides configuration settings with environment variables,
+// if they are set.
 //
-// Uses a defined lookup table to identify and get environment variables to override.
+// Uses a defined lookup table to identify and get environment variables to
+// override.
 func OverrideViaENV(c *Configuration) {
 	for _, e := range os.Environ() {
 		pair := strings.SplitN(e, "=", 2)

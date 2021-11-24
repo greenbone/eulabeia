@@ -17,7 +17,10 @@ type vtHandler struct {
 	sensor  string
 }
 
-func (vt vtHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
+func (vt vtHandler) On(
+	topic string,
+	message []byte,
+) (*connection.SendResponse, error) {
 	// Determine message type
 	var msg messages.Message
 	err := json.Unmarshal(message, &msg)
@@ -42,8 +45,14 @@ func (vt vtHandler) On(topic string, message []byte) (*connection.SendResponse, 
 			}
 
 			return &connection.SendResponse{
-				Topic: fmt.Sprintf("%s/%s/%s/%s", vt.context, "vt", "cmd", vt.sensor),
-				MSG:   getVT,
+				Topic: fmt.Sprintf(
+					"%s/%s/%s/%s",
+					vt.context,
+					"vt",
+					"cmd",
+					vt.sensor,
+				),
+				MSG: getVT,
 			}, nil
 		}
 	}

@@ -24,13 +24,16 @@ import (
 )
 
 // References are the bid, cve or xrefs entries in a nasl script.
-//eg. an xref from nmap.nasl is type 'URL' with id: 'https://nmap.org/book/man-performance.html'
+// eg. an xref from nmap.nasl is type 'URL' with id:
+// 'https://nmap.org/book/man-performance.html'
 type RefType struct {
 	Type string `json:"type"`
 	ID   string `json:"id"`
 }
 
-// VT's parameters have an ID. The ID 0 (zero) is reserved for the script timeout which is not add to Redis cache as a preference but as script parameter.
+// VT's parameters have an ID. The ID 0 (zero) is reserved for the script
+// timeout which is not add to Redis cache as a preference but as script
+// parameter.
 type VTParamType struct {
 	ID           int    `json:"id"`          // Parameter ID. ID:0 is always to specify a timeout.
 	Name         string `json:"name"`        // Parameter Name
@@ -40,8 +43,10 @@ type VTParamType struct {
 	DefaultValue string `json:"default"`     // Parameter default value
 }
 
-// Severities are stored as Tag. Because tag names can not be repeated, only one severity is supported.
-// The old tag name for severities are cvss_base and cvss_base_vector. The new extended severities tags has priority over the old format.
+// Severities are stored as Tag. Because tag names can not be repeated, only one
+// severity is supported.
+// The old tag name for severities are cvss_base and cvss_base_vector. The new
+// extended severities tags has priority over the old format.
 type SeverityType struct {
 	Vector  string `json:"severity_vector"` // CVSS vector. Supported are CVSSv2 and CVSSv3.x
 	Version string `json:"severity_type"`   // CVSS version

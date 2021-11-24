@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/models"
 )
@@ -89,28 +88,6 @@ var vt = models.VT{
 	},
 }
 
-type MockPubSub struct{}
-
-func (mps MockPubSub) Close() error {
-	return nil
-}
-
-func (mps MockPubSub) Connect() error {
-	return nil
-}
-
-func (mps MockPubSub) Publish(topic string, message interface{}) error {
-	return nil
-}
-
-func (mps MockPubSub) Preprocess(topic string, message []byte) ([]connection.TopicData, bool) {
-	return nil, false
-}
-
-func (mps MockPubSub) Subscribe(handler map[string]connection.OnMessage) error {
-	return nil
-}
-
 type RedisMock struct {
 }
 
@@ -118,7 +95,12 @@ func (rm RedisMock) Close() error {
 	return nil
 }
 
-func (rm RedisMock) GetList(db int, key string, start int, end int) ([]string, error) {
+func (rm RedisMock) GetList(
+	db int,
+	key string,
+	start int,
+	end int,
+) ([]string, error) {
 	switch key {
 	case "oid:test:prefs":
 		return []string{
@@ -196,7 +178,6 @@ func (rm RedisMock) GetKeys(db int, filter string) ([]string, error) {
 
 func TestGetVT(t *testing.T) {
 	fs := feed{
-		mqtt:    MockPubSub{},
 		context: "",
 		rc:      &RedisMock{},
 	}
@@ -217,13 +198,16 @@ func TestGetVT(t *testing.T) {
 	}
 
 	if string(vtTestJSON) != string(vtJSON) {
-		t.Fatalf("vtTestJSON != vtJSON\n\nvtTestJSON:\n %s\n\n vtJSON:\n%s\n", vtTestJSON, vtJSON)
+		t.Fatalf(
+			"vtTestJSON != vtJSON\n\nvtTestJSON:\n %s\n\n vtJSON:\n%s\n",
+			vtTestJSON,
+			vtJSON,
+		)
 	}
 }
 
 func TestResolveFilter(t *testing.T) {
 	fs := feed{
-		mqtt:    MockPubSub{},
 		context: "",
 		rc:      &RedisMock{},
 	}

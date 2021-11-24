@@ -25,7 +25,9 @@ import (
 
 // Storage is for poutting and getting a models.Target
 type Storage interface {
-	Put(models.Target) error            // Overrides existing or creates a models.Target
+	Put(
+		models.Target,
+	) error // Overrides existing or creates a models.Target
 	Get(string) (*models.Target, error) // Gets a models.Target via ID
 	Delete(string) error
 }

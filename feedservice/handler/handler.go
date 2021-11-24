@@ -19,7 +19,10 @@ type FeedHandler struct {
 	ID            string
 }
 
-func (handler FeedHandler) On(topic string, message []byte) (*connection.SendResponse, error) {
+func (handler FeedHandler) On(
+	topic string,
+	message []byte,
+) (*connection.SendResponse, error) {
 	// determine message type
 	var msg messages.Message
 	if err := json.Unmarshal(message, &msg); err != nil {
@@ -63,8 +66,12 @@ func (handler FeedHandler) On(topic string, message []byte) (*connection.SendRes
 
 			return &connection.SendResponse{
 				MSG: models.ResolvedFilter{
-					Message: messages.NewMessage("resolved.vt", "", msg.GroupID),
-					OIDs:    oids,
+					Message: messages.NewMessage(
+						"resolved.vt",
+						"",
+						msg.GroupID,
+					),
+					OIDs: oids,
 				},
 				Topic: fmt.Sprintf("%s/vt/info", handler.Context),
 			}, nil

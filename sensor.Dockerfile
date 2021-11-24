@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
     libpaho-mqtt-dev \
     libpcap-dev \
     libssh-gcrypt-dev \
+    libnet1-dev \
 	git \
     && rm -rf /var/lib/apt/lists/*
 RUN echo "cloning: $OPENVAS_REPOSITORY"

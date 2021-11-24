@@ -2,9 +2,10 @@ package feedservice
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"strconv"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/feedservice/handler"
@@ -22,7 +23,6 @@ type DBConnecion interface {
 
 // feed is the struct representing the feedservice
 type feed struct {
-	mqtt    connection.PubSub
 	context string
 	rc      DBConnecion
 	id      string
@@ -157,7 +157,11 @@ func (f *feed) GetVT(msg cmds.Get) (models.VT, *info.Failure, error) {
 		return models.VT{}, nil, err
 	}
 	if len(pref) == 0 {
-		return models.VT{}, info.GetFailureResponse(msg.Message, "vt", msg.ID), nil
+		return models.VT{}, info.GetFailureResponse(
+			msg.Message,
+			"vt",
+			msg.ID,
+		), nil
 	}
 	log.Printf("Got %d vts", len(pref))
 
@@ -169,7 +173,11 @@ func (f *feed) GetVT(msg cmds.Get) (models.VT, *info.Failure, error) {
 		tag := strings.SplitN(v, "=", 2)
 		tags[tag[0]] = tag[1]
 	}
-	refs := getRefs(pref[redis.NVT_CVES_POS], pref[redis.NVT_BIDS_POS], pref[redis.NVT_XREFS_POS])
+	refs := getRefs(
+		pref[redis.NVT_CVES_POS],
+		pref[redis.NVT_BIDS_POS],
+		pref[redis.NVT_XREFS_POS],
+	)
 
 	vt := models.VT{
 		OID:                msg.ID,
@@ -203,7 +211,8 @@ func (f *feed) GetVT(msg cmds.Get) (models.VT, *info.Failure, error) {
 	return vt, nil, err
 }
 
-// GetVTs expects a List of VTFilter and returns a list of oids which match the given filter.
+// GetVTs expects a List of VTFilter and returns a list of oids which match the
+// given filter.
 func (f *feed) ResolveFilter(filter []models.VTFilter) ([]string, error) {
 	ret := make([]string, 0)
 
@@ -219,7 +228,12 @@ func (f *feed) ResolveFilter(filter []models.VTFilter) ([]string, error) {
 	var contains bool
 	for _, nvtOID := range vtOIDs {
 		oid := strings.TrimPrefix(nvtOID, "nvt:")
-		vt, err := f.rc.GetList(1, nvtOID, redis.NVT_FILENAME_POS, redis.NVT_NAME_POS)
+		vt, err := f.rc.GetList(
+			1,
+			nvtOID,
+			redis.NVT_FILENAME_POS,
+			redis.NVT_NAME_POS,
+		)
 		if err != nil {
 			continue
 		}
@@ -252,17 +266,14 @@ func (f *feed) ResolveFilter(filter []models.VTFilter) ([]string, error) {
 
 }
 
-// Start starts the feed service
-func (f *feed) Start() {
-	fmt.Printf("%s/vt/cmd/%s\n", f.context, f.id)
-	// MQTT Subscription Map
-	f.mqtt.Subscribe(map[string]connection.OnMessage{
-		fmt.Sprintf("%s/vt/cmd/%s", f.context, f.id): handler.FeedHandler{
-			GetVT:         f.GetVT,
-			ResolveFilter: f.ResolveFilter,
-			Context:       f.context,
-		},
-	})
+func (f *feed) Handler() map[string]connection.OnMessage {
+	t := fmt.Sprintf("%s/vt/cmd/%s", f.context, f.id)
+	h := handler.FeedHandler{
+		GetVT:         f.GetVT,
+		ResolveFilter: f.ResolveFilter,
+		Context:       f.context,
+	}
+	return map[string]connection.OnMessage{t: h}
 }
 
 // Close ends the feed service
@@ -271,9 +282,8 @@ func (f *feed) Close() error {
 }
 
 // NewScheduler creates a new scheduler
-func NewFeed(mqtt connection.PubSub, context string, id string, redisPath string) *feed {
+func NewFeed(context string, id string, redisPath string) *feed {
 	return &feed{
-		mqtt:    mqtt,
 		context: context,
 		rc:      redis.NewRedisConnection("unix", redisPath),
 		id:      id,

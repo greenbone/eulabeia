@@ -39,7 +39,8 @@ type GotScan struct {
 
 // GotMemory is the response on get.memory and contains memory information
 //
-// GotMemory is needed to actually start a scan since only sensor which sufficient
+// GotMemory is needed to actually start a scan since only sensor which
+// sufficient
 // memory should be started
 type GotMemory struct {
 	messages.Message

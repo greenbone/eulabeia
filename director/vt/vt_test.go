@@ -28,14 +28,22 @@ func TestResponse(t *testing.T) {
 		t.Fatal(err)
 	}
 	if resp.Topic != "test/vt/cmd/testSensor" {
-		t.Fatalf("Wrong topic.\nShould be:\n%s\nIs:\n%s\n", "test/vt/cmd/testSensor", resp.Topic)
+		t.Fatalf(
+			"Wrong topic.\nShould be:\n%s\nIs:\n%s\n",
+			"test/vt/cmd/testSensor",
+			resp.Topic,
+		)
 	}
 	respString, err := json.Marshal(resp.MSG)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if string(respString) != success {
-		t.Fatalf("Error in response.\nShould be:\n%s\n\nIs:\n%s\n", success, respString)
+		t.Fatalf(
+			"Error in response.\nShould be:\n%s\n\nIs:\n%s\n",
+			success,
+			respString,
+		)
 	}
 
 }

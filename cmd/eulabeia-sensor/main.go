@@ -19,9 +19,11 @@ package main
 
 import (
 	"flag"
+	"os"
+
+	"github.com/greenbone/eulabeia/connection"
 	_ "github.com/greenbone/eulabeia/logging/configuration"
 	"github.com/rs/zerolog/log"
-	"os"
 
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection/mqtt"
@@ -33,7 +35,11 @@ import (
 )
 
 func main() {
-	configPath := flag.String("config", "", "Path to config file, default: search for config file in TODO")
+	configPath := flag.String(
+		"config",
+		"",
+		"Path to config file, default: search for config file in TODO",
+	)
 	flag.Parse()
 	configuration, err := config.New(*configPath, "eulabeia")
 	if err != nil {
@@ -50,11 +56,13 @@ func main() {
 		configuration.Sensor.Id = sensor_id
 	}
 
-	log.Info().Msgf("Starting sensor (%s) on context (%s)\n", configuration.Sensor.Id, configuration.Context)
+	log.Info().
+		Msgf("Starting sensor (%s) on context (%s)\n", configuration.Sensor.Id, configuration.Context)
 	client, err := mqtt.New(server, configuration.Sensor.Id, "", "",
 		&mqtt.LastWillMessage{
 			Topic: "scanner/sensor/cmd/director",
 			MSG: cmds.Delete{
+				EventType: cmds.EventType{},
 				Identifier: messages.Identifier{
 					Message: messages.NewMessage("delete.sensor", "", ""),
 					ID:      configuration.Sensor.Id,
@@ -68,11 +76,24 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to connect")
 	}
-	feed := feedservice.NewFeed(client, configuration.Context, configuration.Sensor.Id, configuration.Feedservice.RedisDbAddress)
-	log.Printf("Starting Feed Service\n")
-	feed.Start()
-	sens := sensor.NewScheduler(client, configuration.Sensor.Id, configuration.ScannerPreferences, configuration.Context)
-	log.Printf("Starting Scheduler\n")
-	sens.Start()
+	feed := feedservice.NewFeed(
+		configuration.Context,
+		configuration.Sensor.Id,
+		configuration.Feedservice.RedisDbAddress,
+	)
+	sens := sensor.NewScheduler(
+		connection.DefaultOut,
+		configuration.Sensor.Id,
+		configuration.ScannerPreferences,
+		configuration.Context,
+	)
+	handler := connection.CombineHandler(
+		feed.Handler(),
+		sens.Handler(),
+	)
+	mhm := connection.NewDefaultMessageHandler(handler, client)
+	sens.Start(mhm)
+	log.Debug().Msg("Starting MessageListener")
+	mhm.Start()
 	process.Block(client, sens, feed)
 }

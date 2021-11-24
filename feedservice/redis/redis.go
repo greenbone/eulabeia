@@ -28,7 +28,12 @@ type RedisConnection struct {
 	pool *redis.Pool
 }
 
-func (rc RedisConnection) GetList(db int, key string, start int, end int) ([]string, error) {
+func (rc RedisConnection) GetList(
+	db int,
+	key string,
+	start int,
+	end int,
+) ([]string, error) {
 	conn := rc.pool.Get()
 	defer conn.Close()
 
@@ -49,7 +54,11 @@ func (rc RedisConnection) GetKeys(db int, filter string) ([]string, error) {
 
 	data, err := redis.Strings(conn.Do("KEYS", filter))
 	if err != nil {
-		return nil, fmt.Errorf("unable to get keys with filter %s: %s", filter, err)
+		return nil, fmt.Errorf(
+			"unable to get keys with filter %s: %s",
+			filter,
+			err,
+		)
 	}
 	return data, nil
 }

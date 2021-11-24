@@ -55,7 +55,8 @@ func TestCommandLong(t *testing.T) {
 	time.Sleep(time.Second)
 }
 
-// helperFailCommander creates a Command to execute a programm with a exit code 1
+// helperFailCommander creates a Command to execute a programm with a exit code
+// 1
 type helperFailCommander struct {
 }
 
@@ -76,11 +77,15 @@ func TestCommandFail(t *testing.T) {
 	os.Exit(1)
 }
 
-// helperVersionCommander creates a Command to execute a programm which prints an OpenVAS sample version
+// helperVersionCommander creates a Command to execute a programm which prints
+// an OpenVAS sample version
 type helperVersionCommander struct {
 }
 
-func (exe helperVersionCommander) Command(name string, arg ...string) *exec.Cmd {
+func (exe helperVersionCommander) Command(
+	name string,
+	arg ...string,
+) *exec.Cmd {
 	cs := []string{"-test.run=TestCommandVersion", "--", name}
 	cs = append(cs, arg...)
 	cmd := exec.Command(os.Args[0], cs...)
@@ -98,11 +103,15 @@ func TestCommandVersion(t *testing.T) {
 	os.Exit(0)
 }
 
-// helperSettingsCommander creates an Command to execute a programm which prints sample settings
+// helperSettingsCommander creates an Command to execute a programm which prints
+// sample settings
 type helperSettingsCommander struct {
 }
 
-func (exe helperSettingsCommander) Command(name string, arg ...string) *exec.Cmd {
+func (exe helperSettingsCommander) Command(
+	name string,
+	arg ...string,
+) *exec.Cmd {
 	cs := []string{"-test.run=TestCommandSettings", "--", name}
 	cs = append(cs, arg...)
 	cmd := exec.Command(os.Args[0], cs...)
@@ -122,7 +131,8 @@ func TestCommandSettings(t *testing.T) {
 
 // At this point the real tests begin.
 
-// TestStartStopScanSudo tests the procedure of creating an openvas process and stopping it with sudo privileges
+// TestStartStopScanSudo tests the procedure of creating an openvas process and
+// stopping it with sudo privileges
 func TestStartStopScanSudo(t *testing.T) {
 	// OpenVASScanner instance
 	ovas := NewOpenVASScanner(make(chan string))
@@ -154,7 +164,8 @@ func TestStartStopScanSudo(t *testing.T) {
 	}
 }
 
-// TestNonSudoStopScanFail tests if it fails to stop a scan when there is no scan to stop
+// TestNonSudoStopScanFail tests if it fails to stop a scan when there is no
+// scan to stop
 func TestNonSudoStopScanFail(t *testing.T) {
 	// OpenVASScanner instance
 	ovas := NewOpenVASScanner(make(chan string))
@@ -183,7 +194,8 @@ func TestScanFinishedSuccess(t *testing.T) {
 	}
 }
 
-// TestScanFinishedFail tests if marking a scan as finished fails if there is no scan to finish
+// TestScanFinishedFail tests if marking a scan as finished fails if there is no
+// scan to finish
 func TestScanFinishedFail(t *testing.T) {
 	// OpenVASScanner instance
 	ovas := NewOpenVASScanner(make(chan string))
@@ -193,7 +205,8 @@ func TestScanFinishedFail(t *testing.T) {
 	}
 }
 
-// TestGetVersion tests if the information getting from the openvas version is extracted correctly
+// TestGetVersion tests if the information getting from the openvas version is
+// extracted correctly
 func TestGetVersion(t *testing.T) {
 	// OpenVASScanner instance
 	ovas := NewOpenVASScanner(make(chan string))
@@ -207,7 +220,8 @@ func TestGetVersion(t *testing.T) {
 	}
 }
 
-// TestGetSettings tests if the information getting from the openvas settings is extracted correctly
+// TestGetSettings tests if the information getting from the openvas settings is
+// extracted correctly
 func TestGetSettings(t *testing.T) {
 	// OpenVASScanner instance
 	ovas := NewOpenVASScanner(make(chan string))

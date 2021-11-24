@@ -15,14 +15,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// Scheduler component of the sensor. This module is responsible for handling request from the director.
+// Scheduler component of the sensor. This module is responsible for handling
+// request from the director.
 package sensor
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"sync"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/messages"
@@ -38,22 +40,21 @@ import (
 
 // Scheduler is a struct containing functionality to control a sensor
 type Scheduler struct {
-	queue         *util.QueueList         // queued scans
-	init          *util.QueueList         // scans that currently initializes
-	running       *util.QueueList         // scans that are currently running
-	loadingVTs    bool                    // marks that VTs are currently loading
-	ovas          *openvas.OpenVASScanner // openvas
-	sudo          bool                    // sudo rights
-	sync.Mutex                            // thread safe hadnling when moving scan IDs between lists
-	stopped       bool                    // marks that the sensor is stopped
-	regChan       chan struct{}           // channel for succesful registation
-	commander     openvas.Commander       // commander used for openvas
-	context       string                  // context used for mqtt
-	interruptChan chan string             // channel for signaling interrupted scans
-
-	mqtt connection.PubSub         // mqtt connection
-	id   string                    // ID of the sensor
-	conf config.ScannerPreferences // config file
+	queue         *util.QueueList                 // queued scans
+	init          *util.QueueList                 // scans that currently initializes
+	running       *util.QueueList                 // scans that are currently running
+	loadingVTs    bool                            // marks that VTs are currently loading
+	ovas          *openvas.OpenVASScanner         // openvas
+	sudo          bool                            // sudo rights
+	sync.Mutex                                    // thread safe hadnling when moving scan IDs between lists
+	stopped       bool                            // marks that the sensor is stopped
+	regChan       chan struct{}                   // channel for succesful registation
+	commander     openvas.Commander               // commander used for openvas
+	context       string                          // context used for mqtt
+	interruptChan chan string                     // channel for signaling interrupted scans
+	out           chan<- *connection.SendResponse // Channel to send messages
+	id            string                          // ID of the sensor
+	conf          config.ScannerPreferences       // config file
 }
 
 // loadVTs commands openvas to load VTs into redis
@@ -72,11 +73,15 @@ func (sensor *Scheduler) loadVTs() {
 func (sensor *Scheduler) QueueScan(scanID string) error {
 	sensor.Lock()
 	defer sensor.Unlock()
-	if sensor.queue.Contains(scanID) || sensor.init.Contains(scanID) || sensor.running.Contains(scanID) {
-		return fmt.Errorf("there is already a running scan with the ID %s", scanID)
+	if sensor.queue.Contains(scanID) || sensor.init.Contains(scanID) ||
+		sensor.running.Contains(scanID) {
+		return fmt.Errorf(
+			"there is already a running scan with the ID %s",
+			scanID,
+		)
 	}
 	sensor.queue.Enqueue(scanID)
-	sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
+	sensor.out <- messages.EventToResponse(sensor.context, info.Status{
 		Identifier: messages.Identifier{
 			ID:      scanID,
 			Message: messages.NewMessage("status.scan", "", ""),
@@ -98,7 +103,7 @@ func (sensor *Scheduler) StartScan(scanID string) error {
 	if err := sensor.ovas.StartScan(sensor.queue.Front(), int(sensor.conf.Niceness), sensor.sudo, sensor.commander); err != nil {
 		return err
 	}
-	sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
+	sensor.out <- messages.EventToResponse(sensor.context, info.Status{
 		Identifier: messages.Identifier{
 			ID:      sensor.queue.Front(),
 			Message: messages.NewMessage("status.scan", "", ""),
@@ -132,17 +137,19 @@ func (sensor *Scheduler) ScanFinished(scanID string) error {
 	return nil
 }
 
-// StopScan will remove the scan from the queue or invoke a stop scan command to scanner
+// StopScan will remove the scan from the queue or invoke a stop scan command to
+// scanner
 func (sensor *Scheduler) StopScan(scanID string) error {
 	sensor.Lock()
 	defer sensor.Unlock()
 	if sensor.queue.RemoveListItem(scanID) {
 		return nil
 	}
-	if sensor.init.RemoveListItem(scanID) || sensor.running.RemoveListItem(scanID) {
+	if sensor.init.RemoveListItem(scanID) ||
+		sensor.running.RemoveListItem(scanID) {
 		err := sensor.ovas.StopScan(scanID, sensor.sudo, sensor.commander)
 		if err == nil {
-			sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
+			sensor.out <- messages.EventToResponse(sensor.context, info.Status{
 				Identifier: messages.Identifier{
 					ID:      scanID,
 					Message: messages.NewMessage("status.scan", "", ""),
@@ -162,14 +169,14 @@ func (sensor *Scheduler) GetVersion() error {
 	if err != nil {
 		return err
 	}
-	err = sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Version{
+	sensor.out <- messages.EventToResponse(sensor.context, info.Version{
 		Identifier: messages.Identifier{
 			ID:      "",
 			Message: messages.NewMessage("sensor.version", "", ""),
 		},
 		Version: ver,
 	})
-	return err
+	return nil
 }
 
 // interruptScan removes scan from list and publishes a status MSG
@@ -177,8 +184,9 @@ func (sensor *Scheduler) interruptScan(scanID string) error {
 	sensor.Lock()
 	defer sensor.Unlock()
 
-	if sensor.init.RemoveListItem(scanID) || sensor.running.RemoveListItem(scanID) {
-		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
+	if sensor.init.RemoveListItem(scanID) ||
+		sensor.running.RemoveListItem(scanID) {
+		sensor.out <- messages.EventToResponse(sensor.context, info.Status{
 			Identifier: messages.Identifier{
 				ID:      scanID,
 				Message: messages.NewMessage("status.scan", "", ""),
@@ -212,15 +220,22 @@ func (sensor *Scheduler) schedule() {
 		}
 
 		// Check for free scanner slot
-		if sensor.conf.MaxScan > 0 && sensor.init.Size()+sensor.running.Size() == int(sensor.conf.MaxScan) {
-			log.Printf("Unable to start a scan from queue, Max number of scans reached.\n")
+		if sensor.conf.MaxScan > 0 &&
+			sensor.init.Size()+sensor.running.Size() == int(
+				sensor.conf.MaxScan,
+			) {
+			log.Printf(
+				"Unable to start a scan from queue, Max number of scans reached.\n",
+			)
 			continue
 		}
 
 		// get memory stats and check for memory
 		if sensor.conf.MinFreeMemScanQueue > 0 {
 			m, err := util.GetAvailableMemory(util.StdMemoryManager{})
-			memoryNeeded := m.Bytes + uint64(sensor.init.Size())*sensor.conf.MinFreeMemScanQueue
+			memoryNeeded := m.Bytes + uint64(
+				sensor.init.Size(),
+			)*sensor.conf.MinFreeMemScanQueue
 			if err != nil {
 				log.Fatal().Err(err).Msg("Unable to get memory stats")
 			}
@@ -232,27 +247,31 @@ func (sensor *Scheduler) schedule() {
 
 		// try to run scan process
 		if err := sensor.StartScan(sensor.queue.Front()); err != nil {
-			log.Printf("%s: unable to start scan: %s", sensor.queue.Front(), err)
+			log.Printf(
+				"%s: unable to start scan: %s",
+				sensor.queue.Front(),
+				err,
+			)
 		}
 
 	}
 }
 
 // register loops until its ID is registrated
-func (sensor *Scheduler) register() {
+func (sensor *Scheduler) register(m connection.MessageHandler) {
 	for { // loop until sensor is registered
-		sensor.mqtt.Publish(fmt.Sprintf("%s/sensor/cmd/director", sensor.context), cmds.Modify{
-			Identifier: messages.Identifier{
-				ID:      sensor.id,
-				Message: messages.NewMessage("modify.sensor", "", ""),
-			},
-		})
+		sensor.out <- &connection.SendResponse{
+			Topic: fmt.Sprintf("%s/sensor/cmd/director", sensor.context),
+			MSG:   cmds.NewModify("sensor", sensor.id, nil, "director", ""),
+		}
 		select {
 		case <-sensor.regChan:
+			log.Printf("%s registered", sensor.id)
 			return
 		// Send new registration mqtt message each second
 		case <-time.After(time.Second):
 		}
+		go m.Check()
 	}
 }
 
@@ -265,7 +284,7 @@ func (sensor *Scheduler) Close() error {
 	log.Print("Cleaning all OpenVAS Processes...\n")
 	// Remove all queued scans
 	for item, ok := sensor.queue.Dequeue(); ok; item, ok = sensor.queue.Dequeue() {
-		sensor.mqtt.Publish(fmt.Sprintf("%s/scan/info", sensor.context), info.Status{
+		sensor.out <- messages.EventToResponse(sensor.context, info.Status{
 			Identifier: messages.Identifier{
 				ID:      item,
 				Message: messages.NewMessage("status.scan", "", ""),
@@ -294,53 +313,57 @@ func (sensor *Scheduler) Close() error {
 		}(item)
 	}
 	wg.Wait()
+	close(sensor.interruptChan)
+	close(sensor.regChan)
 	return nil
 }
 
-// Start initializes MQTT handling and starts the scheduler
-func (sensor *Scheduler) Start() {
-	// Subscribe on Topic to get confirmation about registration
-	sensor.mqtt.Subscribe(map[string]connection.OnMessage{
-		fmt.Sprintf("%s/sensor/info", sensor.context): handler.Registered{
-			Register: sensor.regChan,
-			ID:       sensor.id,
-		},
-	})
-	// Register Sensor
-	sensor.register()
+func (sensor *Scheduler) Handler() map[string]connection.OnMessage {
+	// TODO separate Register Sensor
 	// MQTT OnMessage Types
-	var startStopHandler = handler.StartStop{
+	startStopHandler := handler.StartStop{
 		Start: sensor.QueueScan,
 		Stop:  sensor.StopScan,
 	}
 
-	var statusHandler = handler.Status{
+	statusHandler := handler.Status{
 		Run: sensor.ScanRunning,
 		Fin: sensor.ScanFinished,
 	}
 
-	var vtsHandler = handler.LoadVTs{
+	vtsHandler := handler.LoadVTs{
 		VtsLoad: sensor.loadVTs,
 	}
 
-	// MQTT Subscription Map
-	var subMap = map[string]connection.OnMessage{
+	registeredHandler := handler.Registered{
+		Register: sensor.regChan,
+		ID:       sensor.id,
+	}
+
+	return map[string]connection.OnMessage{
+		fmt.Sprintf("%s/sensor/info", sensor.context):            registeredHandler,
 		fmt.Sprintf("%s/scan/cmd/%s", sensor.context, sensor.id): startStopHandler,
 		fmt.Sprintf("%s/scan/info", sensor.context):              statusHandler,
 		fmt.Sprintf("%s/sensor/cmd", sensor.context):             vtsHandler,
 	}
+}
 
-	err := sensor.mqtt.Subscribe(subMap)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Sensor cannot subscribe to topics")
-	}
-
+// Start registers a sensor and starts scheduler
+//
+// Uses the out channel to send register messages
+func (sensor *Scheduler) Start(m connection.MessageHandler) {
+	sensor.register(m)
 	sensor.stopped = false
 	go sensor.schedule()
 }
 
 // NewScheduler creates a new scheduler
-func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferences, context string) *Scheduler {
+func NewScheduler(
+	out chan<- *connection.SendResponse,
+	id string,
+	conf config.ScannerPreferences,
+	context string,
+) *Scheduler {
 	interruptChan := make(chan string)
 	return &Scheduler{
 		queue:         util.NewQueueList(),
@@ -353,9 +376,8 @@ func NewScheduler(mqtt connection.PubSub, id string, conf config.ScannerPreferen
 		commander:     openvas.StdCommander{},
 		context:       context,
 		interruptChan: interruptChan,
-
-		mqtt: mqtt,
-		id:   id,
-		conf: conf,
+		out:           out,
+		id:            id,
+		conf:          conf,
 	}
 }

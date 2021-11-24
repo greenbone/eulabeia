@@ -40,7 +40,10 @@ type ScanPreprocessor struct {
 	Context string
 }
 
-func (s ScanPreprocessor) Preprocess(topic string, payload []byte) ([]connection.TopicData, bool) {
+func (s ScanPreprocessor) Preprocess(
+	topic string,
+	payload []byte,
+) ([]connection.TopicData, bool) {
 	if !strings.HasSuffix(topic, "/scan/cmd/director") {
 		return nil, false
 	}

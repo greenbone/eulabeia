@@ -37,7 +37,13 @@ func (r RSA) Encrypt(b []byte) ([]byte, error) {
 			finish = msgLen
 		}
 
-		encrypedChunk, err := rsa.EncryptOAEP(hash, rand.Reader, &r.prvKey.PublicKey, b[start:finish], nil)
+		encrypedChunk, err := rsa.EncryptOAEP(
+			hash,
+			rand.Reader,
+			&r.prvKey.PublicKey,
+			b[start:finish],
+			nil,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +63,11 @@ func (r RSA) Decrypt(b []byte) ([]byte, error) {
 			finish = msgLen
 		}
 
-		decryptedBlockBytes, err := r.prvKey.Decrypt(nil, b[start:finish], &rsa.OAEPOptions{Hash: crypto.SHA256})
+		decryptedBlockBytes, err := r.prvKey.Decrypt(
+			nil,
+			b[start:finish],
+			&rsa.OAEPOptions{Hash: crypto.SHA256},
+		)
 		if err != nil {
 			return nil, err
 		}

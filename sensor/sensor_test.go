@@ -10,27 +10,8 @@ import (
 	"github.com/greenbone/eulabeia/connection"
 )
 
-type MockPubSub struct{}
-
-func (mps MockPubSub) Close() error {
-	return nil
-}
-
-func (mps MockPubSub) Connect() error {
-	return nil
-}
-
-func (mps MockPubSub) Publish(topic string, message interface{}) error {
-	return nil
-}
-
-func (mps MockPubSub) Preprocess(topic string, message []byte) ([]connection.TopicData, bool) {
-	return nil, false
-}
-
-func (mps MockPubSub) Subscribe(handler map[string]connection.OnMessage) error {
-	return nil
-}
+// TODO write clean service
+var out = make(chan *connection.SendResponse, 100)
 
 // helperShortCommander creates a Command to execute a programm with a short
 // runtime
@@ -65,7 +46,7 @@ func TestQueueInitRunFinishScan(t *testing.T) {
 		Niceness:            10,
 		MinFreeMemScanQueue: 0,
 	}
-	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "")
+	scheduler := NewScheduler(out, "testID", conf, "")
 	scheduler.commander = MockCommander{}
 
 	scanID := "foo"
@@ -159,7 +140,7 @@ func TestStopScan(t *testing.T) {
 		Niceness:            10,
 		MinFreeMemScanQueue: 0,
 	}
-	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "")
+	scheduler := NewScheduler(out, "testID", conf, "")
 	scheduler.commander = MockCommander{}
 
 	scanID := "foo"
@@ -180,7 +161,10 @@ func TestStopScan(t *testing.T) {
 
 	// Test stop scan if scan is in init
 	scheduler.init.Enqueue(scanID)
-	if err := scheduler.StopScan(scanID); err.Error() != fmt.Sprintf("process for scan id %s does not exist", scanID) {
+	if err := scheduler.StopScan(scanID); err.Error() != fmt.Sprintf(
+		"process for scan id %s does not exist",
+		scanID,
+	) {
 		t.Fatalf("Unable to stop scan: %s\n", err)
 	}
 	if !scheduler.init.IsEmpty() {
@@ -189,7 +173,10 @@ func TestStopScan(t *testing.T) {
 
 	// Test stop scan if scan is in running
 	scheduler.running.Enqueue(scanID)
-	if err := scheduler.StopScan(scanID); err.Error() != fmt.Sprintf("process for scan id %s does not exist", scanID) {
+	if err := scheduler.StopScan(scanID); err.Error() != fmt.Sprintf(
+		"process for scan id %s does not exist",
+		scanID,
+	) {
 		t.Fatalf("Unable to stop scan: %s\n", err)
 	}
 	if !scheduler.running.IsEmpty() {
@@ -206,7 +193,7 @@ func TestClose(t *testing.T) {
 		Niceness:            10,
 		MinFreeMemScanQueue: 0,
 	}
-	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "")
+	scheduler := NewScheduler(out, "testID", conf, "")
 	scheduler.commander = MockCommander{}
 
 	for i := 0; i < 30; i++ {
@@ -220,13 +207,15 @@ func TestClose(t *testing.T) {
 		}
 	}
 
-	if scheduler.queue.IsEmpty() || scheduler.init.IsEmpty() || scheduler.running.IsEmpty() {
+	if scheduler.queue.IsEmpty() || scheduler.init.IsEmpty() ||
+		scheduler.running.IsEmpty() {
 		t.Fatalf("None of the queueLists should be empty\n")
 	}
 
 	scheduler.Close()
 
-	if !scheduler.queue.IsEmpty() || !scheduler.init.IsEmpty() || !scheduler.running.IsEmpty() {
+	if !scheduler.queue.IsEmpty() || !scheduler.init.IsEmpty() ||
+		!scheduler.running.IsEmpty() {
 		t.Fatalf("All of the queueLists should be empty\n")
 	}
 }
@@ -239,7 +228,7 @@ func TestInterruptedScan(t *testing.T) {
 		Niceness:            10,
 		MinFreeMemScanQueue: 0,
 	}
-	scheduler := NewScheduler(MockPubSub{}, "testID", conf, "")
+	scheduler := NewScheduler(out, "testID", conf, "")
 
 	scan1 := "foo"
 	scan2 := "bar"
