@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/connection"
+	"github.com/rs/zerolog/log"
 )
 
 // EventType is used to identify a message
@@ -33,6 +34,10 @@ const (
 	CMD  EventType = "cmd"  // Event is a cmd
 	INFO EventType = "info" // Event is a info
 )
+
+type GetMessage interface {
+	GetMessage() Message
+}
 
 type Event interface {
 	Event() EventType
@@ -64,6 +69,10 @@ type Message struct {
 	GroupID   string `json:"group_id"`        // The ID of a group of messages, responses will have the same ID
 }
 
+func (m Message) GetMessage() Message {
+	return m
+}
+
 func (m Message) MessageType() MessageType {
 	result, err := ParseMessageType(m.Type)
 	if err != nil {
@@ -93,10 +102,11 @@ func (m MessageType) String() string {
 	return result
 }
 
-func ParseMessageType(typ string) (*MessageType, error) {
-	smt := strings.Split(typ, ".")
+func ParseMessageType(mt string) (*MessageType, error) {
+	log.Trace().Msgf("Trying to parse: %s", mt)
+	smt := strings.Split(mt, ".")
 	if len(smt) < 1 {
-		return nil, fmt.Errorf("unable to parse %s to MessageType", typ)
+		return nil, fmt.Errorf("unable to parse %s to MessageType", mt)
 	}
 	result := MessageType{
 		Function: smt[0],

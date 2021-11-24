@@ -21,12 +21,8 @@ import (
 	"errors"
 	"fmt"
 
-	"encoding/json"
-	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
-	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
-	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 )
 
@@ -67,65 +63,4 @@ func ParseMessageType(message []byte) (*messages.MessageType, error) {
 		)
 	}
 	return mt, nil
-}
-
-// onMessage is a struct containing aggregates for registered types.
-//
-// The messages.MessageType is normalized like what.on e.g. create.target
-// onMessage tries to parse the given messages to messages.Create,
-// messages.Modify, messages.Get then tries to find via MessageType the
-// Aggregate via handler.
-type onMessage struct {
-	lookup  map[string]Container
-	context string
-}
-
-func (om onMessage) On(
-	topic string,
-	message []byte,
-) (*connection.SendResponse, error) {
-	mt, err := ParseMessageType(message)
-	if err != nil {
-		return messages.EventToResponse(om.context, info.Failure{
-			Identifier: messages.Identifier{
-				Message: messages.NewMessage("failure", "", ""),
-			},
-			Error: fmt.Sprintf("%s", err),
-		}), nil
-	}
-	if h, ok := om.lookup[mt.Aggregate]; ok {
-		use, fuse := containerClosure(h, mt.Function)
-		if e := json.Unmarshal(message, use); e != nil {
-			return messages.EventToResponse(om.context, info.Failure{
-				Identifier: messages.Identifier{
-					Message: messages.NewMessage("failure", "", ""),
-				},
-				Error: fmt.Sprintf("unable to parse %s: %s", mt, e),
-			}), nil
-		}
-		r, f, e := fuse()
-		if e != nil {
-			return nil, e
-		}
-		if f != nil {
-			return messages.EventToResponse(om.context, f), e
-		}
-		return messages.EventToResponse(om.context, r), e
-
-	}
-	log.Printf("unable to identify entity %s", mt)
-	return nil, nil
-}
-
-// New returns a new connection.OnMessage handler
-func New(context string, container ...Container) connection.OnMessage {
-	lookup := map[string]Container{}
-
-	for _, c := range container {
-		lookup[c.Topic] = c
-	}
-	return onMessage{
-		lookup:  lookup,
-		context: context,
-	}
 }

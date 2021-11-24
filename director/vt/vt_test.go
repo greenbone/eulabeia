@@ -1,48 +1,19 @@
 package vt
 
 import (
-	"encoding/json"
 	"testing"
 
-	"github.com/greenbone/eulabeia/models"
-	"github.com/greenbone/eulabeia/storage"
+	"github.com/greenbone/eulabeia/messages/cmds"
 )
 
-const success = "{\"id\":\"testOID\",\"message_created\":0,\"message_type\":\"get.vt\",\"message_id\":\"0\",\"group_id\":\"0\"}"
-
 func TestResponse(t *testing.T) {
-	s := storage.InMemory{Pretend: false}
-	h := New(&s, "test", "testSensor")
+	h := New("testSensor")
 
-	m := models.Scan{
-		ID: "testScan",
-		Target: models.Target{
-			Sensor: "testSensor",
-		},
-	}
-
-	s.Put("testScan", m)
-
-	resp, err := h.On("", []byte(success))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if resp.Topic != "test/vt/cmd/testSensor" {
+	resp, _, _ := h.Getter.Get(cmds.NewGet("vt", "testOID", "", ""))
+	if resp.MessageType().Destination != "testSensor" {
 		t.Fatalf(
-			"Wrong topic.\nShould be:\n%s\nIs:\n%s\n",
-			"test/vt/cmd/testSensor",
-			resp.Topic,
-		)
-	}
-	respString, err := json.Marshal(resp.MSG)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(respString) != success {
-		t.Fatalf(
-			"Error in response.\nShould be:\n%s\n\nIs:\n%s\n",
-			success,
-			respString,
+			"Destination %s is wrong it should be testSensor",
+			resp.MessageType().Destination,
 		)
 	}
 

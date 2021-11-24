@@ -23,8 +23,13 @@ type Certificate struct {
 }
 
 type Connection struct {
-	Server  string // Bind address of server in format 133.713.371.337:1337
-	Timeout int64  // TODO
+	Server        string // The server to connect to
+	QOS           byte   // Setting the default QOS for most cases it should be 1
+	CleanStart    bool   // When set to true the broker will not store session information
+	SessionExpiry uint64 // How long a session will be stored; when 0 and CleanStart false it will be one day
+	Timeout       int64
+	Username      string // Username for authentication
+	Password      string // Password used with Username for authentication
 }
 
 type ScannerPreferences struct {
@@ -39,10 +44,6 @@ type ScannerPreferences struct {
 type Preferences struct {
 	LogLevel string // Loglevel (Debug, Info ...)
 	LogFile  string // Path to logfile
-}
-
-type Sensor struct {
-	Id string // The Id (a uuid) of this sensor
 }
 
 type Feedservice struct {
@@ -62,7 +63,6 @@ type Configuration struct {
 	Connection         Connection
 	ScannerPreferences ScannerPreferences
 	Preferences        Preferences
-	Sensor             Sensor
 	Feedservice        Feedservice
 	Director           Director
 	path               string

@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/info"
@@ -182,74 +183,92 @@ func TestAggragteHandler(t *testing.T) {
 		"get":    all,
 		"delete": all,
 	}
+
+	container := []Container{FromAggregate("target", exampleAggregate{})}
+	var received interface{}
+	publisher := []connection.Publisher{
+		connection.ClosurePublisher{
+			Closure: func(s string, i interface{}) error {
+				received = i
+				return nil
+			}},
+	}
+	in := make(chan *connection.TopicData, 1)
+	out := make(chan *connection.SendResponse, 1)
+	defer close(in)
+	defer close(out)
+	r := NewRegister("", container, nil, nil, publisher, in, out)
+
 	for k, test := range tests {
 		for _, j := range test {
+			received = nil
 			b, err := json.Marshal(createEvent(k, j))
 			if err != nil {
 				t.Errorf("[%s][%s] failed to create json", k, j)
 			}
 			fmt.Printf("[%s][%s] running\n", k, j)
-			h := New("", FromAggregate("target", exampleAggregate{}))
-			r, err := h.On("", b)
+			in <- &connection.TopicData{Topic: "scanner/target/cmd", Message: b}
+			fmt.Printf("[%s][%s] sent data %s\n", k, j, string(b))
+			r.Check()
 			switch j {
 			case SUCCESS:
 				switch k {
 				case "delete":
-					if _, ok := r.MSG.(*info.Deleted); !ok {
+					if _, ok := received.(*info.Deleted); !ok {
 						t.Errorf(
 							"[%s][%s] expected models.GotTarget but got %T",
 							k,
 							j,
-							r,
+							received,
 						)
 					}
 				case "get":
-					if _, ok := r.MSG.(*models.GotTarget); !ok {
+					if _, ok := received.(*models.GotTarget); !ok {
 						t.Errorf(
 							"[%s][%s] expected models.GotTarget but got %T",
 							k,
 							j,
-							r,
+							received,
 						)
 					}
 				case "create":
-					if _, ok := r.MSG.(*info.Created); !ok {
+					if _, ok := received.(*info.Created); !ok {
 						t.Errorf(
 							"[%s][%s] expected info.Created but got %T",
 							k,
 							j,
-							r,
+							received,
 						)
 					}
 				case "modify":
-					if _, ok := r.MSG.(*info.Modified); !ok {
+					if _, ok := received.(*info.Modified); !ok {
 						t.Errorf(
 							"[%s][%s] expected info.Modified but got %T",
 							k,
 							j,
-							r,
+							received,
 						)
 					}
 
 				}
 			case FAILURE:
 				if k != "create" {
-					if _, ok := r.MSG.(*info.Failure); !ok {
+					if _, ok := received.(*info.Failure); !ok {
 						t.Errorf(
 							"[%s][%s] expected info.Failure but got %T",
 							k,
 							j,
-							r,
+							received,
 						)
 					}
 				}
 			case ERROR:
-				if err == nil {
+				if err != nil {
 					t.Errorf(
-						"[%s][%s] expected error but is nil; got msg %T instead",
+						"[%s][%s] expected to not error but is nil; got msg %T instead",
 						k,
 						j,
-						r,
+						received,
 					)
 				}
 

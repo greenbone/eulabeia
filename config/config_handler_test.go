@@ -65,30 +65,12 @@ func TestConfigurationHandler(t *testing.T) {
 		t.Errorf("Connection.Timeout should be %d", timeout)
 	}
 
-	if config.Sensor.Id != "" {
-		t.Errorf("Connection.Sensor.Id should not be set.")
-	}
-
-	// Set and check sensor ID in TOML strcut
-	config.Sensor.Id = uuid.NewString()
-	if config.Sensor.Id == "" {
-		t.Errorf("Connection.Sensor.Id should be set.")
-	}
-	_, err = uuid.Parse(config.Sensor.Id)
-	if err != nil {
-		t.Errorf("Connection.Sensor.Id should be an uuid.")
-	}
-
 	// Save TOML struct back to file
 	Save(config)
 
 	// Reload file
 	config, _ = New(path, "eulabeia")
 
-	if config.Sensor.Id == "" {
-		t.Errorf("Connection.Sensor.Id should be set.")
-	}
-	_, err = uuid.Parse(config.Sensor.Id)
 	if err != nil {
 		t.Errorf("Connection.Sensor.Id should be an uuid.")
 	}
