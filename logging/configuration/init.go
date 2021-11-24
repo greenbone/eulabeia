@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -27,7 +28,12 @@ func init() {
 	if s, ok := os.LookupEnv("LOG_SERVICE_NAME"); ok {
 		service = s
 	} else {
-		service = "eulabeia"
+		if p, err := os.Executable(); err != nil {
+			service = "unknown"
+		} else {
+			_, f := path.Split(p)
+			service = f
+		}
 	}
 	if s, ok := os.LookupEnv("LOG_LEVEL"); ok {
 		if l, err := zerolog.ParseLevel(s); err != nil {
