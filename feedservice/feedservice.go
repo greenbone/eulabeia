@@ -176,7 +176,6 @@ func (f *feed) GetVT(msg cmds.Get) (models.VT, *info.Failure, error) {
 	if len(pref) == 0 {
 		return models.VT{}, info.GetFailureResponse(
 			msg.Message,
-			"vt",
 			msg.ID,
 		), nil
 	}

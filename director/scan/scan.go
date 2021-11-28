@@ -45,7 +45,7 @@ func (t scanAggregate) Start(
 		return nil, nil, err
 	}
 	if scan == nil {
-		return nil, info.GetFailureResponse(s.Message, "scan", s.ID), nil
+		return nil, info.GetFailureResponse(s.Message, s.ID), nil
 	}
 
 	log.Printf("Starting scan (%s) on sensor (%s)", s.ID, scan.Sensor)
@@ -101,13 +101,12 @@ func (t scanAggregate) Modify(
 				if err != nil {
 					return nil, info.GetFailureResponse(
 						m.Message,
-						"target",
 						str,
 					), nil
 				}
 				scan.Target = *target
 			} else {
-				return nil, info.GetFailureResponse(m.Message, "target", "invalid"), nil
+				return nil, info.GetFailureResponse(m.Message, "invalid"), nil
 			}
 		case "temporary":
 			if b, ok := v.(bool); ok {
@@ -139,7 +138,7 @@ func (t scanAggregate) Delete(
 	d cmds.Delete,
 ) (*info.Deleted, *info.Failure, error) {
 	if err := t.storage.Delete(d.ID); err != nil {
-		return nil, info.DeleteFailureResponse(d.Message, "target", d.ID), nil
+		return nil, info.DeleteFailureResponse(d.Message, d.ID), nil
 	}
 	return &info.Deleted{
 		Identifier: messages.Identifier{
@@ -157,7 +156,7 @@ func (t scanAggregate) Get(g cmds.Get) (messages.Event, *info.Failure, error) {
 	if scan, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if scan == nil {
-		return nil, info.GetFailureResponse(g.Message, "scan", g.ID), nil
+		return nil, info.GetFailureResponse(g.Message, g.ID), nil
 	} else {
 		return &models.GotScan{
 			Message: messages.NewMessage("got.scan", g.MessageID, g.GroupID),

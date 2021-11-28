@@ -153,7 +153,7 @@ func (t targetAggregate) Get(
 	if target, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if target == nil {
-		return nil, info.GetFailureResponse(g.Message, "target", g.ID), nil
+		return nil, info.GetFailureResponse(g.Message, g.ID), nil
 	} else {
 		return &models.GotTarget{
 			Message: messages.NewMessage("got.target", g.MessageID, g.GroupID),
@@ -166,7 +166,7 @@ func (t targetAggregate) Delete(
 	d cmds.Delete,
 ) (*info.Deleted, *info.Failure, error) {
 	if err := t.storage.Delete(d.ID); err != nil {
-		return nil, info.DeleteFailureResponse(d.Message, "target", d.ID), nil
+		return nil, info.DeleteFailureResponse(d.Message, d.ID), nil
 	}
 	return &info.Deleted{
 		Identifier: messages.Identifier{
