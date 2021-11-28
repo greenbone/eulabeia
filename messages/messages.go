@@ -24,7 +24,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/greenbone/eulabeia/connection"
-	"github.com/rs/zerolog/log"
 )
 
 // EventType is used to identify a message
@@ -40,6 +39,7 @@ type GetMessage interface {
 }
 
 type Event interface {
+	GetMessage
 	Event() EventType
 	MessageType() MessageType
 }
@@ -81,11 +81,20 @@ func (m Message) MessageType() MessageType {
 	return *result
 }
 
+type GetID interface {
+	Event
+	GetID() string
+}
+
 // Identifier is an ID based cmd it contains an ID for
 // messages.Message.MessageType
 type Identifier struct {
 	ID string `json:"id"`
 	Message
+}
+
+func (s Identifier) GetID() string {
+	return s.ID
 }
 
 type MessageType struct {
@@ -103,19 +112,22 @@ func (m MessageType) String() string {
 }
 
 func ParseMessageType(mt string) (*MessageType, error) {
-	log.Trace().Msgf("Trying to parse: %s", mt)
 	smt := strings.Split(mt, ".")
 	if len(smt) < 1 {
 		return nil, fmt.Errorf("unable to parse %s to MessageType", mt)
 	}
+	s := 0
+	if smt[0] == "failure" {
+		s = 1
+	}
 	result := MessageType{
 		Function: smt[0],
 	}
-	if len(smt) > 1 {
-		result.Aggregate = smt[1]
+	if len(smt) > s+1 {
+		result.Aggregate = smt[s+1]
 	}
-	if len(smt) > 2 {
-		result.Destination = smt[2]
+	if len(smt) > s+2 {
+		result.Destination = smt[s+2]
 	}
 	return &result, nil
 }

@@ -41,7 +41,7 @@ const (
 
 // Result
 type Result struct {
-	ScanId   string     `json:"id"`          // Scan id
+	ID       string     `json:"id"`          // Scan id
 	Type     ResultType `json:"result_type"` // Result type
 	Host     string     `json:"host_ip"`     // Host's IP the result belongs to
 	Hostname string     `json:"host_name"`   // DNS name of the host
@@ -55,6 +55,10 @@ type GotResult struct {
 	messages.Message
 	info.EventType
 	Result
+}
+
+func (s GotResult) GetID() string {
+	return s.ID
 }
 
 // Host information usefull for the host progress calculation

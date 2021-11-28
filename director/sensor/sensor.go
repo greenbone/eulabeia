@@ -96,7 +96,7 @@ func (t sensorAggregate) Get(
 	if sensor, err := t.storage.Get(g.ID); err != nil {
 		return nil, nil, err
 	} else if sensor == nil {
-		return nil, info.GetFailureResponse(g.Message, "sensor", g.ID), nil
+		return nil, info.GetFailureResponse(g.Message, g.ID), nil
 	} else {
 		return &models.GotSensor{
 			Message: messages.NewMessage("got.sensor", g.MessageID, g.GroupID),
@@ -109,7 +109,7 @@ func (t sensorAggregate) Delete(
 	d cmds.Delete,
 ) (*info.Deleted, *info.Failure, error) {
 	if err := t.storage.Delete(d.ID); err != nil {
-		return nil, info.DeleteFailureResponse(d.Message, "sensor", d.ID), nil
+		return nil, info.DeleteFailureResponse(d.Message, d.ID), nil
 	}
 	return &info.Deleted{
 		Identifier: messages.Identifier{

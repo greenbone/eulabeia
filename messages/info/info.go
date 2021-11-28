@@ -47,12 +47,33 @@ type Modified IDInfo
 // Deleted is the success response of a cmd.Delete
 type Deleted IDInfo
 
+func IDInfoResponse(basedOn messages.Message, id string, function string) IDInfo {
+	return IDInfo{
+		Identifier: messages.Identifier{
+			ID:      id,
+			Message: messages.NewMessage(fmt.Sprintf("%s.%s", function, basedOn.MessageType().Aggregate), "", basedOn.GroupID),
+		},
+	}
+}
+
 // Failure is returned when an error occured while processing a message
 type Failure struct {
 	EventType
 	messages.Identifier
 	Error string `json:"error"`
 }
+
+const (
+	REQUESTED   = "requested"
+	QUEUED      = "queued"
+	INIT        = "init"
+	RUNNING     = "running"
+	STOPPING    = "stopping"
+	STOPPED     = "stopped"
+	INTERRUPTED = "interrupted"
+	FAILED      = "failed"
+	FINISHED    = "finished"
+)
 
 // Contains the status of a scan
 type Status struct {
@@ -61,28 +82,15 @@ type Status struct {
 	Status string `json:"status"`
 }
 
-type Response struct {
-	EventType
-	messages.Message
-	Status string `json:"status"`
-	Msg    string `json:"msg"`
-}
-
 type Version struct {
 	EventType
 	messages.Identifier
 	Version string `json:"version"`
 }
 
-// DeleteFailureResponse is a conenvience method to return a Failure as Unable
-// to delete
-func DeleteFailureResponse(
-	basedOn messages.Message,
-	prefix string,
-	id string,
-) *Failure {
+func FailureResponse(basedOn messages.Message, id string, emsg string) *Failure {
 	return &Failure{
-		Error: fmt.Sprintf("Unable to delete %s %s.", prefix, id),
+		Error: emsg,
 		Identifier: messages.Identifier{
 			Message: messages.NewMessage(
 				fmt.Sprintf("failure.%s", basedOn.Type),
@@ -94,22 +102,27 @@ func DeleteFailureResponse(
 	}
 }
 
+// DeleteFailureResponse is a conenvience method to return a Failure as Unable
+// to delete
+func DeleteFailureResponse(
+	basedOn messages.Message,
+	id string,
+) *Failure {
+	return FailureResponse(
+		basedOn,
+		id,
+		fmt.Sprintf("Unable to delete %s %s.", basedOn.MessageType().Aggregate, id),
+	)
+}
+
 // GetFailureResponse is a conenvience method to return a Failure as NotFound
 func GetFailureResponse(
 	basedOn messages.Message,
-	prefix string,
 	id string,
 ) *Failure {
-	return &Failure{
-		Error: fmt.Sprintf("%s %s not found.", prefix, id),
-		Identifier: messages.Identifier{
-
-			Message: messages.NewMessage(
-				fmt.Sprintf("failure.%s", basedOn.Type),
-				"",
-				basedOn.GroupID,
-			),
-			ID: id,
-		},
-	}
+	return FailureResponse(
+		basedOn,
+		id,
+		fmt.Sprintf("%s %s not found.", basedOn.MessageType().Aggregate, id),
+	)
 }
