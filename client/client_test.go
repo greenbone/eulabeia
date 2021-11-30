@@ -25,22 +25,22 @@ func createDelegationFake(gid string, response ...messages.Event) (chan *connect
 		i := 0
 		for sr := range out {
 			log.Trace().Msgf("Got message %+v", sr)
-			switch respond[i].(type) {
-			case info.Status:
-				for ; i < len(response); i++ {
+			if len(respond) > 0 {
+				switch respond[i].(type) {
+				case info.Status:
+					for ; i < len(response); i++ {
+						b, _ := json.Marshal(&respond[i])
+						log.Trace().Msgf("[%d] sending %s", i, string(b))
+						in <- &connection.TopicData{Topic: "dontcare", Message: b}
+					}
+				default:
 					b, _ := json.Marshal(&respond[i])
 					log.Trace().Msgf("[%d] sending %s", i, string(b))
 					in <- &connection.TopicData{Topic: "dontcare", Message: b}
+					i = i + 1
 				}
-			default:
-				b, _ := json.Marshal(&respond[i])
-				log.Trace().Msgf("[%d] sending %s", i, string(b))
-				in <- &connection.TopicData{Topic: "dontcare", Message: b}
-				i = i + 1
 			}
 		}
-		log.Trace().Msg("BYE BYE BYE BYE BYE")
-
 	}(out, in, gid, response)
 	return out, in
 }
@@ -293,7 +293,6 @@ func TestRetry(t *testing.T) {
 		Out:        out,
 		In:         in,
 		Retries:    len(responses),
-		Timeout:    30 * time.Second,
 	}
 	create := cmds.NewCreate("target", "", groupID)
 	p, _ := From(c, create)

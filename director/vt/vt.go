@@ -12,7 +12,7 @@ type vtHandler struct {
 }
 
 func (t vtHandler) Get(g cmds.Get) (messages.Event, *info.Failure, error) {
-	return cmds.NewGet("vt", "", t.sensor, g.GroupID), nil, nil
+	return cmds.NewGet("vt", g.ID, t.sensor, g.GroupID), nil, nil
 }
 
 func New(sensor string) handler.Container {

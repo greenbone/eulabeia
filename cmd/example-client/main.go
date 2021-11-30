@@ -22,34 +22,20 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	_ "github.com/greenbone/eulabeia/logging/configuration"
-	"github.com/rs/zerolog/log"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/greenbone/eulabeia/config"
+	"github.com/greenbone/eulabeia/client"
 	"github.com/greenbone/eulabeia/connection"
-	"github.com/greenbone/eulabeia/connection/mqtt"
-	"github.com/greenbone/eulabeia/director/scan"
+	_ "github.com/greenbone/eulabeia/logging/configuration"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
-	"github.com/greenbone/eulabeia/messages/handler"
-	"github.com/greenbone/eulabeia/messages/info"
+	"github.com/rs/zerolog/log"
+
+	"github.com/greenbone/eulabeia/config"
+	"github.com/greenbone/eulabeia/connection/mqtt"
 	"github.com/greenbone/eulabeia/models"
 )
-
-const MEGA_ID = "mega_scan_123"
-const context = "scanner"
-const topic = context + "/+/info"
-
-var firstContact = false
-var megaScanStarted = false
 
 var target = models.Target{
 	Hosts: []string{"localhost"},
@@ -90,174 +76,54 @@ var target = models.Target{
 	},
 }
 
-const (
-	GOT_SENSOR      = "got.sensor"
-	CREATED_TARGET  = "created.target"
-	MODIFIED_TARGET = "modified.target"
-	MODIFIED_SCAN   = "modified.scan"
-	RESULT_SCAN     = "result.scan"
-	GOT_VT          = "got.vt"
-	STATUS_SCAN     = "status.scan"
-)
 
-// ExampleHandler parses the message and calls corresponding function of
-// MessageType within do map.
-type ExampleHandler struct {
-	sync.RWMutex
-	do      map[string]func(info.IDInfo, []byte) *connection.SendResponse
-	handled []string
-	exit    chan os.Signal
-}
-
-func (e *ExampleHandler) On(
-	topic string,
-	msg []byte,
-) (*connection.SendResponse, error) {
-	e.Lock()
-	defer e.Unlock()
-
-	var infoMSG info.IDInfo
-	if err := json.Unmarshal(msg, &infoMSG); err != nil {
-		log.Fatal().Msgf("Unable to parse %s to info.IDInfo (%s)", msg, err)
-	}
-	mt := infoMSG.MessageType()
-	f, ok := e.do[infoMSG.ID]
-	if !ok {
-		f, ok = e.do[mt.String()]
-		if !ok {
-			return nil, nil
-		}
-	}
-	response := f(infoMSG, msg)
-	// On a response without a topic we assume ignored
-	if response != nil && response.Topic == "" {
-		return nil, nil
-	}
-	e.handled = append(e.handled, mt.String())
-	e.handled = append(e.handled, infoMSG.ID)
-
-	// When the topic is set to exit the scenario finished
-	if response != nil && response.Topic == "exit" {
-		e.exit <- syscall.SIGCONT
-		return nil, nil
-	}
-
-	return response, nil
-}
-
-func CreateTarget(_ info.IDInfo, _ []byte) *connection.SendResponse {
-	firstContact = true
-	log.Trace().Msg("creating target")
-	create := cmds.NewCreate("target", "director", "")
-	return messages.EventToResponse(context, create)
-}
-
-func ModifyTarget(msg info.IDInfo, _ []byte) *connection.SendResponse {
-	modify := cmds.NewModify(
-		"target",
-		msg.ID,
-		map[string]interface{}{"sensor": "openvas"},
-		"director",
-		msg.GroupID)
-	return messages.EventToResponse(context, modify)
-}
-
-func GetVT(_ info.IDInfo, msg []byte) *connection.SendResponse {
-	var result models.Result
-	err := json.Unmarshal(msg, &result)
+func verifyGetVT(cc client.Configuration) {
+	p, err := client.From(cc, cmds.NewGet("vt", "0.0.0.0.0.0.0.0.0.1", "director", "getvts"))
 	if err != nil {
-		log.Fatal().Msgf("unable to parse result: %s", string(msg))
+		log.Panic().Err(err).Msg("Unable create program for get.vts")
 	}
-	if result.OID == "" {
-		log.Printf("skipping sending get.vt due to missing oid")
-		return nil
+	_, f, err := p.Run()
+	if err != nil {
+		log.Panic().Err(err).Msgf("get.vt failed %+v", f)
 	}
-
-	getVT := cmds.NewGet("vt", result.OID, "director", "")
-	return messages.EventToResponse(context, getVT)
 }
 
-func VerifyVT(i info.IDInfo, b []byte) *connection.SendResponse {
-	if i.Type == "got.vt" {
-		var vt models.GotVT
-		if json.Unmarshal(b, &vt) != nil {
-			log.Fatal().Msgf("unable to parse vt: %s", string(b))
+func verifyStartScan(cc client.Configuration) messages.GetID {
+
+	cc.Retries = 0
+	cc.RetryInterval = 0
+
+	p, err := client.From(cc, cmds.NewCreate("target", "director", "scantest"))
+	if err != nil {
+		log.Panic().Err(err).Msg("Unable to create scantest program")
+	}
+	modifyTarget := client.ModifyBasedOnGetID("target", "director", func(gi messages.GetID) map[string]interface{} {
+		v, err := client.ToValues(target)
+		if err != nil {
+			log.Panic().Err(err).Msgf("%T to values", target)
 		}
-		return nil
-	}
-	return &connection.SendResponse{}
-}
-
-func CreateScan(msg info.IDInfo, _ []byte) *connection.SendResponse {
-	// We use the principle modify over create to directly create a scan with a
-	// target ID.
-	// Otherwise we need to store the target ID and reuse it on created.scan.
-	if msg.ID == MEGA_ID {
-		return &connection.SendResponse{}
-	}
-	modify := cmds.NewModify(
-		"scan",
-		uuid.NewString(),
-		map[string]interface{}{"target": msg.ID},
-		"director",
-		msg.GroupID)
-	return messages.EventToResponse(context, modify)
-}
-
-func MegaScan(i info.IDInfo, _ []byte) *connection.SendResponse {
-	if i.ID == MEGA_ID || megaScanStarted {
-		return &connection.SendResponse{}
-	}
-	megaScanStarted = true
-	mega := scan.StartMegaScan{
-		Message: messages.NewMessage("start.scan.director", "", ""),
-		Scan: models.Scan{
-			ID:     MEGA_ID,
-			Target: target,
-		},
-	}
-	return messages.EventToResponse(context, mega)
-}
-
-func VerifyForScanStatus(i info.IDInfo, b []byte) *connection.SendResponse {
-	if i.Type == "status.scan" {
-		var status info.Status
-		if json.Unmarshal(b, &status) != nil {
-			log.Fatal().Msgf("Unable to parse: %s", string(b))
+		return v
+	})
+	modifyScan := client.ModifyBasedOnGetID("scan", "director", func(gi messages.GetID) map[string]interface{} {
+		return map[string]interface{}{
+			"target_id": gi.GetID(),
 		}
-		if status.Status == "finished" {
-			return &connection.SendResponse{
-				Topic: "exit",
-			}
-		}
-	}
-	return &connection.SendResponse{}
-}
+	})
 
-func Done(_ info.IDInfo, _ []byte) *connection.SendResponse {
-	return nil
-}
-
-func Verify(eh *ExampleHandler) {
-	var difference []string
-	for k := range eh.do {
-		found := false
-		for _, v := range eh.handled {
-			if k == v {
-				found = true
-				break
-			}
-		}
-		if !found {
-			difference = append(difference, k)
-		}
+	verifyFailure := client.DefaultVerifier(client.FailureParser)
+	p = p.Next(nil, modifyTarget, verifyFailure, client.DefaultVerifier(client.ModifiedParser))
+	p = p.Next(nil, modifyScan, verifyFailure, client.DefaultVerifier(client.ModifiedParser))
+	p = p.Next(nil, client.StartBasedOnGetID("scan", "director"), client.OpenvasScanFailure, client.OpenvasScanSuccess)
+	s, f, err := p.Start()
+	if f != nil {
+		log.Panic().Msgf("Failure while waiting for sensor: %+v", f)
 	}
-	if len(difference) > 0 {
-		log.Fatal().Msgf("FAILURE: %s were not handled.", difference)
-	} else {
-		log.Info().Msg("SUCCESS")
-
+	if err != nil {
+		log.Panic().Err(err).Msg("Start scan failed")
 	}
+
+	log.Info().Msgf("Finished with %+v", s)
+	return s.(messages.GetID)
 }
 
 func main() {
@@ -278,56 +144,48 @@ func main() {
 	if err != nil {
 		log.Fatal().Msgf("Failed to create MQTT: %s", err)
 	}
-	defer c.Close()
 	err = c.Connect()
 	if err != nil {
 		log.Fatal().Msgf("Failed to connect: %s", err)
 	}
-	ic := make(chan os.Signal, 1)
-	defer close(ic)
-	mh := ExampleHandler{
-		do: map[string]func(info.IDInfo, []byte) *connection.SendResponse{
-			GOT_SENSOR:      CreateTarget,
-			CREATED_TARGET:  ModifyTarget,
-			MODIFIED_TARGET: CreateScan,
-			MODIFIED_SCAN:   MegaScan,
-			// after boreas integration result scan and get vt aren't working
-			// as before. They will be disabled for now and handled in a follow
-			// up task
-			//			RESULT_SCAN:     GetVT,
-			//			GOT_VT:          VerifyVT,
-			STATUS_SCAN: VerifyForScanStatus,
-		},
-		exit: ic,
+	defer c.Close()
+	c.Subscribe([]string{
+		"#",
+	})
+	out := make(chan *connection.SendResponse, 1)
+	go func(pub connection.Publisher) {
+		for o := range out {
+			log.Trace().Msgf("Sending message to %s", o.Topic)
+			pub.Publish(o.Topic, o.MSG)
+		}
+	}(c)
+	cc := client.Configuration{
+		Context:       "scanner",
+		Out:           out,
+		In:            c.In(),
+		Timeout:       30 * time.Second,
+		Retries:       10,
+		RetryInterval: 1 * time.Second,
 	}
-	defer Verify(&mh)
-	h := map[string]connection.OnMessage{topic: &mh}
-	err = c.Subscribe([]string{topic})
+	p, err := client.From(cc, cmds.NewGet("sensor", "localhorst", "director", "initial"))
 	if err != nil {
-		panic(err)
+		log.Panic().Err(err).Msg("unable to create wait program")
 	}
-	mhm := handler.NewDefaultMessageHandler(configuration.Context, nil, h, c)
-	mhm.Start()
+	_, f, err := p.Start()
+	if f != nil {
+		log.Panic().Msgf("Failure while waiting for sensor: %+v", f)
 
-	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)
-	for i := 0; i < 10 && !firstContact; i++ {
-		err = c.Publish(
-			"scanner/sensor/cmd/director",
-			cmds.NewGet("sensor", "localhorst", "director", "0"),
-		)
-		if err != nil {
-			log.Fatal().Msgf("Failed to publish: %s", err)
-		}
-		if !firstContact {
-			time.Sleep(1 * time.Second)
-		}
 	}
-	timer := time.NewTimer(1 * time.Minute)
-	defer timer.Stop()
-	go func() {
-		<-timer.C
-		ic <- syscall.SIGABRT
-	}()
-	<-ic
-	log.Printf("After handling %s it is time to say good bye", mh.handled)
+	if err != nil {
+		log.Panic().Err(err).Msg("error while waiting for sensor")
+	}
+	received := make(chan *client.Received)
+	go func(r chan *client.Received) {
+		for m := range r {
+			log.Debug().Msgf("[%d][%T] %+v", m.State, m.Event, m.Event)
+		}
+	}(received)
+	cc.DownStream = received
+	_ = verifyStartScan(cc)
+	verifyGetVT(cc)
 }
