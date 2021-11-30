@@ -187,7 +187,9 @@ func (f *feed) GetVT(msg cmds.Get) (models.VT, *info.Failure, error) {
 
 	for _, v := range allTags {
 		tag := strings.SplitN(v, "=", 2)
-		tags[tag[0]] = tag[1]
+		if len(tag) > 1 {
+			tags[tag[0]] = tag[1]
+		}
 	}
 	refs := getRefs(
 		pref[redis.NVT_CVES_POS],

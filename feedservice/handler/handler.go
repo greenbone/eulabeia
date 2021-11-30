@@ -26,6 +26,7 @@ import (
 	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
+	"github.com/rs/zerolog/log"
 )
 
 // FeedHandler handles incoming request regarding the feed
@@ -49,6 +50,7 @@ func (handler FeedHandler) On(
 	if err != nil {
 		return nil, err
 	}
+	log.Trace().Msgf("[%s] %s", topic, string(message))
 	if mt.Aggregate == "vt" {
 		switch mt.Function {
 		case "get": // Get single VT metadata

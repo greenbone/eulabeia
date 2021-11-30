@@ -136,7 +136,6 @@ func (p *Program) Start() (success interface{}, failure interface{}, err error) 
 // Run runs the current and following steps
 func (p *Program) Run() (success interface{}, failure interface{}, err error) {
 	// it is not a startpoint and depends on a previous program
-
 	if p.init == nil {
 		if p.previous == nil {
 			return nil, nil, errors.New("unable to calculate init event without previous program")
@@ -160,7 +159,7 @@ func (p *Program) Run() (success interface{}, failure interface{}, err error) {
 	}
 retryloop:
 	for i := 0; i < p.retries+1; i++ {
-		log.Trace().Msgf("[%d] run", i)
+		log.Trace().Msgf("[%d][%s] run %T", i, p.init.GetMessage().GroupID, p.init)
 		err = nil
 		p.failure = nil
 		failure = nil
@@ -219,6 +218,15 @@ func StartBasedOnGetID(aggregate string, destination string) func(messages.Event
 	return func(e messages.Event) messages.Event {
 		if v, ok := e.(messages.GetID); ok {
 			return cmds.NewStart(aggregate, v.GetID(), destination, v.GetMessage().GroupID)
+		}
+		return nil
+	}
+}
+
+func DeleteBasedOnGetID(aggregate string, destination string) func(messages.Event) messages.Event {
+	return func(e messages.Event) messages.Event {
+		if v, ok := e.(messages.GetID); ok {
+			return cmds.NewDelete(aggregate, v.GetID(), destination, v.GetMessage().GroupID)
 		}
 		return nil
 	}
@@ -364,6 +372,13 @@ func GotResultParser(b []byte) (string, messages.Event, error) {
 	}
 	return "got", c, nil
 }
+func GotVTParser(b []byte) (string, messages.Event, error) {
+	var c models.GotVT
+	if err := json.Unmarshal(b, &c); err != nil {
+		return "", nil, err
+	}
+	return "got", c, nil
+}
 func GotSensorParser(b []byte) (string, messages.Event, error) {
 	var c models.GotSensor
 	if err := json.Unmarshal(b, &c); err != nil {
@@ -433,6 +448,8 @@ func From(
 			parser = GotScanParser
 		case "result":
 			parser = GotResultParser
+		case "vt":
+			parser = GotVTParser
 		default:
 			return nil, fmt.Errorf("no known parser for %s", v.MessageType().Aggregate)
 		}
@@ -453,6 +470,7 @@ func From(
 
 func New(c Configuration, init messages.Event, vs, vf VerifyAndParse) *Program {
 	return &Program{
+		context:       c.Context,
 		init:          init,
 		verifySuccess: vs,
 		verifyFailure: vf,
