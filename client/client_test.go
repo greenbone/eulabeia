@@ -16,7 +16,7 @@ import (
 )
 
 var NO_VALUES = func(gi messages.GetID) map[string]interface{} { return nil }
-var MODIFY_SCAN_VALUES = func(gi messages.GetID) map[string]interface{} { return map[string]interface{}{"target": gi.GetID()} }
+var MODIFY_SCAN_VALUES = func(gi messages.GetID) map[string]interface{} { return map[string]interface{}{"target_id": gi.GetID()} }
 
 func createDelegationFake(gid string, response ...messages.Event) (chan *connection.SendResponse, chan *connection.TopicData) {
 	out := make(chan *connection.SendResponse, 1)
@@ -24,23 +24,22 @@ func createDelegationFake(gid string, response ...messages.Event) (chan *connect
 	go func(out <-chan *connection.SendResponse, in chan<- *connection.TopicData, gid string, respond []messages.Event) {
 		i := 0
 		for sr := range out {
-			if sr != nil {
-				log.Trace().Msgf("Got message %+v", sr)
-				switch respond[i].(type) {
-				case info.Status:
-					for ; i < len(response); i++ {
-						b, _ := json.Marshal(&respond[i])
-						log.Trace().Msgf("[%d] sending %s", i, string(b))
-						in <- &connection.TopicData{Topic: "dontcare", Message: b}
-					}
-				default:
+			log.Trace().Msgf("Got message %+v", sr)
+			switch respond[i].(type) {
+			case info.Status:
+				for ; i < len(response); i++ {
 					b, _ := json.Marshal(&respond[i])
 					log.Trace().Msgf("[%d] sending %s", i, string(b))
 					in <- &connection.TopicData{Topic: "dontcare", Message: b}
-					i = i + 1
 				}
+			default:
+				b, _ := json.Marshal(&respond[i])
+				log.Trace().Msgf("[%d] sending %s", i, string(b))
+				in <- &connection.TopicData{Topic: "dontcare", Message: b}
+				i = i + 1
 			}
 		}
+		log.Trace().Msg("BYE BYE BYE BYE BYE")
 
 	}(out, in, gid, response)
 	return out, in
@@ -135,7 +134,7 @@ func TestCreateThenModifyScan(t *testing.T) {
 	}
 	p, _ := From(c, create)
 	tm := ModifyBasedOnGetID("scan", "director", NO_VALUES)
-	p.Next(nil, tm, CreateDefaultMessage(FailureParser), CreateDefaultMessage(ModifiedParser))
+	p.Next(nil, tm, DefaultVerifier(FailureParser), DefaultVerifier(ModifiedParser))
 	s, f, err := p.Start()
 	if err != nil {
 		t.Fatalf("Expected success but got err: %s (%+v)", err, f)
@@ -201,13 +200,13 @@ func TestCreateTargetModifyTargetCreateScanModifyScanStartScan(t *testing.T) {
 		StartBasedOnGetID("scan", "director"),
 	}
 	s_verification := []VerifyAndParse{
-		CreateDefaultMessage(ModifiedParser),
-		CreateDefaultMessage(ModifiedParser),
+		DefaultVerifier(ModifiedParser),
+		DefaultVerifier(ModifiedParser),
 		OpenvasScanSuccess,
 	}
 	f_verification := []VerifyAndParse{
-		CreateDefaultMessage(FailureParser),
-		CreateDefaultMessage(FailureParser),
+		DefaultVerifier(FailureParser),
+		DefaultVerifier(FailureParser),
 		OpenvasScanFailure,
 	}
 
@@ -249,6 +248,70 @@ func TestCreateTargetModifyTargetCreateScanModifyScanStartScan(t *testing.T) {
 		if v.Status != info.FINISHED {
 			log.Fatal().Msgf("Expected status (%s) to be %s", v.Status, info.FINISHED)
 		}
+	default:
+		t.Errorf("Expected info.Status as last response but got %T", v)
+	}
+}
+
+func TestRetry(t *testing.T) {
+	groupID := "retry_test"
+	sID := "test"
+	responses := []messages.Event{
+		info.Failure{
+			Identifier: messages.Identifier{
+				ID:      sID,
+				Message: messages.NewMessage("failure.create.target", "", groupID),
+			},
+		},
+		info.Failure{
+			Identifier: messages.Identifier{
+				ID:      sID,
+				Message: messages.NewMessage("failure.create.target", "", groupID),
+			},
+		},
+		info.Failure{
+			Identifier: messages.Identifier{
+				ID:      sID,
+				Message: messages.NewMessage("failure.create.target", "", groupID),
+			},
+		},
+		info.Created{
+			Identifier: messages.Identifier{
+				ID:      sID,
+				Message: messages.NewMessage("created.target", "", groupID),
+			},
+		},
+	}
+	out, in := createDelegationFake(groupID, responses...)
+	defer close(in)
+	defer close(out)
+	downstream := make(chan *Received, len(responses))
+
+	c := Configuration{
+		Context:    "scanner",
+		DownStream: downstream,
+		Out:        out,
+		In:         in,
+		Retries:    len(responses),
+		Timeout:    30 * time.Second,
+	}
+	create := cmds.NewCreate("target", "", groupID)
+	p, _ := From(c, create)
+	s, f, e := p.Run()
+	if e != nil || f != nil {
+		t.Fatalf("Expected success but got error (%s) or failure (%+v)", e, f)
+	}
+	countds := 0
+	for countds < len(responses) {
+		select {
+		case <-downstream:
+			countds = countds + 1
+		case <-time.After(10 * time.Second):
+			log.Fatal().Msgf("Timeout after a minute; counted: %d.", countds)
+		}
+	}
+	switch v := s.(type) {
+	case info.Created:
 	default:
 		t.Errorf("Expected info.Status as last response but got %T", v)
 	}
