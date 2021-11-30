@@ -52,13 +52,17 @@ type Program struct {
 	receive           <-chan *connection.TopicData
 	received          chan<- *Received // used to inform downstream about failure or success; mostly useful on multiple success or fialure states (e.g. a scan)
 	timeout           time.Duration    // Timeout of trying to receive a response; a timeout is mandataroy ohterwise it could block
+	retries           int
+	retryInterval     time.Duration
 	finish            bool
 }
 
 func (p *Program) onMessage(td *connection.TopicData) {
 	var maym messages.Message
 	if err := json.Unmarshal(td.Message, &maym); err != nil {
-		log.Trace().Err(err).Msgf("Skipping message (%s) on %s because it is not parseable to Message", string(td.Message), td.Topic)
+		log.Trace().
+			Err(err).
+			Msgf("Skipping message (%s) on %s because it is not parseable to Message", string(td.Message), td.Topic)
 		return
 	}
 	finish, msg, err := p.verifySuccess(p.init, td.Message, maym)
@@ -149,26 +153,46 @@ func (p *Program) Run() (success interface{}, failure interface{}, err error) {
 	if p.init == nil {
 		return nil, nil, errors.New("no initial send found")
 	}
-	select {
-	case p.send <- messages.EventToResponse(p.context, p.init):
-	case <-time.After(p.timeout):
-		return nil, nil, fmt.Errorf("timeout after %s", p.timeout)
+	timeout := func(on string) {
+		log.Info().Msgf("Timeout after %s while %s", p.timeout, on)
+		err = fmt.Errorf("timeout after %s", p.timeout)
+		time.Sleep(p.retryInterval)
 	}
-	log.Trace().Msgf("Sent %+v", p.init)
-	for !p.finish {
+retryloop:
+	for i := 0; i < p.retries+1; i++ {
+		log.Trace().Msgf("[%d] run", i)
+		err = nil
+		p.failure = nil
+		failure = nil
+		p.finish = false
 		select {
-		case td, open := <-p.receive:
-			p.onMessage(td)
-			if !open {
-				return nil, nil, errors.New("channel in closed")
-			}
+		case p.send <- messages.EventToResponse(p.context, p.init):
 		case <-time.After(p.timeout):
-			return nil, nil, fmt.Errorf("timeout after %s", p.timeout)
+			timeout("sending message")
+			continue retryloop
 		}
+		log.Trace().Msgf("Sent %+v", p.init)
+		for !p.finish {
+			select {
+			case td, open := <-p.receive:
+				p.onMessage(td)
+				if !open {
+					return nil, nil, errors.New("channel in closed")
+				}
+			case <-time.After(p.timeout):
+				timeout("receiving")
+				continue retryloop
+			}
+		}
+		success = p.success
+		failure = p.failure
+		if success != nil {
+			break
+		}
+		time.Sleep(p.retryInterval)
 	}
-	success = p.success
-	failure = p.failure
-	if success == nil {
+
+	if success == nil && err == nil {
 		err = errors.New("program failed")
 	}
 	if p.next != nil {
@@ -200,7 +224,7 @@ func StartBasedOnGetID(aggregate string, destination string) func(messages.Event
 	}
 }
 
-func CreateDefaultMessage(to func([]byte) (string, messages.Event, error)) VerifyAndParse {
+func DefaultVerifier(to func([]byte) (string, messages.Event, error)) VerifyAndParse {
 	return func(e messages.Event, b []byte, m messages.Message) (bool, messages.Event, error) {
 
 		mmt := m.MessageType()
@@ -356,12 +380,29 @@ func FailureParser(b []byte) (string, messages.Event, error) {
 	return "failure", c, nil
 }
 
+// ToValues transforms a given interface to map[string]interface{}
+//
+// It is mainly used when creating modify events.
+func ToValues(i interface{}) (map[string]interface{}, error) {
+	var vals map[string]interface{}
+	b, err := json.Marshal(i)
+	if err != nil {
+		return nil, err
+	}
+	if err = json.Unmarshal(b, &vals); err != nil {
+		return nil, err
+	}
+	return vals, nil
+}
+
 type Configuration struct {
-	Context    string
-	Out        chan<- *connection.SendResponse
-	In         <-chan *connection.TopicData
-	DownStream chan<- *Received
-	Timeout    time.Duration
+	Context       string
+	Out           chan<- *connection.SendResponse
+	In            <-chan *connection.TopicData
+	DownStream    chan<- *Received
+	Timeout       time.Duration
+	Retries       int
+	RetryInterval time.Duration
 }
 
 func From(
@@ -379,8 +420,8 @@ func From(
 	var vf VerifyAndParse
 	switch v := msg.(type) {
 	case cmds.Create:
-		vs = CreateDefaultMessage(CreatedParser)
-		vf = CreateDefaultMessage(FailureParser)
+		vs = DefaultVerifier(CreatedParser)
+		vf = DefaultVerifier(FailureParser)
 	case cmds.Get:
 		var parser func([]byte) (string, messages.Event, error)
 		switch v.MessageType().Aggregate {
@@ -396,24 +437,30 @@ func From(
 			return nil, fmt.Errorf("no known parser for %s", v.MessageType().Aggregate)
 		}
 
-		vs = CreateDefaultMessage(parser)
-		vf = CreateDefaultMessage(FailureParser)
+		vs = DefaultVerifier(parser)
+		vf = DefaultVerifier(FailureParser)
 	case cmds.Delete:
-		vs = CreateDefaultMessage(DeletedParser)
-		vf = CreateDefaultMessage(FailureParser)
+		vs = DefaultVerifier(DeletedParser)
+		vf = DefaultVerifier(FailureParser)
 	case cmds.Modify:
-		vs = CreateDefaultMessage(ModifiedParser)
-		vf = CreateDefaultMessage(FailureParser)
+		vs = DefaultVerifier(ModifiedParser)
+		vf = DefaultVerifier(FailureParser)
 	default:
-		return nil, errors.New("unable to create Program from: %v; please use New instead")
+		return nil, errors.New("unable to create Program from: %v")
 	}
+	return New(c, msg, vs, vf), nil
+}
+
+func New(c Configuration, init messages.Event, vs, vf VerifyAndParse) *Program {
 	return &Program{
-		init:          msg,
+		init:          init,
 		verifySuccess: vs,
 		verifyFailure: vf,
 		send:          c.Out,
 		receive:       c.In,
 		received:      c.DownStream,
 		timeout:       c.Timeout,
-	}, nil
+		retries:       c.Retries,
+		retryInterval: c.RetryInterval,
+	}
 }

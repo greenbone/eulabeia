@@ -51,6 +51,45 @@ const topic = context + "/+/info"
 var firstContact = false
 var megaScanStarted = false
 
+var target = models.Target{
+	Hosts: []string{"localhost"},
+	Ports: []string{"80"},
+	Plugins: models.VTsList{
+		Single: []models.SingleVT{
+			{
+				OID: "1.3.6.1.4.1.25623.1.0.90022",
+				PrefsByID: map[int]interface{}{
+					0: "test1",
+					1: 2,
+				},
+				PrefsByName: map[string]interface{}{
+					"pref1": "test2",
+					"pref2": true,
+				},
+			},
+		},
+		Group: []models.VTFilter{
+			{
+				Key:   "family",
+				Value: "my test family",
+			},
+		},
+	},
+	Exclude: []string{"exclude1"},
+	Sensor:  "localhorst",
+	AliveTest: models.AliveTest{
+		Test_alive_hosts_only: true,
+		Methods:               2,
+		Ports:                 []int{80, 137, 587, 3128, 8081},
+	},
+	Parallel: true,
+	Credentials: map[string]map[string]string{
+		"ssh": {
+			"private_key": "denkste",
+		},
+	},
+}
+
 const (
 	GOT_SENSOR      = "got.sensor"
 	CREATED_TARGET  = "created.target"
@@ -173,47 +212,8 @@ func MegaScan(i info.IDInfo, _ []byte) *connection.SendResponse {
 	mega := scan.StartMegaScan{
 		Message: messages.NewMessage("start.scan.director", "", ""),
 		Scan: models.Scan{
-			ID: MEGA_ID,
-			Target: models.Target{
-				ID:    MEGA_ID,
-				Hosts: []string{"localhost"},
-				Ports: []string{"80"},
-				Plugins: models.VTsList{
-					Single: []models.SingleVT{
-						{
-							OID: "1.3.6.1.4.1.25623.1.0.90022",
-							PrefsByID: map[int]interface{}{
-								0: "test1",
-								1: 2,
-							},
-							PrefsByName: map[string]interface{}{
-								"pref1": "test2",
-								"pref2": true,
-							},
-						},
-					},
-					Group: []models.VTFilter{
-						{
-							Key:   "family",
-							Value: "my test family",
-						},
-					},
-				},
-				Exclude: []string{"exclude1"},
-				Sensor:  "localhorst",
-				AliveTest: models.AliveTest{
-					Test_alive_hosts_only: true,
-					Methods:               2,
-					Ports:                 []int{80, 137, 587, 3128, 8081},
-				},
-				Parallel: true,
-				Credentials: map[string]map[string]string{
-					"ssh": {
-						"private_key": "denkste",
-					},
-				},
-			},
-			Finished: []string{"hosts2"},
+			ID:     MEGA_ID,
+			Target: target,
 		},
 	}
 	return messages.EventToResponse(context, mega)
