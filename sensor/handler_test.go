@@ -3,7 +3,6 @@ package sensor
 import (
 	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
@@ -94,37 +93,6 @@ func TestStartStop(t *testing.T) {
 	}
 	if !ms.scanStopped {
 		t.Fatal("Scan should be stopped\n")
-	}
-}
-
-// TestRegistered tests the functionality of the Registered handler
-func TestRegistered(t *testing.T) {
-	regChan := make(chan struct{}, 1)
-	sensorID := "foo"
-	registered := &Registered{
-		Register: regChan,
-		ID:       sensorID,
-	}
-
-	registeredMsg := info.Modified{
-		Identifier: messages.Identifier{
-			Message: messages.NewMessage("modified.sensor", "", ""),
-			ID:      sensorID,
-		},
-	}
-
-	registeredMsgJSON, err := json.Marshal(registeredMsg)
-
-	if err != nil {
-		t.Fatal("Transform registered Msg into JSON failed")
-	}
-
-	registered.On("", registeredMsgJSON)
-
-	select {
-	case <-regChan:
-	case <-time.After(time.Millisecond * 50):
-		t.Fatal("Unable to register\n")
 	}
 }
 

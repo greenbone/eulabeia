@@ -44,36 +44,6 @@ func (handler StartStop) On(
 	return nil, nil
 }
 
-type Registered struct {
-	Register chan struct{} // Channel to signal succesful registration
-	ID       string        // SensorID to compare registered ID with own
-}
-
-func (handler Registered) On(
-	topic string,
-	message []byte,
-) (*connection.SendResponse, error) {
-	var msg info.Created
-	err := json.Unmarshal(message, &msg)
-	if err != nil {
-		return nil, err
-	}
-	mt, err := messages.ParseMessageType(msg.Type)
-	if err != nil {
-		return nil, err
-	}
-	if msg.ID == handler.ID && mt.Function == "modified" &&
-		mt.Aggregate == "sensor" {
-		select {
-		case handler.Register <- struct{}{}:
-		default:
-			log.Trace().Msgf("Ignoring modified sensor (%s); it is already registered", msg.ID)
-		}
-
-	}
-	return nil, nil
-}
-
 type Status struct {
 	Run func(string) error // Function to mark a scan as running
 	Fin func(string) error // Function to mark a scan as finished
