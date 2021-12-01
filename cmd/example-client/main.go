@@ -76,7 +76,6 @@ var target = models.Target{
 	},
 }
 
-
 func verifyGetVT(cc client.Configuration) {
 	p, err := client.From(cc, cmds.NewGet("vt", "0.0.0.0.0.0.0.0.0.1", "director", "getvts"))
 	if err != nil {
@@ -163,7 +162,7 @@ func main() {
 		Context:       "scanner",
 		Out:           out,
 		In:            c.In(),
-		Timeout:       30 * time.Second,
+		Timeout:       5 * time.Second,
 		Retries:       10,
 		RetryInterval: 1 * time.Second,
 	}
