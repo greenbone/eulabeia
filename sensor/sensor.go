@@ -28,7 +28,6 @@ import (
 
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/messages"
-	"github.com/greenbone/eulabeia/messages/cmds"
 	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/messages/info"
 
@@ -257,24 +256,6 @@ func (sensor *Scheduler) schedule() {
 	}
 }
 
-// register loops until its ID is registrated
-func (sensor *Scheduler) register(m handler.Register) {
-	for { // loop until sensor is registered
-		sensor.out <- &connection.SendResponse{
-			Topic: fmt.Sprintf("%s/sensor/cmd/director", sensor.context),
-			MSG:   cmds.NewModify("sensor", sensor.id, nil, "director", ""),
-		}
-		select {
-		case <-sensor.regChan:
-			log.Printf("%s registered", sensor.id)
-			return
-		// Send new registration mqtt message each second
-		case <-time.After(time.Second):
-		}
-		go m.Check()
-	}
-}
-
 // Close cleans all queues and OpenVAS processes, sets all scan stats to
 // stopped and stops the scheduler
 func (sensor *Scheduler) Close() error {
@@ -335,13 +316,7 @@ func (sensor *Scheduler) Handler() map[string]connection.OnMessage {
 		VtsLoad: sensor.loadVTs,
 	}
 
-	registeredHandler := Registered{
-		Register: sensor.regChan,
-		ID:       sensor.id,
-	}
-
 	return map[string]connection.OnMessage{
-		fmt.Sprintf("%s/sensor/info", sensor.context):            registeredHandler,
 		fmt.Sprintf("%s/sensor/cmd", sensor.context):             vtsHandler,
 		fmt.Sprintf("%s/scan/cmd/%s", sensor.context, sensor.id): startStopHandler,
 		fmt.Sprintf("%s/scan/info", sensor.context):              statusHandler,
@@ -352,7 +327,6 @@ func (sensor *Scheduler) Handler() map[string]connection.OnMessage {
 //
 // Uses the out channel to send register messages
 func (sensor *Scheduler) Start(m handler.Register) {
-	sensor.register(m)
 	sensor.stopped = false
 	go sensor.schedule()
 }

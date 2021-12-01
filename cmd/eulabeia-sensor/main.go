@@ -19,7 +19,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"time"
 
+	"github.com/greenbone/eulabeia/client"
 	"github.com/greenbone/eulabeia/connection"
 	_ "github.com/greenbone/eulabeia/logging/configuration"
 	"github.com/rs/zerolog/log"
@@ -33,6 +36,41 @@ import (
 	"github.com/greenbone/eulabeia/process"
 	"github.com/greenbone/eulabeia/sensor"
 )
+
+func waitForRegistration(context string, clientID string, ps connection.PubSub) {
+	exit := false
+	defer func() {
+		exit = true
+	}()
+	go func() {
+		for !exit {
+			select {
+			case send := <-connection.DefaultOut:
+				ps.Publish(send.Topic, send.MSG)
+			default:
+			}
+		}
+	}()
+	ps.Subscribe([]string{
+		fmt.Sprintf("%s/sensor/info", context),
+	})
+	clientc := client.Configuration{
+		Context:       context,
+		Out:           connection.DefaultOut,
+		In:            ps.In(),
+		Timeout:       5 * time.Second,
+		Retries:       10,
+		RetryInterval: 1 * time.Second,
+	}
+	reg, err := client.From(clientc, cmds.NewModify("sensor", clientID, nil, "director", clientID))
+	if err != nil {
+		log.Panic().Err(err).Msgf("Unable to create register program")
+	}
+	_, f, err := reg.Run()
+	if err != nil || f != nil {
+		log.Panic().Err(err).Msgf("Unable to register %s: %+v", clientID, f)
+	}
+}
 
 func main() {
 	configPath := flag.String(
@@ -64,14 +102,17 @@ func main() {
 				ID:      *clientid,
 			},
 		}}
-	client, err := mqtt.FromConfiguration(*clientid, lwm, &configuration.Connection)
+	mqttc, err := mqtt.FromConfiguration(*clientid, lwm, &configuration.Connection)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create MQTT")
 	}
-	err = client.Connect()
+	err = mqttc.Connect()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to connect")
 	}
+
+	waitForRegistration(configuration.Context, *clientid, mqttc)
+
 	feed := feedservice.NewFeed(
 		configuration.Context,
 		*clientid,
@@ -87,9 +128,9 @@ func main() {
 		feed.Handler(),
 		sens.Handler(),
 	)
-	mhm := handler.NewDefaultMessageHandler(configuration.Context, nil, h, client)
+	mhm := handler.NewDefaultMessageHandler(configuration.Context, nil, h, mqttc)
+	mhm.Start()
 	sens.Start(mhm)
 	log.Debug().Msg("Starting MessageListener")
-	mhm.Start()
-	process.Block(client, sens, feed)
+	process.Block(mqttc, sens, feed)
 }
