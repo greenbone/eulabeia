@@ -19,27 +19,30 @@ import (
 // Verify and Parse uses init event and received bytes to return bool for finished, messages.Event
 // the parsed bytes or an error
 type VerifyAndParse func(messages.Event, []byte, messages.Message) (bool, messages.Event, error)
+
+// OnPrevious uses the output of a program to create a new init for the current
 type OnPrevious func(messages.Event) messages.Event
 
+// State represents the state of a received message
 type State int8
 
 const (
-	None    = -1
-	Failure = 0
-	Success = 1
+	None    = -1 // Not relevant for the program
+	Failure = 0  // Identified as a failure message
+	Success = 1  // Identified as a success message
 )
 
+// Received is used to identify downstream handler about success or failure
 type Received struct {
 	State State
 	Event messages.Event
 }
 
+// Program is a predefined message handler
 type Program struct {
 	sync.RWMutex
-	context string
-	name    string
-	init    messages.Event
-	// TODO combine them and return State
+	context           string
+	init              messages.Event
 	verifySuccess     VerifyAndParse
 	verifyFailure     VerifyAndParse
 	onPreviousSuccess OnPrevious
@@ -70,11 +73,9 @@ func (p *Program) onMessage(td *connection.TopicData) {
 	p.Lock()
 	defer p.Unlock()
 	if err != nil {
-		log.Trace().Err(err).Msg("Unable verify sucess, trying to verify failure")
 		if finish, msg, e := p.verifyFailure(p.init, td.Message, maym); e == nil {
 			p.failure = msg
 			p.finish = finish
-			log.Trace().Msgf("Setting Failure to %T", msg)
 			received = &Received{
 				State: Failure,
 				Event: msg,
@@ -83,7 +84,6 @@ func (p *Program) onMessage(td *connection.TopicData) {
 			log.Trace().Err(e).Msgf("Ignoring message %s", maym.Type)
 		}
 	} else {
-		log.Trace().Msgf("Setting success to %T", msg)
 		p.success = msg
 		p.finish = finish
 		received = &Received{
@@ -97,6 +97,7 @@ func (p *Program) onMessage(td *connection.TopicData) {
 	}
 }
 
+// Next adds a step to the execution chain
 func (p *Program) Next(
 	onFailure, onSuccess OnPrevious,
 	verifyFailure, verifySuccess VerifyAndParse,
@@ -133,7 +134,7 @@ func (p *Program) Start() (success interface{}, failure interface{}, err error) 
 	return p.First().Run()
 }
 
-// Run runs the current and following steps
+// Run runs the current and next steps
 func (p *Program) Run() (success interface{}, failure interface{}, err error) {
 	// it is not a startpoint and depends on a previous program
 	if p.init == nil {
@@ -170,7 +171,6 @@ retryloop:
 			timeout("sending message")
 			continue retryloop
 		}
-		log.Trace().Msgf("Sent %+v", p.init)
 		for !p.finish {
 			select {
 			case td, open := <-p.receive:
@@ -195,16 +195,16 @@ retryloop:
 		err = errors.New("program failed")
 	}
 	if p.next != nil {
-		log.Trace().Msgf("Running next %s", p.name)
+		log.Trace().Msg("Running next Program")
 		success, failure, err = p.next.Run()
 	}
 	return
 
 }
 
+// ModifyBasedOnGetID is used to create a modify message based on the previous message
 func ModifyBasedOnGetID(aggregate string, destination string, values func(messages.GetID) map[string]interface{}) func(messages.Event) messages.Event {
 	return func(e messages.Event) messages.Event {
-		log.Trace().Msgf("Got v: %+v", e)
 		if v, ok := e.(messages.GetID); ok {
 
 			return cmds.NewModify(aggregate, v.GetID(), values(v), destination, v.GetMessage().GroupID)
@@ -214,6 +214,7 @@ func ModifyBasedOnGetID(aggregate string, destination string, values func(messag
 	}
 }
 
+// StartBasedOnGetID  used to create a start message based on the previous message
 func StartBasedOnGetID(aggregate string, destination string) func(messages.Event) messages.Event {
 	return func(e messages.Event) messages.Event {
 		if v, ok := e.(messages.GetID); ok {
@@ -223,6 +224,7 @@ func StartBasedOnGetID(aggregate string, destination string) func(messages.Event
 	}
 }
 
+// DeleteBasedOnGetID  used to create a delete message based on the previous message
 func DeleteBasedOnGetID(aggregate string, destination string) func(messages.Event) messages.Event {
 	return func(e messages.Event) messages.Event {
 		if v, ok := e.(messages.GetID); ok {
@@ -232,6 +234,7 @@ func DeleteBasedOnGetID(aggregate string, destination string) func(messages.Even
 	}
 }
 
+// DefaultVerifier creates a messages.Event verifier based on given parser
 func DefaultVerifier(to func([]byte) (string, messages.Event, error)) VerifyAndParse {
 	return func(e messages.Event, b []byte, m messages.Message) (bool, messages.Event, error) {
 
@@ -254,6 +257,7 @@ func DefaultVerifier(to func([]byte) (string, messages.Event, error)) VerifyAndP
 
 }
 
+// OpenvasScanSuccess is a success verifier for start scan message for openvas
 func OpenvasScanSuccess(e messages.Event, b []byte, m messages.Message) (bool, messages.Event, error) {
 	basedOn, ok := e.(messages.GetID)
 	if !ok {
@@ -295,6 +299,7 @@ func OpenvasScanSuccess(e messages.Event, b []byte, m messages.Message) (bool, m
 
 }
 
+// OpenvasScanFailure is a failure verifier for start scan message for openvas
 func OpenvasScanFailure(e messages.Event, b []byte, m messages.Message) (bool, messages.Event, error) {
 	basedOn, ok := e.(messages.GetID)
 	if !ok {
@@ -410,16 +415,18 @@ func ToValues(i interface{}) (map[string]interface{}, error) {
 	return vals, nil
 }
 
+// Configuration is used to configure programs
 type Configuration struct {
-	Context       string
-	Out           chan<- *connection.SendResponse
-	In            <-chan *connection.TopicData
-	DownStream    chan<- *Received
-	Timeout       time.Duration
-	Retries       int
-	RetryInterval time.Duration
+	Context       string                          // is the context of the topic
+	Out           chan<- *connection.SendResponse // required channel to sendout messages
+	In            <-chan *connection.TopicData    // required channel of incoming messages
+	DownStream    chan<- *Received                // Optional channel to inform about identified success or failure messages
+	Timeout       time.Duration                   // Optional, default 5 minutes; timeout duration for Out, In or Downstream channel operations
+	Retries       int                             // Optional amount of retries on timeout or failure; can only be set on the first step
+	RetryInterval time.Duration                   // Optional sleep duration before anoter try gets started
 }
 
+// From creates the first step of a Program based on given configuration and message
 func From(
 	c Configuration,
 	msg messages.Event) (*Program, error) {
@@ -468,6 +475,7 @@ func From(
 	return New(c, msg, vs, vf), nil
 }
 
+// Nes creates the first step of a Program based on given configuration, message and verifier
 func New(c Configuration, init messages.Event, vs, vf VerifyAndParse) *Program {
 	return &Program{
 		context:       c.Context,
