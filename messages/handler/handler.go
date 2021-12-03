@@ -73,3 +73,21 @@ type Aggregate interface {
 	Deleter
 	Getter
 }
+
+// InterfaceArrayToStringArray is a conenvience function to transform
+// []interface{} to []string
+//
+// It is usually used on modify due to the map[string]interface{} within a
+// modify message
+func InterfaceArrayToStringArray(v interface{}) []string {
+	if cv, ok := v.([]interface{}); ok {
+		strings := make([]string, len(cv), cap(cv))
+		for i, j := range cv {
+			if s, ok := j.(string); ok {
+				strings[i] = s
+			}
+		}
+		return strings
+	}
+	return nil
+}

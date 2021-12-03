@@ -100,8 +100,8 @@ func (s *Register) preprocess(
 }
 
 func (om *Register) elevate(message []byte) (*connection.SendResponse, error) {
-	mt, err := ParseMessageType(message)
-	if err != nil {
+	var msg messages.Message
+	if err := json.Unmarshal(message, &msg); err != nil {
 		return messages.EventToResponse(om.context, info.Failure{
 			Identifier: messages.Identifier{
 				Message: messages.NewMessage("failure", "", ""),
@@ -109,6 +109,7 @@ func (om *Register) elevate(message []byte) (*connection.SendResponse, error) {
 			Error: fmt.Sprintf("%s", err),
 		}), nil
 	}
+	mt := msg.MessageType()
 	if h, ok := om.container[mt.Aggregate]; ok {
 		use, fuse := ContainerMethod(h, mt.Function)
 		if e := json.Unmarshal(message, use); e != nil {
