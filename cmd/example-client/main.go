@@ -76,21 +76,12 @@ func (e *ExampleHandler) On(
 ) (*connection.SendResponse, error) {
 	e.Lock()
 	defer e.Unlock()
-	mt, err := handler.ParseMessageType(msg)
-	if err != nil {
-		// In this example we end the program on a unexpected message so that we
-		// can
-		// reuse it as a smoke test.
-		// However in a production environment you want to either log and ignore
-		// or
-		// just ignore unparseable messages.
-		panic(err)
-	}
-	log.Printf("Got message: %s", mt)
+
 	var infoMSG info.IDInfo
 	if err := json.Unmarshal(msg, &infoMSG); err != nil {
 		log.Fatal().Msgf("Unable to parse %s to info.IDInfo (%s)", msg, err)
 	}
+	mt := infoMSG.MessageType()
 	f, ok := e.do[infoMSG.ID]
 	if !ok {
 		f, ok = e.do[mt.String()]
@@ -117,6 +108,7 @@ func (e *ExampleHandler) On(
 
 func CreateTarget(_ info.IDInfo, _ []byte) *connection.SendResponse {
 	firstContact = true
+	log.Trace().Msg("creating target")
 	create := cmds.NewCreate("target", "director", "")
 	return messages.EventToResponse(context, create)
 }
@@ -282,9 +274,7 @@ func main() {
 		panic(err)
 	}
 	config.OverrideViaENV(configuration)
-	server := configuration.Connection.Server
-
-	c, err := mqtt.New(server, *clientid+uuid.NewString(), "", "", nil, nil)
+	c, err := mqtt.FromConfiguration(*clientid, nil, &configuration.Connection)
 	if err != nil {
 		log.Fatal().Msgf("Failed to create MQTT: %s", err)
 	}
@@ -311,12 +301,12 @@ func main() {
 		exit: ic,
 	}
 	defer Verify(&mh)
-	handler := map[string]connection.OnMessage{topic: &mh}
-	err = c.Subscribe(handler)
+	h := map[string]connection.OnMessage{topic: &mh}
+	err = c.Subscribe([]string{topic})
 	if err != nil {
 		panic(err)
 	}
-	mhm := connection.NewDefaultMessageHandler(handler, c)
+	mhm := handler.NewDefaultMessageHandler(configuration.Context, nil, h, c)
 	mhm.Start()
 
 	signal.Notify(ic, os.Interrupt, syscall.SIGTERM)

@@ -19,7 +19,6 @@ package main
 
 import (
 	"flag"
-	"os"
 
 	"github.com/greenbone/eulabeia/connection"
 	_ "github.com/greenbone/eulabeia/logging/configuration"
@@ -30,6 +29,7 @@ import (
 	"github.com/greenbone/eulabeia/feedservice"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
+	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/process"
 	"github.com/greenbone/eulabeia/sensor"
 )
@@ -40,6 +40,12 @@ func main() {
 		"",
 		"Path to config file, default: search for config file in TODO",
 	)
+	clientid := flag.String(
+		"clientid",
+		"eulabeia-sensor",
+		"A clientid for the connection",
+	)
+
 	flag.Parse()
 	configuration, err := config.New(*configPath, "eulabeia")
 	if err != nil {
@@ -47,28 +53,18 @@ func main() {
 	}
 
 	config.OverrideViaENV(configuration)
-	server := configuration.Connection.Server
-	if configuration.Sensor.Id == "" {
-		sensor_id, err := os.Hostname()
-		if err != nil {
-			panic(err)
-		}
-		configuration.Sensor.Id = sensor_id
-	}
-
 	log.Info().
-		Msgf("Starting sensor (%s) on context (%s)\n", configuration.Sensor.Id, configuration.Context)
-	client, err := mqtt.New(server, configuration.Sensor.Id, "", "",
-		&mqtt.LastWillMessage{
-			Topic: "scanner/sensor/cmd/director",
-			MSG: cmds.Delete{
-				EventType: cmds.EventType{},
-				Identifier: messages.Identifier{
-					Message: messages.NewMessage("delete.sensor", "", ""),
-					ID:      configuration.Sensor.Id,
-				},
-			}},
-		nil)
+		Msgf("Starting sensor (%s) on context (%s)\n", *clientid, configuration.Context)
+	lwm := &mqtt.LastWillMessage{
+		Topic: "scanner/sensor/cmd/director",
+		MSG: cmds.Delete{
+			EventType: cmds.EventType{},
+			Identifier: messages.Identifier{
+				Message: messages.NewMessage("delete.sensor", "", ""),
+				ID:      *clientid,
+			},
+		}}
+	client, err := mqtt.FromConfiguration(*clientid, lwm, &configuration.Connection)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create MQTT")
 	}
@@ -78,20 +74,20 @@ func main() {
 	}
 	feed := feedservice.NewFeed(
 		configuration.Context,
-		configuration.Sensor.Id,
+		*clientid,
 		configuration.Feedservice.RedisDbAddress,
 	)
 	sens := sensor.NewScheduler(
 		connection.DefaultOut,
-		configuration.Sensor.Id,
+		*clientid,
 		configuration.ScannerPreferences,
 		configuration.Context,
 	)
-	handler := connection.CombineHandler(
+	h := connection.CombineHandler(
 		feed.Handler(),
 		sens.Handler(),
 	)
-	mhm := connection.NewDefaultMessageHandler(handler, client)
+	mhm := handler.NewDefaultMessageHandler(configuration.Context, nil, h, client)
 	sens.Start(mhm)
 	log.Debug().Msg("Starting MessageListener")
 	mhm.Start()

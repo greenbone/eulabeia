@@ -30,6 +30,7 @@ import (
 // It is a convencience struct for handler so that it can be registered and
 // chosen transparently.
 type Container struct {
+	// TODO Rename to identifier later
 	Topic    string
 	Creater  Creater
 	Modifier Modifier
@@ -50,6 +51,42 @@ func FromAggregate(topic string, a Aggregate) Container {
 	}
 }
 
+// FromModifier is a convencience method to create specialized lookup maps for
+// connection.OnMessage
+func FromModifier(topic string, a Modifier) Container {
+	return Container{
+		Topic:    topic,
+		Modifier: a,
+	}
+}
+
+// FromCreater is a convencience method to create specialized lookup maps for
+// connection.OnMessage
+func FromCreater(topic string, a Creater) Container {
+	return Container{
+		Topic:   topic,
+		Creater: a,
+	}
+}
+
+// FromDeleter is a convencience method to create specialized lookup maps for
+// connection.OnMessage
+func FromDeleter(topic string, a Deleter) Container {
+	return Container{
+		Topic:   topic,
+		Deleter: a,
+	}
+}
+
+// FromStarter is a convencience method to create specialized lookup maps for
+// connection.OnMessage
+func FromStarter(topic string, a Starter) Container {
+	return Container{
+		Topic:   topic,
+		Starter: a,
+	}
+}
+
 // FromGetter is a convencience method to create specialized lookup maps for
 // connection.OnMessage
 func FromGetter(topic string, a Getter) Container {
@@ -59,10 +96,9 @@ func FromGetter(topic string, a Getter) Container {
 	}
 }
 
-// containerClosure returns a pointer of a struct to unmarshall the json into as
-// well as a closure to call the
-// actual downstream handler.
-func containerClosure(
+// ContainerMethod returns a pointer of a struct to unmarshall the json into as
+// well as a closure to call the actual downstream handler.
+func ContainerMethod(
 	h Container,
 	method string,
 ) (messages.Event, func() (messages.Event, *info.Failure, error)) {

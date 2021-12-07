@@ -23,12 +23,11 @@ import (
 	"github.com/greenbone/eulabeia/internal/test"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
-	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/storage"
 )
 
 func TestSuccessResponse(t *testing.T) {
-	h := handler.New("", New(&storage.InMemory{Pretend: true}))
+	h := New(&storage.InMemory{Pretend: true})
 	tests := []test.HandleTests{
 		{
 			Input: cmds.Create{

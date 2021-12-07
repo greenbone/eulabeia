@@ -8,7 +8,6 @@ import (
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
-	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/models"
 )
 
@@ -47,12 +46,12 @@ func (s ScanPreprocessor) Preprocess(
 	if !strings.HasSuffix(topic, "/scan/cmd/director") {
 		return nil, false
 	}
-	mt, err := handler.ParseMessageType(payload)
-	if err != nil || mt.Function != "start" && mt.Aggregate != "scan" {
+	var sms StartMegaScan
+	if err := json.Unmarshal(payload, &sms); err != nil {
 		return nil, false
 	}
-	var sms StartMegaScan
-	if err = json.Unmarshal(payload, &sms); err != nil {
+	mt := sms.MessageType()
+	if mt.Function != "start" && mt.Aggregate != "scan" {
 		return nil, false
 	}
 	if len(sms.Hosts) == 0 {

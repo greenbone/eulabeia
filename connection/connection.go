@@ -21,8 +21,6 @@ package connection
 import (
 	"io"
 	"sync"
-
-	"github.com/rs/zerolog/log"
 )
 
 // Send Response is used to indicate that a response message should be send
@@ -76,7 +74,7 @@ type Preprocessor interface {
 // Subscribe iterates through each handler and registers each OnMessage to a
 // topic and will send each incoming data to the in channel
 type Subscriber interface {
-	Subscribe(handler map[string]OnMessage) error
+	Subscribe([]string) error
 	In() <-chan *TopicData
 }
 
@@ -148,20 +146,12 @@ func (s ClosurePreprocessor) Preprocess(
 	return s.Closure(TopicData{topic, message})
 }
 
-type MessageHandler struct {
-	handler      map[string]OnMessage
-	preprocessor []Preprocessor
-	publisher    []Publisher
-	out          <-chan *SendResponse
-	in           <-chan *TopicData
-}
-
 var NoOpPreprocessor = []Preprocessor{}
 
 // Defaulting to three in flight messages
 var DefaultOut = make(chan *SendResponse, 3)
 
-func mergePubSubIn(ps []PubSub) <-chan *TopicData {
+func MergePubSubIn(ps []PubSub) <-chan *TopicData {
 	out := make(chan *TopicData, 3)
 	var wg sync.WaitGroup
 	wg.Add(len(ps))
@@ -179,121 +169,4 @@ func mergePubSubIn(ps []PubSub) <-chan *TopicData {
 	}()
 	return out
 
-}
-
-// NewSingleMessageHandler creates a MessageHandler with DefaultOut based on
-// PubSub
-func NewDefaultMessageHandler(
-	handler map[string]OnMessage,
-	pubsub ...PubSub,
-) MessageHandler {
-	pubs := make([]Publisher, len(pubsub))
-	for i, p := range pubsub {
-		pubs[i] = p
-		p.Subscribe(handler)
-	}
-
-	return NewMessageHandler(
-		handler,
-		NoOpPreprocessor,
-		pubs,
-		mergePubSubIn(pubsub),
-		DefaultOut,
-	)
-}
-
-// NewMessageHandlerr creates a message handler
-//
-// A MessageHandler will use the given handler to execute based on the incoming
-// TopicData and may use
-// given Publisher to publish outgoing SendResponses.
-func NewMessageHandler(handler map[string]OnMessage,
-	preprocessor []Preprocessor,
-	publisher []Publisher,
-	in <-chan *TopicData,
-	out <-chan *SendResponse) MessageHandler {
-	return MessageHandler{
-		handler,
-		preprocessor,
-		publisher,
-		out,
-		in,
-	}
-
-}
-
-func (s *MessageHandler) preprocess(
-	topic string,
-	message []byte,
-) ([]TopicData, bool) {
-	var td []TopicData
-	handled := false
-	for _, p := range s.preprocessor {
-		if r, ok := p.Preprocess(topic, message); ok {
-			handled = true
-			td = append(td, r...)
-		}
-	}
-	return td, handled
-}
-
-func (s *MessageHandler) send(resp *SendResponse) {
-	for i, p := range s.publisher {
-		if err := p.Publish(resp.Topic, resp.MSG); err != nil {
-			log.Error().
-				Err(err).
-				Msgf("Error occured while publishing data on topic %s on publisher %d", resp.Topic, i)
-		}
-	}
-
-}
-func (s *MessageHandler) Check() bool {
-	select {
-	case in, open := <-s.in:
-		if in != nil {
-			log.Trace().Msgf("Received msg (%s) on %s", in.Message, in.Topic)
-			var tds []TopicData
-			if t, ok := s.preprocess(in.Topic, in.Message); ok {
-				tds = t
-			} else {
-				tds = []TopicData{*in}
-			}
-			log.Trace().Msgf("Calling %d handler", len(tds))
-			for _, t := range tds {
-				if h, ok := s.handler[t.Topic]; ok {
-					log.Trace().Msgf("Calling %s handler", t.Topic)
-					resp, err := h.On(t.Topic, t.Message)
-					if err != nil {
-						log.Error().
-							Err(err).
-							Msgf("Error occured while processing message for %s", t.Topic)
-					} else if resp != nil {
-						log.Debug().Msgf("Sending resp to %s", resp.Topic)
-						s.send(resp)
-					}
-					log.Trace().Msgf("Finished %s handler", t.Topic)
-				} else {
-					log.Debug().Msgf("No handler for topic (%s) found.", t.Topic)
-				}
-			}
-		}
-		return open
-
-	case out, open := <-s.out:
-		if out != nil {
-			log.Trace().Msgf("Sending message (%v) to %s", out.MSG, out.Topic)
-			s.send(out)
-		}
-		return open
-	}
-
-}
-
-func (s *MessageHandler) Start() {
-	go func() {
-		for s.Check() {
-			log.Trace().Msg("checking")
-		}
-		log.Debug().Msg("MessageHander stopped")
-	}()
 }

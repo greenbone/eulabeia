@@ -53,7 +53,6 @@ func main() {
 		panic(err)
 	}
 	config.OverrideViaENV(configuration)
-	server := configuration.Connection.Server
 
 	prepare_topic := func(aggregate_name string) string {
 		return fmt.Sprintf(
@@ -63,7 +62,7 @@ func main() {
 		)
 	}
 	log.Info().Msgf("Starting director with context %s", configuration.Context)
-	client, err := mqtt.New(server, *clientid, "", "", nil, nil)
+	client, err := mqtt.FromConfiguration(*clientid, nil, &configuration.Connection)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create MQTT client.")
 	}
@@ -79,26 +78,19 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create storage.")
 	}
-	handler := map[string]connection.OnMessage{
-		prepare_topic("sensor"): handler.New(
-			configuration.Context,
-			sensor.New(device),
-		),
-		prepare_topic("target"): handler.New(
-			configuration.Context,
-			target.New(device),
-		),
-		prepare_topic("scan"): handler.New(
-			configuration.Context,
-			scan.New(device),
-		),
-		prepare_topic("vt"): vt.New(
-			device,
-			configuration.Context,
-			configuration.Director.VTSensor,
-		),
+	container := []handler.Container{
+		sensor.New(device),
+		target.New(device),
+		scan.New(device),
+		vt.New(configuration.Director.VTSensor),
 	}
-	err = client.Subscribe(handler)
+
+	err = client.Subscribe([]string{
+		prepare_topic("sensor"),
+		prepare_topic("target"),
+		prepare_topic("scan"),
+		prepare_topic("vt"),
+	})
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to subscribe.")
 	}
@@ -106,14 +98,16 @@ func main() {
 		scan.ScanPreprocessor{Context: configuration.Context},
 	}
 
-	mhm := connection.NewMessageHandler(
-		handler,
+	r := handler.NewRegister(
+		configuration.Context,
+		container,
+		nil,
 		preoprocessor,
 		[]connection.Publisher{client},
 		client.In(),
 		connection.DefaultOut,
 	)
-	mhm.Start()
+	r.Start()
 
 	process.Block(client)
 }

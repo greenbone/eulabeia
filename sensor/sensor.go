@@ -29,10 +29,10 @@ import (
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/messages"
 	"github.com/greenbone/eulabeia/messages/cmds"
+	"github.com/greenbone/eulabeia/messages/handler"
 	"github.com/greenbone/eulabeia/messages/info"
 
 	"github.com/greenbone/eulabeia/connection"
-	"github.com/greenbone/eulabeia/sensor/handler"
 	"github.com/greenbone/eulabeia/sensor/scanner/openvas"
 
 	"github.com/greenbone/eulabeia/util"
@@ -258,7 +258,7 @@ func (sensor *Scheduler) schedule() {
 }
 
 // register loops until its ID is registrated
-func (sensor *Scheduler) register(m connection.MessageHandler) {
+func (sensor *Scheduler) register(m handler.Register) {
 	for { // loop until sensor is registered
 		sensor.out <- &connection.SendResponse{
 			Topic: fmt.Sprintf("%s/sensor/cmd/director", sensor.context),
@@ -321,37 +321,37 @@ func (sensor *Scheduler) Close() error {
 func (sensor *Scheduler) Handler() map[string]connection.OnMessage {
 	// TODO separate Register Sensor
 	// MQTT OnMessage Types
-	startStopHandler := handler.StartStop{
+	startStopHandler := StartStop{
 		Start: sensor.QueueScan,
 		Stop:  sensor.StopScan,
 	}
 
-	statusHandler := handler.Status{
+	statusHandler := Status{
 		Run: sensor.ScanRunning,
 		Fin: sensor.ScanFinished,
 	}
 
-	vtsHandler := handler.LoadVTs{
+	vtsHandler := LoadVTs{
 		VtsLoad: sensor.loadVTs,
 	}
 
-	registeredHandler := handler.Registered{
+	registeredHandler := Registered{
 		Register: sensor.regChan,
 		ID:       sensor.id,
 	}
 
 	return map[string]connection.OnMessage{
 		fmt.Sprintf("%s/sensor/info", sensor.context):            registeredHandler,
+		fmt.Sprintf("%s/sensor/cmd", sensor.context):             vtsHandler,
 		fmt.Sprintf("%s/scan/cmd/%s", sensor.context, sensor.id): startStopHandler,
 		fmt.Sprintf("%s/scan/info", sensor.context):              statusHandler,
-		fmt.Sprintf("%s/sensor/cmd", sensor.context):             vtsHandler,
 	}
 }
 
 // Start registers a sensor and starts scheduler
 //
 // Uses the out channel to send register messages
-func (sensor *Scheduler) Start(m connection.MessageHandler) {
+func (sensor *Scheduler) Start(m handler.Register) {
 	sensor.register(m)
 	sensor.stopped = false
 	go sensor.schedule()
