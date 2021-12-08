@@ -1,2 +1,5 @@
 # default reviewers
 *                 @greenbone/eulabeia-maintainers
+
+# dev ops
+.github/*         @greenbone/devops @greenbone/eulabeia-maintainers
