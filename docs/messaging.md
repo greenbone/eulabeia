@@ -2,7 +2,7 @@
 
 In Eulabeia we follow the topic structure:
 
-`<contex<aggregate>/<event>/<destination>`
+`<context><aggregate>/<event>/<destination>`
 
 - context is the context where the message is exchanged (e.g. `scanner`)
 - aggregate is the aggregate this message belongs to (e.g. `scan`)
