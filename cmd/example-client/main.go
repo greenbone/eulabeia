@@ -79,7 +79,7 @@ var target = models.Target{
 func verifyGetVT(cc client.Configuration) {
 	p, err := client.From(cc, cmds.NewGet("vt", "0.0.0.0.0.0.0.0.0.1", "director", "getvts"))
 	if err != nil {
-		log.Panic().Err(err).Msg("Unable create program for get.vts")
+		log.Panic().Err(err).Msg("Unable to create program for get.vts")
 	}
 	_, f, err := p.Run()
 	if err != nil {

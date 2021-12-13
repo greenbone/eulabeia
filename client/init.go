@@ -53,8 +53,8 @@ type Program struct {
 	previous          *Program
 	send              chan<- *connection.SendResponse
 	receive           <-chan *connection.TopicData
-	received          chan<- *Received // used to inform downstream about failure or success; mostly useful on multiple success or fialure states (e.g. a scan)
-	timeout           time.Duration    // Timeout of trying to receive a response; a timeout is mandataroy ohterwise it could block
+	received          chan<- *Received // Used to inform downstream about failure or success; mostly useful on multiple success or failure states (e.g. a scan)
+	timeout           time.Duration    // Timeout of trying to receive a response; a timeout is mandatory otherwise it could block
 	retries           int
 	retryInterval     time.Duration
 	finish            bool
