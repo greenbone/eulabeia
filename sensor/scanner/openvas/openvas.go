@@ -17,16 +17,18 @@
 
 // OpenVAS component of the sensor. This module is responsible fot everything
 // regarding OpenVAS
+
 package openvas
 
 import (
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
+
+	"github.com/rs/zerolog/log"
 )
 
 // OpenVASScanner is the eulabeia scanner implementation of openvas. It is
