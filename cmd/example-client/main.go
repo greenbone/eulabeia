@@ -188,4 +188,5 @@ func main() {
 	cc.DownStream = received
 	_ = verifyStartScan(cc, "localhorst")
 	verifyGetVT(cc)
+	_ = verifyStartScan(cc, "hiddenhorst")
 }
