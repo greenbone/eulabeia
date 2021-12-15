@@ -4,8 +4,8 @@ endif
 
 GO_BUILD = CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 DOCKER_BUILD = DOCKER_BUILDKIT=1 docker build $(CACHE) --force-rm=true --compress=true
-BROKER_IP = $(or $(shell docker container inspect -f '{{ .NetworkSettings.IPAddress }}' eulabeia_broker), $(echo ""))
-MQTT_CONTAINER = docker run -e "MQTT_SERVER=$(call BROKER_IP):9138" --rm
+EULABEIA_CONTAINER = docker run --network eulabeia --rm
+MQTT_CONTAINER = $(EULABEIA_CONTAINER) -e "MQTT_SERVER=broker:9138"
 GO_MINOR_VERSION = $(shell go version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f2)
 
 ifndef REPOSITORY
@@ -30,6 +30,9 @@ format:
 	clang-format -i --style=file ./c/libeulabeia/include/eulabeia/*.h
 	clang-format -i --style=file ./c/example/*.c
 
+create-network:
+	- docker network create -d bridge eulabeia
+
 c-library:
 	cmake -S c/libeulabeia/ -B c/libeulabeia/build
 	cmake --build c/libeulabeia/build
@@ -46,32 +49,35 @@ check:
 test:
 	go test ./...
 
-start-broker:
-	docker run --rm -d -p 9138:9138 --name eulabeia_broker $(REPOSITORY)/eulabeia-broker:latest
+start-broker: create-network
+	docker run --network eulabeia -h broker --rm -d -p 9138:9138 --name eulabeia_broker $(REPOSITORY)/eulabeia-broker:latest
 
 stop-broker:
-	docker kill eulabeia_broker
+	- docker kill eulabeia_broker
 
 start-director:
 	$(MQTT_CONTAINER) -d --name eulabeia_director $(REPOSITORY)/eulabeia-director
 
 stop-director:
-	docker stop eulabeia_director
+	- docker stop eulabeia_director
 
 start-sensor:
 	docker volume create eulabeia_redis_socket
 	docker run -d --rm -v eulabeia_redis_socket:/run/redis --name eulabeia_redis $(REPOSITORY)/eulabeia-redis
 	docker volume create eulabeia_feed
 	$(MQTT_CONTAINER) -d -v eulabeia_feed:/var/lib/openvas/feed/plugins -v eulabeia_redis_socket:/run/redis --name eulabeia_sensor $(REPOSITORY)/eulabeia-sensor
-	docker exec eulabeia_sensor mkdir -p /etc/openvas
-	docker exec eulabeia_sensor bash -c 'echo "mqtt_server_uri = $(BROKER_IP):9138" >> /etc/openvas/openvas.conf'
-	docker exec eulabeia_sensor openvas -u
+
+start-hidden-sensor:
+	$(EULABEIA_CONTAINER) -d -h hiddenhorst --name eulabeia_hidden_sensor $(REPOSITORY)/eulabeia-hidden-sensor
 
 stop-sensor:
 	- docker stop eulabeia_sensor
 	- docker volume rm eulabeia_feed
 	- docker kill eulabeia_redis
 	- docker volume rm eulabeia_redis_socket
+
+stop-hidden-sensor:
+	- docker kill eulabeia_hidden_sensor
 
 run-example-client:
 	until test `docker inspect eulabeia_sensor --format='{{.State.Running}}'` = "true"; do echo "waiting for sensor"; sleep 1; done
@@ -80,8 +86,8 @@ run-example-client:
 
 start-smoke-test: start-container run-example-client
 
-start-container: start-broker start-director start-sensor
-stop-container: stop-director stop-sensor stop-broker
+start-container: start-broker start-director start-sensor start-hidden-sensor
+stop-container: stop-director stop-sensor stop-broker stop-hidden-sensor
 
 smoke-test: build-container start-smoke-test stop-container
 
@@ -115,10 +121,13 @@ build-container-c-example: build-container-clib
 build-container-sensor: build-container-clib build-sensor
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-sensor -f sensor.Dockerfile .
 
+build-container-hidden-sensor: build-container-sensor
+	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-hidden-sensor -f example/hidden-sensor/Dockerfile example/hidden-sensor/
+
 build-container-example: build-example
 	$(DOCKER_BUILD) -t $(REPOSITORY)/eulabeia-example-client -f example-client.Dockerfile .
 
-build-container: build-container-redis build-container-broker build-container-director build-container-sensor build-container-example
+build-container: build-container-redis build-container-broker build-container-director build-container-hidden-sensor build-container-example
 
 update:
 	go get -u all
