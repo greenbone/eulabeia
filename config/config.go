@@ -50,11 +50,31 @@ type Feedservice struct {
 	RedisDbAddress string
 }
 
+// SSHUser defines credentials for user authentication on a tunnel
+type SSHUser struct {
+	Name    string // Name of the user
+	KeyPath string // Path to the private key
+}
+
+// SSHHost defines host credentials of a tunneled connection
+type SSHHost struct {
+	PublicKeyPath string // Public key path of the host
+	Address       string // Address of the host
+	Protocol      string // Protocol to be used
+}
+
+// SSHSensor defines sensors behind a tunneled connection
+type SSHSensor struct {
+	ID   string  // Identifier of the sensor
+	User SSHUser // User credentials
+	Host SSHHost // Host credentials
+}
+
 type Director struct {
-	Id          string // The Id (a uuid) of this director
-	StoragePath string // The path to store the json into
-	KeyFile     string // The path to the private RSA key used to crypt json
-	VTSensor    string // Sensor used to send get vt messages
+	StoragePath string      // The path to store the json into
+	KeyFile     string      // The path to the private RSA key used to crypt json
+	VTSensor    string      // Sensor used to send get vt messages
+	SSHSensor   []SSHSensor // The sensor not directly reachable via MQTT broker
 }
 
 type Configuration struct {
