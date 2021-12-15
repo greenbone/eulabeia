@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-
 )
 
 func TestConfigurationHandler(t *testing.T) {

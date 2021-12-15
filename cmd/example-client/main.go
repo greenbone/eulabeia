@@ -87,7 +87,7 @@ func verifyGetVT(cc client.Configuration) {
 	}
 }
 
-func verifyStartScan(cc client.Configuration) messages.GetID {
+func verifyStartScan(cc client.Configuration, sensor string) messages.GetID {
 
 	cc.Retries = 0
 	cc.RetryInterval = 0
@@ -96,6 +96,7 @@ func verifyStartScan(cc client.Configuration) messages.GetID {
 	if err != nil {
 		log.Panic().Err(err).Msg("Unable to create scantest program")
 	}
+	target.Sensor = sensor
 	modifyTarget := client.ModifyBasedOnGetID("target", "director", func(gi messages.GetID) map[string]interface{} {
 		v, err := client.ToValues(target)
 		if err != nil {
@@ -185,6 +186,6 @@ func main() {
 		}
 	}(received)
 	cc.DownStream = received
-	_ = verifyStartScan(cc)
+	_ = verifyStartScan(cc, "localhorst")
 	verifyGetVT(cc)
 }
