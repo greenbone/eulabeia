@@ -49,10 +49,11 @@ type Publisher interface {
 	Publish(topic string, message interface{}) error
 }
 
-// TopicData is a tuple for Topic and Message.
+// TopicData is a tuple for incoming messages
 type TopicData struct {
-	Topic   string
-	Message []byte
+	Topic   string   // The topic this message was send to
+	Message []byte   // The actual content
+	Sender  []string // The sender this messages has been sent from
 }
 
 // Preprocessor is the interface the wrapt the basic Preprocess method.
@@ -120,7 +121,7 @@ func (a ClosureOnMessage) On(
 	topic string,
 	message []byte,
 ) (*SendResponse, error) {
-	return a.Closure(TopicData{topic, message})
+	return a.Closure(TopicData{topic, message, []string{}})
 }
 
 // ClosurePublisher is struct for simple Publish implementation that don't
@@ -143,7 +144,7 @@ func (s ClosurePreprocessor) Preprocess(
 	topic string,
 	message []byte,
 ) ([]TopicData, bool) {
-	return s.Closure(TopicData{topic, message})
+	return s.Closure(TopicData{topic, message, []string{}})
 }
 
 var NoOpPreprocessor = []Preprocessor{}

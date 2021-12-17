@@ -28,6 +28,7 @@ RedisDbAddress = "/run/redis/redis.sock"
 StoragePath = "/var/lib/eulabeia/director/storage"
 KeyFile = "/var/lib/eulabeia/director/private.key"
 VTSensor = "localhorst"
+
 [[Director.SSHSensor]]
 ID = "hiddenhorst"
 User.Name = "gvm"

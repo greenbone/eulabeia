@@ -26,7 +26,7 @@ type Connection struct {
 	Server        string // The server to connect to
 	QOS           byte   // Setting the default QOS for most cases it should be 1
 	CleanStart    bool   // When set to true the broker will not store session information
-	SessionExpiry uint64 // How long a session will be stored; when 0 and CleanStart false it will be one day
+	SessionExpiry uint32 // How long a session will be stored; when 0 and CleanStart false it will be one day
 	Timeout       int64
 	Username      string // Username for authentication
 	Password      string // Password used with Username for authentication

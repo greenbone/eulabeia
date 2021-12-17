@@ -48,6 +48,15 @@ func (m MQTT) Close() error {
 	return m.client.Disconnect(&paho.Disconnect{ReasonCode: 0})
 }
 
+func (m MQTT) isSendByUs(sender []string) bool {
+	for _, s := range sender {
+		if strings.HasPrefix(s, m.client.ClientID) {
+			return true
+		}
+	}
+	return false
+}
+
 func (m MQTT) register(topic string) error {
 
 	m.client.Router.RegisterHandler(topic, func(p *paho.Publish) {
@@ -55,10 +64,7 @@ func (m MQTT) register(topic string) error {
 		// NoLocal is on when
 		// tunneling
 		if m.client.ClientID != "" &&
-			strings.HasPrefix(
-				p.Properties.User.Get("sender"),
-				m.client.ClientID,
-			) {
+			m.isSendByUs(p.Properties.User.GetAll("sender")) {
 			log.Printf(
 				"ignoring message on %s due to same clientID (%s)",
 				p.Topic,
@@ -66,8 +72,11 @@ func (m MQTT) register(topic string) error {
 			)
 			return
 		}
-		m.in <- &connection.TopicData{Topic: topic, Message: p.Payload}
-
+		m.in <- &connection.TopicData{
+			Topic:   p.Topic,
+			Message: p.Payload,
+			Sender:  p.Properties.User.GetAll("sender"),
+		}
 	})
 
 	_, err := m.client.Subscribe(context.Background(), &paho.Subscribe{
@@ -91,18 +100,29 @@ func (m MQTT) Subscribe(topics []string) error {
 }
 
 func (m MQTT) Publish(topic string, message interface{}) error {
-	b, err := json.Marshal(message)
-	if err != nil {
-		return err
+	var b []byte
+	if mb, ok := message.([]byte); ok {
+		b = mb
+	} else {
+		mb, err := json.Marshal(message)
+		if err != nil {
+			return err
+		}
+		b = mb
 	}
-	props := &paho.PublishProperties{}
+
+	props := &paho.PublishProperties{
+		User: []paho.UserProperty{
+			{Key: "sender", Value: m.client.ClientID},
+		},
+	}
 	pb := &paho.Publish{
 		Topic:      topic,
 		QoS:        m.qos,
 		Payload:    b,
 		Properties: props,
 	}
-	_, err = m.client.Publish(context.Background(), pb)
+	_, err := m.client.Publish(context.Background(), pb)
 	return err
 }
 
@@ -133,32 +153,34 @@ func (lwm LastWillMessage) asBytes() ([]byte, error) {
 
 // Configuration holds information for MQTT
 type Configuration struct {
-	ClientID      string           // The ID to be used when connecting to a broker
-	Username      string           // Username to be used as authentication; empty for anonymous
-	Password      string           // Password to be used as authentication with Username
-	LWM           *LastWillMessage // LastWillMessage to be send when disconnecting
-	CleanStart    bool             // CleanStart when false and SessionExpiry set to > 1 it will reuse a session
-	SessionExpiry uint64           // Amount of seconds a session is valid; WARNING when set to 0 it is effectively a cleanstart.
-	QOS           byte
-	KeepAlive     uint16
-	Inflight      uint
+	Server        string                     // Address of the mqtt broker
+	ClientID      string                     // The ID to be used when connecting to a broker
+	Username      string                     // Username to be used as authentication; empty for anonymous
+	Password      string                     // Password to be used as authentication with Username
+	LWM           *LastWillMessage           // LastWillMessage to be send when disconnecting
+	CleanStart    bool                       // CleanStart when false and SessionExpiry set to > 1 it will reuse a session
+	SessionExpiry uint32                     // Amount of seconds a session is valid; WARNING when set to 0 it is effectively a cleanstart.
+	QOS           byte                       // Defines the quality of service (0, 1 or 2)
+	KeepAlive     uint16                     // Defines the keep alive time
+	In            chan *connection.TopicData // Channel to publish incoming mqtt messages into
 }
 
-func FromConfiguration(clientID string, lwm *LastWillMessage, c *config.Connection) (connection.PubSub, error) {
+func VerifiedConfiguration(clientID string, lwm *LastWillMessage, c *config.Connection) Configuration {
 	if !c.CleanStart && clientID == "" {
 		log.Warn().Msg("Setting clean start to false requires a clientID; setting it to true due to missing clientID")
 		c.CleanStart = true
 	}
 	if !c.CleanStart && c.SessionExpiry == 0 {
 		log.Trace().Msg("Inactive clean start requires a session expiry; using default one day")
-		c.SessionExpiry = uint64((24 * time.Hour).Seconds())
+		c.SessionExpiry = uint32((24 * time.Hour).Seconds())
 	}
 	if !c.CleanStart && c.QOS < 1 {
 		log.Trace().Msgf("Setting QOS from %d to 1 based on CleanStart false", c.QOS)
 		c.QOS = 1
 	}
 
-	mqttConfig := Configuration{
+	return Configuration{
+		Server:        c.Server,
 		ClientID:      clientID,
 		Username:      c.Username,
 		Password:      c.Password,
@@ -167,20 +189,24 @@ func FromConfiguration(clientID string, lwm *LastWillMessage, c *config.Connecti
 		SessionExpiry: c.SessionExpiry,
 		QOS:           c.QOS,
 		KeepAlive:     30,
-		Inflight:      1,
+		In:            make(chan *connection.TopicData, 1),
 	}
+
+}
+
+func FromConfiguration(c Configuration) (connection.PubSub, error) {
 	conn, err := net.Dial("tcp", c.Server)
 	if err != nil {
 		return nil, err
 	}
 	log.Debug().Msgf("MQTT: client ID %s, username %s, clean start %v, session expiry %d, qos %d",
-		mqttConfig.ClientID,
-		mqttConfig.Username,
-		mqttConfig.CleanStart,
-		mqttConfig.SessionExpiry,
-		mqttConfig.QOS,
+		c.ClientID,
+		c.Username,
+		c.CleanStart,
+		c.SessionExpiry,
+		c.QOS,
 	)
-	return New(conn, mqttConfig)
+	return New(conn, c)
 }
 
 func New(conn net.Conn,
@@ -198,6 +224,11 @@ func New(conn net.Conn,
 		CleanStart: cfg.CleanStart,
 		Username:   cfg.Username,
 		Password:   []byte(cfg.Password),
+		Properties: &paho.ConnectProperties{},
+	}
+	if !cfg.CleanStart {
+
+		cp.Properties.SessionExpiryInterval = &cfg.SessionExpiry
 	}
 	if cfg.LWM != nil {
 		if b, err := cfg.LWM.asBytes(); err != nil {
@@ -221,6 +252,6 @@ func New(conn net.Conn,
 		client:            c,
 		connectProperties: cp,
 		qos:               cfg.QOS,
-		in:                make(chan *connection.TopicData, cfg.Inflight),
+		in:                cfg.In,
 	}, nil
 }

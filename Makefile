@@ -79,14 +79,14 @@ stop-sensor:
 stop-hidden-sensor:
 	- docker kill eulabeia_hidden_sensor
 
-run-example-client:
+run-example-client: build-container-example
 	until test `docker inspect eulabeia_sensor --format='{{.State.Running}}'` = "true"; do echo "waiting for sensor"; sleep 1; done
 	until test `docker inspect eulabeia_director --format='{{.State.Running}}'` = "true"; do echo "waiting for director"; sleep 1; done
 	$(MQTT_CONTAINER) --name eulabeia_example $(REPOSITORY)/eulabeia-example-client
 
 start-smoke-test: start-container run-example-client
 
-start-container: start-broker start-director start-sensor start-hidden-sensor
+start-container: start-hidden-sensor start-broker start-director start-sensor
 stop-container: stop-director stop-sensor stop-broker stop-hidden-sensor
 
 smoke-test: build-container start-smoke-test stop-container

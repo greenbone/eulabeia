@@ -91,6 +91,7 @@ func verifyStartScan(cc client.Configuration, sensor string) messages.GetID {
 
 	cc.Retries = 0
 	cc.RetryInterval = 0
+	cc.Timeout = 0
 
 	p, err := client.From(cc, cmds.NewCreate("target", "director", "scantest"))
 	if err != nil {
@@ -116,14 +117,34 @@ func verifyStartScan(cc client.Configuration, sensor string) messages.GetID {
 	p = p.Next(nil, client.StartBasedOnGetID("scan", "director"), client.OpenvasScanFailure, client.OpenvasScanSuccess)
 	s, f, err := p.Start()
 	if f != nil {
-		log.Panic().Msgf("Failure while waiting for sensor: %+v", f)
+		log.Panic().Str("sensor", sensor).Msgf("Failure: %+v ", f)
 	}
 	if err != nil {
-		log.Panic().Err(err).Msg("Start scan failed")
+		log.Panic().Str("sensor", sensor).Err(err).Msg("Start scan failed")
 	}
 
-	log.Info().Msgf("Finished with %+v", s)
+	log.Info().Msgf("Success: %+v", s)
 	return s.(messages.GetID)
+}
+
+func waitForSensor(sensor string, cc client.Configuration, received chan *client.Received) {
+	p, err := client.From(cc, cmds.NewGet("sensor", "localhorst", "director", "initial"))
+	if err != nil {
+		log.Panic().Err(err).Msg("unable to create wait program")
+	}
+	_, f, err := p.Start()
+	if f != nil {
+		log.Panic().Msgf("Failure while waiting for sensor: %+v", f)
+
+	}
+	if err != nil {
+		log.Panic().Err(err).Msg("error while waiting for sensor")
+	}
+	go func(r chan *client.Received) {
+		for m := range r {
+			log.Debug().Msgf("[%d][%T] %+v", m.State, m.Event, m.Event)
+		}
+	}(received)
 }
 
 func main() {
@@ -140,7 +161,8 @@ func main() {
 		panic(err)
 	}
 	config.OverrideViaENV(configuration)
-	c, err := mqtt.FromConfiguration(*clientid, nil, &configuration.Connection)
+	c, err := mqtt.FromConfiguration(
+		mqtt.VerifiedConfiguration(*clientid, nil, &configuration.Connection))
 	if err != nil {
 		log.Fatal().Msgf("Failed to create MQTT: %s", err)
 	}
@@ -163,30 +185,19 @@ func main() {
 		Context:       "scanner",
 		Out:           out,
 		In:            c.In(),
-		Timeout:       5 * time.Second,
+		Timeout:       20 * time.Second,
 		Retries:       10,
 		RetryInterval: 1 * time.Second,
 	}
-	p, err := client.From(cc, cmds.NewGet("sensor", "localhorst", "director", "initial"))
-	if err != nil {
-		log.Panic().Err(err).Msg("unable to create wait program")
-	}
-	_, f, err := p.Start()
-	if f != nil {
-		log.Panic().Msgf("Failure while waiting for sensor: %+v", f)
-
-	}
-	if err != nil {
-		log.Panic().Err(err).Msg("error while waiting for sensor")
-	}
 	received := make(chan *client.Received)
-	go func(r chan *client.Received) {
-		for m := range r {
-			log.Debug().Msgf("[%d][%T] %+v", m.State, m.Event, m.Event)
-		}
-	}(received)
+	waitForSensor("localhorst", cc, received)
+	waitForSensor("hiddenhorst", cc, received)
 	cc.DownStream = received
-	_ = verifyStartScan(cc, "localhorst")
-	verifyGetVT(cc)
+	log.Info().Msg("Checking hiddenhorst")
 	_ = verifyStartScan(cc, "hiddenhorst")
+	log.Info().Msg("Checking localhorst")
+	_ = verifyStartScan(cc, "localhorst")
+	log.Info().Msg("Checking get.vt")
+
+	verifyGetVT(cc)
 }
