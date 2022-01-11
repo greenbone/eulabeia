@@ -1,4 +1,4 @@
-ARG OPENVAS_REPOSITORY="git://github.com/greenbone/openvas-scanner"
+ARG OPENVAS_REPOSITORY="https://github.com/greenbone/openvas-scanner.git"
 ARG OPENVAS_BRANCH="middleware"
 FROM greenbone/eulabeia-c-lib AS build
 # we need our own copy of openvas to have the latest 
@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
     libpcap-dev \
     libssh-gcrypt-dev \
     libnet1-dev \
+    ca-certificates \
 	git \
     && rm -rf /var/lib/apt/lists/*
 RUN echo "cloning: $OPENVAS_REPOSITORY"
