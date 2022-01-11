@@ -20,6 +20,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
 
 	_ "github.com/greenbone/eulabeia/logging/configuration"
 	"github.com/rs/zerolog/log"
@@ -27,6 +28,7 @@ import (
 	"github.com/greenbone/eulabeia/config"
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/connection/mqtt"
+	"github.com/greenbone/eulabeia/connection/tunnel"
 	"github.com/greenbone/eulabeia/director/scan"
 	"github.com/greenbone/eulabeia/director/sensor"
 	"github.com/greenbone/eulabeia/director/target"
@@ -62,7 +64,8 @@ func main() {
 		)
 	}
 	log.Info().Msgf("Starting director with context %s", configuration.Context)
-	client, err := mqtt.FromConfiguration(*clientid, nil, &configuration.Connection)
+	mqttconfig := mqtt.VerifiedConfiguration(*clientid, nil, &configuration.Connection)
+	client, err := mqtt.FromConfiguration(mqttconfig)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create MQTT client.")
 	}
@@ -84,29 +87,43 @@ func main() {
 		scan.New(device),
 		vt.New(configuration.Director.VTSensor),
 	}
-
-	err = client.Subscribe([]string{
+	topics := []string{
 		prepare_topic("sensor"),
 		prepare_topic("target"),
 		prepare_topic("scan"),
 		prepare_topic("vt"),
-	})
+	}
+	err = client.Subscribe(topics)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to subscribe.")
 	}
 	preoprocessor := []connection.Preprocessor{
 		scan.ScanPreprocessor{Context: configuration.Context},
 	}
+	tunnelMqttConfig := mqttconfig
+	tunnelMqttConfig.ClientID = mqttconfig.ClientID + "Tunnel"
+	ps, w, err := tunnel.NewWatcher(
+		1*time.Second,
+		10*time.Second,
+		configuration.Director.SSHSensor,
+		tunnelMqttConfig,
+		[]string{"#"})
+	if err != nil {
+		log.Panic().Err(err).Msg("Unable to create watcher")
+	}
 
 	r := handler.NewRegister(
-		configuration.Context,
-		container,
-		nil,
-		preoprocessor,
-		[]connection.Publisher{client},
-		client.In(),
-		connection.DefaultOut,
+		handler.RegisterConfiguration{
+			Context:      configuration.Context,
+			Container:    container,
+			Preprocessor: preoprocessor,
+			Publisher:    []connection.Publisher{client, ps},
+			In:           client.In(),
+			Out:          connection.DefaultOut,
+			RePublish:    tunnel.CreateRepublish(tunnelMqttConfig.ClientID),
+		},
 	)
+	w.Start()
 	r.Start()
 
 	process.Block(client)

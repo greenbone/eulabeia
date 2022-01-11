@@ -8,7 +8,7 @@ defaultCaFile = "/usr/var/lib/gvm/CA/cacert.pem"
 
 [Connection]
 # server = "0.0.0.0:0"
-server = "broker:9138"
+server = "0.0.0.0:9138"
 timeout = 10 # in seconds
 
 [ScannerPreferences]
@@ -18,6 +18,9 @@ minFreeMemScanQueue = 0  # 0 = disabled
 maxQueuedScans = 0  # 0 = disabled
 niceness = 10
 
+[Sensor]
+ID = "localhorst"
+
 [Feedservice]
 RedisDbAddress = "/run/redis/redis.sock"
 
@@ -25,6 +28,14 @@ RedisDbAddress = "/run/redis/redis.sock"
 StoragePath = "/var/lib/eulabeia/director/storage"
 KeyFile = "/var/lib/eulabeia/director/private.key"
 VTSensor = "localhorst"
+
+[[Director.SSHSensor]]
+ID = "hiddenhorst"
+User.Name = "gvm"
+User.KeyPath = "/var/lib/eulabeia/director/user"
+Host.PublicKeyPath = "/var/lib/eulabeia/director/host.pub"
+Host.Address = "hiddenhorst:22"
+Host.Protcol = "tcp"
 
 [Preferences]
 config = "~/.eulabeia/config.toml"

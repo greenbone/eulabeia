@@ -84,6 +84,7 @@ func (p *Program) onMessage(td *connection.TopicData) {
 			log.Trace().Err(e).Msgf("Ignoring message %s", maym.Type)
 		}
 	} else {
+		log.Trace().Msgf("Success message %s", maym.Type)
 		p.success = msg
 		p.finish = finish
 		received = &Received{
@@ -264,6 +265,7 @@ func OpenvasScanSuccess(e messages.Event, b []byte, m messages.Message) (bool, m
 		return false, nil, errors.New("unable parse message to messages.GetID")
 	}
 	mt := m.MessageType()
+	log.Trace().Str("basedOn", basedOn.GetID()).Msgf("MessageType: %+v", mt)
 	switch strings.ToLower(mt.Function) {
 	case "status":
 		var status info.Status

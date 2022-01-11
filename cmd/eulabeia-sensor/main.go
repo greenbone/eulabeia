@@ -58,8 +58,8 @@ func waitForRegistration(context string, clientID string, ps connection.PubSub) 
 		Context:       context,
 		Out:           connection.DefaultOut,
 		In:            ps.In(),
-		Timeout:       5 * time.Second,
-		Retries:       10,
+		Timeout:       2 * time.Second,
+		Retries:       100,
 		RetryInterval: 1 * time.Second,
 	}
 	reg, err := client.From(clientc, cmds.NewModify("sensor", clientID, nil, "director", clientID))
@@ -102,7 +102,7 @@ func main() {
 				ID:      *clientid,
 			},
 		}}
-	mqttc, err := mqtt.FromConfiguration(*clientid, lwm, &configuration.Connection)
+	mqttc, err := mqtt.FromConfiguration(mqtt.VerifiedConfiguration(*clientid, lwm, &configuration.Connection))
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create MQTT")
 	}

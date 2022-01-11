@@ -26,7 +26,7 @@ type Connection struct {
 	Server        string // The server to connect to
 	QOS           byte   // Setting the default QOS for most cases it should be 1
 	CleanStart    bool   // When set to true the broker will not store session information
-	SessionExpiry uint64 // How long a session will be stored; when 0 and CleanStart false it will be one day
+	SessionExpiry uint32 // How long a session will be stored; when 0 and CleanStart false it will be one day
 	Timeout       int64
 	Username      string // Username for authentication
 	Password      string // Password used with Username for authentication
@@ -50,11 +50,31 @@ type Feedservice struct {
 	RedisDbAddress string
 }
 
+// SSHUser defines credentials for user authentication on a tunnel
+type SSHUser struct {
+	Name    string // Name of the user
+	KeyPath string // Path to the private key
+}
+
+// SSHHost defines host credentials of a tunneled connection
+type SSHHost struct {
+	PublicKeyPath string // Public key path of the host
+	Address       string // Address of the host
+	Protocol      string // Protocol to be used
+}
+
+// SSHSensor defines sensors behind a tunneled connection
+type SSHSensor struct {
+	ID   string  // Identifier of the sensor
+	User SSHUser // User credentials
+	Host SSHHost // Host credentials
+}
+
 type Director struct {
-	Id          string // The Id (a uuid) of this director
-	StoragePath string // The path to store the json into
-	KeyFile     string // The path to the private RSA key used to crypt json
-	VTSensor    string // Sensor used to send get vt messages
+	StoragePath string      // The path to store the json into
+	KeyFile     string      // The path to the private RSA key used to crypt json
+	VTSensor    string      // Sensor used to send get vt messages
+	SSHSensor   []SSHSensor // The sensor not directly reachable via MQTT broker
 }
 
 type Configuration struct {

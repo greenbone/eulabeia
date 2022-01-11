@@ -35,6 +35,7 @@ type Register struct {
 	publisher    []connection.Publisher
 	out          <-chan *connection.SendResponse
 	in           <-chan *connection.TopicData
+	republish    func(connection.TopicData) *connection.SendResponse
 }
 
 // NewSingleMessageHandler creates a MessageHandler with DefaultOut based on
@@ -63,14 +64,30 @@ func NewDefaultMessageHandler(
 	}
 
 	return NewRegister(
-		context,
-		container,
-		onMessages,
-		connection.NoOpPreprocessor,
-		pubs,
-		connection.MergePubSubIn(pubsub),
-		connection.DefaultOut,
+		RegisterConfiguration{
+			context,
+			container,
+			onMessages,
+			connection.NoOpPreprocessor,
+			pubs,
+			connection.MergePubSubIn(pubsub),
+			connection.DefaultOut,
+			nil,
+		},
 	)
+}
+
+// RegisterConfiguration is used to configure a register
+// TODO translate Container to OnMessages instead of providing both directly
+type RegisterConfiguration struct {
+	Context      string                                              // The context of mqtt usually scanner
+	Container    []Container                                         // Message processor preferred by abstract systems (e.g. director)
+	OnMessages   map[string]connection.OnMessage                     // Message processor preferred by systems that require a direct form of control (e.g. sensor)
+	Preprocessor []connection.Preprocessor                           // Message preprocessor to manipulate incoming message before message processor can handle them
+	Publisher    []connection.Publisher                              // Are used to publish outgoing messages (informed via Out channel)
+	In           <-chan *connection.TopicData                        // Channel to inform about incoming messages
+	Out          <-chan *connection.SendResponse                     // Channel to inform about outgoing messages
+	RePublish    func(connection.TopicData) *connection.SendResponse // Closure to decide if a message should be published again; nil if not supported
 }
 
 // NewRegister creates a new register for message handler
@@ -78,26 +95,21 @@ func NewDefaultMessageHandler(
 // A register does delegate incoming messages to registered handler
 // and may publish outgoing data to registered publisher.
 func NewRegister(
-	context string,
-	container []Container,
-	onMessages map[string]connection.OnMessage,
-	preprocessor []connection.Preprocessor,
-	publisher []connection.Publisher,
-	in <-chan *connection.TopicData,
-	out <-chan *connection.SendResponse,
+	config RegisterConfiguration,
 ) Register {
 	handler := make(map[string]Container)
-	for _, c := range container {
+	for _, c := range config.Container {
 		handler[c.Topic] = c
 	}
 	return Register{
-		context,
-		onMessages,
+		config.Context,
+		config.OnMessages,
 		handler,
-		preprocessor,
-		publisher,
-		out,
-		in,
+		config.Preprocessor,
+		config.Publisher,
+		config.Out,
+		config.In,
+		config.RePublish,
 	}
 }
 
@@ -129,6 +141,9 @@ func (om *Register) elevate(message []byte) (*connection.SendResponse, error) {
 	mt := msg.MessageType()
 	if h, ok := om.container[mt.Aggregate]; ok {
 		use, fuse := ContainerMethod(h, mt.Function)
+		if use == nil && fuse == nil {
+			return nil, nil
+		}
 		if e := json.Unmarshal(message, use); e != nil {
 			return messages.EventToResponse(om.context, info.Failure{
 				Identifier: messages.Identifier{
@@ -177,10 +192,25 @@ func (s *Register) Check() bool {
 			for _, t := range tds {
 				var resp *connection.SendResponse
 				var err error
+				if s.republish != nil {
+					if msg := s.republish(t); msg != nil {
+						s.send(msg)
+					}
+				}
 				if h, ok := s.onMessage[t.Topic]; ok {
 					resp, err = h.On(t.Topic, t.Message)
 				} else {
 					resp, err = s.elevate(t.Message)
+					// Extend republish to verify for topics
+					if resp == nil && err == nil && s.republish != nil {
+						log.Trace().Msgf("Sending message to %s", in.Topic)
+						s.send(&connection.SendResponse{
+							Topic: in.Topic,
+							MSG:   in.Message,
+						})
+
+						log.Trace().Msgf("Sent message to %s", in.Topic)
+					}
 				}
 				if err != nil {
 					log.Error().
@@ -190,6 +220,7 @@ func (s *Register) Check() bool {
 					log.Debug().Msgf("Sending resp to %s", resp.Topic)
 					s.send(resp)
 				}
+
 				log.Trace().Msgf("Finished %s handler", t.Topic)
 			}
 		}

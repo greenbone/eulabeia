@@ -21,8 +21,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-
-	"github.com/google/uuid"
 )
 
 func TestConfigurationHandler(t *testing.T) {
@@ -73,16 +71,6 @@ func TestConfigurationHandler(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Connection.Sensor.Id should be an uuid.")
-	}
-
-	// Set director ID in TOML strcut
-	config.Director.Id = uuid.NewString()
-	if config.Director.Id == "" {
-		t.Errorf("Connection.Director.Id should be set.")
-	}
-	_, err = uuid.Parse(config.Director.Id)
-	if err != nil {
-		t.Errorf("Connection.Director.Id should be an uuid.")
 	}
 
 	os.Remove(path)

@@ -130,7 +130,7 @@ func ContainerMethod(
 			return h.Getter.Get(get)
 		}
 	} else {
-		log.Printf("unable to identify method %s", method)
+		log.Printf("unable to identify method %s, ignoring message.", method)
 		return nil, nil
 	}
 }
