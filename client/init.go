@@ -384,6 +384,13 @@ func GotVTParser(b []byte) (string, messages.Event, error) {
 	}
 	return "got", c, nil
 }
+func GotAllVTsParser(b []byte) (string, messages.Event, error) {
+	var c models.GotVTs
+	if err := json.Unmarshal(b, &c); err != nil {
+		return "", nil, err
+	}
+	return "gotall", c, nil
+}
 func GotSensorParser(b []byte) (string, messages.Event, error) {
 	var c models.GotSensor
 	if err := json.Unmarshal(b, &c); err != nil {
@@ -456,7 +463,11 @@ func From(
 		case "result":
 			parser = GotResultParser
 		case "vt":
-			parser = GotVTParser
+			if v.GetID() != "" {
+				parser = GotVTParser
+			} else {
+				parser = GotAllVTsParser
+			}
 		default:
 			return nil, fmt.Errorf("no known parser for %s", v.MessageType().Aggregate)
 		}

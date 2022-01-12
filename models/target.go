@@ -91,6 +91,12 @@ type GotVT struct {
 	VT
 }
 
+type GotVTs struct {
+	messages.Message
+	info.EventType
+	VTs []VT `json:"vts"`
+}
+
 // ResolveFilter is a request to get all OIDs matching the given Filter
 type ResolveFilter struct {
 	cmds.EventType

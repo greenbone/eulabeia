@@ -22,13 +22,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/greenbone/eulabeia/connection"
 	"github.com/greenbone/eulabeia/feedservice/handler"
 	"github.com/greenbone/eulabeia/feedservice/redis"
-	"github.com/greenbone/eulabeia/messages/cmds"
-	"github.com/greenbone/eulabeia/messages/info"
 	"github.com/greenbone/eulabeia/models"
 )
 
@@ -167,19 +163,14 @@ func (f *feed) getNvtPrefs(oid string) []models.VTParamType {
 }
 
 // GetVt expects a single OIDs and returns all metadata of the corresponding VT.
-func (f *feed) GetVT(msg cmds.Get) (models.VT, *info.Failure, error) {
-	log.Printf("In get vt for %s", msg.ID)
-	pref, err := f.rc.GetList(1, fmt.Sprintf("nvt:%s", msg.ID), 0, -1)
+func (f *feed) GetVT(oid string) (models.VT, error) {
+	pref, err := f.rc.GetList(1, fmt.Sprintf("nvt:%s", oid), 0, -1)
 	if err != nil {
-		return models.VT{}, nil, err
+		return models.VT{}, err
 	}
 	if len(pref) == 0 {
-		return models.VT{}, info.GetFailureResponse(
-			msg.Message,
-			msg.ID,
-		), nil
+		return models.VT{}, fmt.Errorf("oid unknown")
 	}
-	log.Printf("Got %d vts", len(pref))
 
 	dependecies := strings.Split(pref[redis.NVT_DEPENDENCIES_POS], ", ")
 	allTags := strings.Split(pref[redis.NVT_TAGS_POS], "|")
@@ -187,9 +178,10 @@ func (f *feed) GetVT(msg cmds.Get) (models.VT, *info.Failure, error) {
 
 	for _, v := range allTags {
 		tag := strings.SplitN(v, "=", 2)
-		if len(tag) > 1 {
-			tags[tag[0]] = tag[1]
+		if len(tag) != 2 {
+			continue
 		}
+		tags[tag[0]] = tag[1]
 	}
 	refs := getRefs(
 		pref[redis.NVT_CVES_POS],
@@ -198,7 +190,7 @@ func (f *feed) GetVT(msg cmds.Get) (models.VT, *info.Failure, error) {
 	)
 
 	vt := models.VT{
-		OID:                msg.ID,
+		OID:                oid,
 		Name:               pref[redis.NVT_NAME_POS],
 		FileName:           pref[redis.NVT_FILENAME_POS],
 		RequiredKeys:       pref[redis.NVT_REQUIRED_KEYS_POS],
@@ -221,12 +213,30 @@ func (f *feed) GetVT(msg cmds.Get) (models.VT, *info.Failure, error) {
 		QoDType:            tags["qod_type"],
 		QoDValue:           tags["qod"],
 		References:         refs,
-		VTParameters:       f.getNvtPrefs(msg.ID),
+		VTParameters:       f.getNvtPrefs(oid),
 		VTDependencies:     dependecies,
 		Severity:           getSeverity(tags),
 	}
 
-	return vt, nil, err
+	return vt, nil
+}
+
+func (f *feed) GetAllVTs() ([]models.VT, error) {
+	oids, err := f.rc.GetKeys(1, "nvt:*")
+	if err != nil {
+		return nil, err
+	}
+	vts := make([]models.VT, len(oids))
+	for i, v := range oids {
+
+		vt, err := f.GetVT(strings.TrimPrefix(v, "nvt:"))
+		if err != nil {
+			return nil, err
+		}
+		vts[i] = vt
+	}
+
+	return vts, nil
 }
 
 // GetVTs expects a List of VTFilter and returns a list of oids which match the
@@ -288,6 +298,7 @@ func (f *feed) Handler() map[string]connection.OnMessage {
 	t := fmt.Sprintf("%s/vt/cmd/%s", f.context, f.id)
 	h := handler.FeedHandler{
 		GetVT:         f.GetVT,
+		GetVTs:        f.GetAllVTs,
 		ResolveFilter: f.ResolveFilter,
 		Context:       f.context,
 	}

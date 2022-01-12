@@ -31,8 +31,9 @@ import (
 
 // FeedHandler handles incoming request regarding the feed
 type FeedHandler struct {
-	GetVT         func(msg cmds.Get) (models.VT, *info.Failure, error) // Get VT metadata from feedservice
-	ResolveFilter func(filter []models.VTFilter) ([]string, error)     //
+	GetVT         func(oid string) (models.VT, error) // Get VT metadata from feedservice
+	GetVTs        func() ([]models.VT, error)
+	ResolveFilter func(filter []models.VTFilter) ([]string, error) //
 	Context       string
 	ID            string
 }
@@ -53,22 +54,29 @@ func (handler FeedHandler) On(
 	log.Trace().Msgf("[%s] %s", topic, string(message))
 	if mt.Aggregate == "vt" {
 		switch mt.Function {
-		case "get": // Get single VT metadata
+		case "get": // Get VT Metadata
 			var msg cmds.Get
 			var response messages.Event
 			if err := json.Unmarshal(message, &msg); err != nil {
 				return nil, err
 			}
-			vt, f, err := handler.GetVT(msg)
-			if err != nil {
-				return nil, err
-			}
-			if f != nil {
-				response = f
-			} else {
+			if msg.ID != "" { // Get Single VT
+				vt, err := handler.GetVT(msg.ID)
+				if err != nil {
+					return messages.EventToResponse(handler.Context, info.GetFailureResponse(msg.Message, msg.ID)), nil
+				}
 				response = models.GotVT{
 					Message: messages.NewMessage("got.vt", "", msg.GroupID),
 					VT:      vt,
+				}
+			} else { // Get all VTs
+				vts, err := handler.GetVTs()
+				if err != nil {
+					return nil, err
+				}
+				response = models.GotVTs{
+					Message: messages.NewMessage("gotall.vt", "", msg.GroupID),
+					VTs:     vts,
 				}
 			}
 			return messages.EventToResponse(handler.Context, response), nil
